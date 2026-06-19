@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DispatchTrack — Ticket Evaluation Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --sb:#0B1628;--sb2:#152236;--sba:#1C3050;
+  --pri:#4F6EF7;--pris:#EEF1FE;
+  --bg:#F0F3FA;--card:#fff;--tx:#0F1B2D;--tx2:#4A5568;--tx3:#94A3B8;
+  --bdr:#E2E8F0;--bdr2:#CBD5E1;
+  --ok:#16A34A;--oks:#DCFCE7;--okt:#14532D;
+  --warn:#D97706;--warns:#FEF3C7;--warnt:#78350F;
+  --err:#DC2626;--errs:#FEE2E2;--errt:#7F1D1D;
+  --inf:#0369A1;--infs:#E0F2FE;--inft:#0C4A6E;
+  --v:#7C3AED;--vs:#EDE9FE;--vt:#4C1D95;
+  --t:#0D9488;--ts:#CCFBF1;--tt:#134E4A;
+  --amb:#B45309;--ambs:#FEF3C7;--ambt:#78350F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;font-size:14px;line-height:1.5}
+button{cursor:pointer;font-family:"Inter",sans-serif}
+input,select,textarea{font-family:"Inter",sans-serif;color:var(--tx)}
+
+/* ─── LOGIN ─────────────────────────────── */
+#lw{position:fixed;inset:0;background:linear-gradient(135deg,#060D1A,#0A1527 50%,#0C1C38);display:flex;align-items:center;justify-content:center;z-index:1000}
+.lcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);backdrop-filter:blur(20px);border-radius:18px;padding:46px 42px;width:420px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.llogo{display:flex;align-items:center;gap:12px;margin-bottom:32px;justify-content:center}
+.lic{width:46px;height:46px;background:linear-gradient(135deg,#4F6EF7,#7C5CF7);border-radius:13px;display:flex;align-items:center;justify-content:center}
+.lbr{font-family:"Space Grotesk",sans-serif;font-size:21px;font-weight:700;color:#fff}
+.lbs{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.5px;text-transform:uppercase}
+.ltit{font-family:"Space Grotesk",sans-serif;font-size:23px;font-weight:700;color:#fff;text-align:center;margin-bottom:5px}
+.lsub{font-size:13px;color:rgba(255,255,255,.42);text-align:center;margin-bottom:28px}
+.lf{margin-bottom:16px}
+.ll{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.58);margin-bottom:6px;display:block}
+.li{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 14px;font-size:14px;color:#fff;outline:none;transition:all .2s}
+.li:focus{border-color:#4F6EF7;background:rgba(255,255,255,.09);box-shadow:0 0 0 3px rgba(79,110,247,.2)}
+.li::placeholder{color:rgba(255,255,255,.22)}
+.lbtn{width:100%;background:linear-gradient(135deg,#4F6EF7,#6B4FF7);border:none;color:#fff;padding:13px;border-radius:8px;font-size:14.5px;font-weight:600;font-family:"Space Grotesk",sans-serif;margin-top:10px;transition:all .2s;cursor:pointer}
+.lbtn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,110,247,.45)}
+.lerr{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);border-radius:7px;padding:10px 14px;font-size:13px;color:#FCA5A5;margin-top:12px;display:none}
+.lft{text-align:center;margin-top:22px;font-size:11.5px;color:rgba(255,255,255,.18)}
+.ldot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#16A34A;vertical-align:middle;margin-right:5px;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ─── APP SHELL ───────────────────────── */
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+#sb{width:228px;background:var(--sb);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sbh{padding:18px 16px 13px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sblo{display:flex;align-items:center;gap:10px}
+.sbic{width:34px;height:34px;background:linear-gradient(135deg,#4F6EF7,#7C5CF7);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sbbr{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:14.5px;color:#fff;line-height:1.1}
+.sbbs{font-size:9.5px;color:rgba(255,255,255,.28);letter-spacing:.5px;text-transform:uppercase}
+.sbnav{flex:1;padding:10px 8px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.sbsc{font-size:9.5px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.22);text-transform:uppercase;padding:10px 10px 4px}
+.sbi{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.46);font-weight:500;font-size:13px;position:relative;user-select:none}
+.sbi:hover{background:var(--sb2);color:rgba(255,255,255,.8)}
+.sbi.active{background:var(--sba);color:#fff}
+.sbi.active::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:58%;background:#4F6EF7;border-radius:0 3px 3px 0}
+.sbi svg{flex-shrink:0;opacity:.65}.sbi.active svg,.sbi:hover svg{opacity:1}
+.sbbd{margin-left:auto;background:#4F6EF7;color:#fff;border-radius:999px;font-size:10px;font-weight:600;padding:1px 7px;min-width:18px;text-align:center;display:none}
+.sbbd.w{background:var(--warn)}
+.sbdv{border:none;border-top:1px solid rgba(255,255,255,.06);margin:6px 0}
+.sbusr{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:9px}
+.sbav{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4F6EF7,#7C5CF7);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sbun{font-size:12.5px;font-weight:500;color:#fff;line-height:1.2}
+.sbur{font-size:10px;color:rgba(255,255,255,.32);text-transform:capitalize}
+.sbout{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;padding:4px;border-radius:5px;transition:all .15s;display:flex;align-items:center}
+.sbout:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.07)}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:#fff;border-bottom:1px solid var(--bdr);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tbt{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:700;color:var(--tx)}
+.tbd{font-size:12px;color:var(--tx3);margin-left:8px}
+
+/* ─── PAGES ─────────────────────────── */
+#pgwrap{flex:1;overflow-y:auto;padding:22px 24px}
+.page{display:none}
+.page.active{display:flex;flex-direction:column;gap:18px}
+
+/* LAYOUT */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.row{display:flex;gap:16px}.col{flex:1;min-width:0}
+
+/* CARDS */
+.card{background:#fff;border-radius:10px;border:1px solid var(--bdr);box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.chd{padding:15px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ct{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14.5px;color:var(--tx)}
+.cbd{padding:20px}
+
+/* STAT */
+.stat{background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.slb{font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.sv{font-family:"Space Grotesk",sans-serif;font-size:28px;font-weight:700;color:var(--tx);line-height:1}
+.ss{font-size:11.5px;color:var(--tx3);margin-top:5px}
+.sic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;border:none;transition:all .15s;white-space:nowrap;cursor:pointer;font-family:"Inter",sans-serif;line-height:1.4;text-decoration:none}
+.bpri{background:linear-gradient(135deg,#4F6EF7,#6B4FF7);color:#fff}
+.bpri:hover{box-shadow:0 4px 14px rgba(79,110,247,.4);transform:translateY(-1px)}
+.bpri:disabled{background:#94A3B8;transform:none!important;box-shadow:none!important;cursor:not-allowed}
+.bok{background:linear-gradient(135deg,#16A34A,#15803D);color:#fff}
+.bok:hover{box-shadow:0 4px 14px rgba(22,163,74,.35);transform:translateY(-1px)}
+.bout{background:#fff;color:var(--tx);border:1.5px solid var(--bdr2)}
+.bout:hover{border-color:#4F6EF7;color:#4F6EF7}
+.bgst{background:transparent;color:var(--tx2);border:none}
+.bgst:hover{background:var(--bg);color:var(--tx)}
+.bdan{background:var(--errs);color:var(--errt);border:1px solid #FECACA}
+.bdan:hover{background:#FECACA}
+.bwrn{background:var(--warns);color:var(--warnt);border:1px solid #FDE68A}
+.bsm{padding:5px 12px;font-size:12px;border-radius:6px}
+.blg{padding:11px 22px;font-size:14px}
+.bxl{padding:13px 28px;font-size:15px;border-radius:9px}
+
+/* FORMS */
+.flb{font-size:12.5px;font-weight:500;color:var(--tx2);margin-bottom:5px;display:block}
+.fhi{font-size:11px;color:var(--tx3);margin-top:3px}
+.fin{width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font-size:13.5px;color:var(--tx);background:#FAFBFD;outline:none;transition:border-color .15s}
+.fin:focus{border-color:#4F6EF7;background:#fff;box-shadow:0 0 0 3px rgba(79,110,247,.1)}
+select.fin{cursor:pointer}
+.finrow{display:flex;align-items:stretch}
+.finrow span{background:#F1F5F9;border:1.5px solid var(--bdr);padding:9px 10px;font-size:12px;color:var(--tx3);white-space:nowrap}
+.finrow span:first-child{border-right:0;border-radius:7px 0 0 7px}
+.finrow span:last-child{border-left:0;border-radius:0 7px 7px 0}
+.finrow .fin{border-radius:0;flex:1}
+
+/* TAGS */
+.tagbox{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#FAFBFD;border:1.5px solid var(--bdr);border-radius:7px;min-height:38px}
+.tagbox.scr{max-height:200px;overflow-y:auto}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:500;line-height:1.5}
+.tenv{background:var(--vs);color:var(--vt);border:1px solid #C4B5FD}
+.tcat{background:var(--ts);color:var(--tt);border:1px solid #99F6E4}
+.tsub{background:#FCE7F3;color:#831843;border:1px solid #FBCFE8}
+.tdef{background:var(--pris);color:#4F6EF7;border:1px solid #C7D2FE}
+.trm{background:none;border:none;color:inherit;opacity:.55;font-size:15px;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center}
+.trm:hover{opacity:1}
+.tadd{display:flex;gap:7px;margin-top:8px}
+.tin{flex:1;padding:7px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-size:13px;outline:none;background:#fff;color:var(--tx)}
+.tin:focus{border-color:#4F6EF7}
+.csr{width:100%;padding:7px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-size:12.5px;outline:none;background:#fff;color:var(--tx);margin-bottom:8px}
+.csr:focus{border-color:#4F6EF7}
+
+/* TABLE */
+.tw{overflow-x:auto;overflow-y:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{position:sticky;top:0;background:#F8FAFC;padding:10px 14px;text-align:left;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:11.5px;color:var(--tx2);border-bottom:2px solid var(--bdr);white-space:nowrap;z-index:2;cursor:pointer;user-select:none}
+.tbl th:hover{color:#4F6EF7}
+.tbl th.sa::after{content:" \25B2";font-size:8px;color:#4F6EF7}
+.tbl th.sd::after{content:" \25BC";font-size:9px;color:#4F6EF7}
+.tbl td{padding:9px 14px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
+.tbl tr:hover td{background:#FAFBFF}
+.tbl tr.chrow td:first-child{border-left:3px solid var(--warn)}
+.tbl tr.chrow td{background:#FFFBEB!important}
+.te{text-align:center;color:var(--tx3);padding:40px 20px;font-size:13px}
+.rsel{padding:5px 8px;border:1.5px solid var(--bdr);border-radius:6px;font-size:12px;color:var(--tx);background:#fff;outline:none;width:100%;max-width:155px;cursor:pointer}
+.rsel:focus{border-color:#4F6EF7}
+.rinp{padding:5px 8px;border:1.5px solid var(--bdr);border-radius:6px;font-size:12px;color:var(--tx);width:70px;outline:none;background:#fff}
+.rinp:focus{border-color:#4F6EF7}
+
+/* BADGES */
+.bdg{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:500;line-height:1.6}
+.bok2{background:var(--oks);color:var(--okt)}.berr{background:var(--errs);color:var(--errt)}
+.bwrn2{background:var(--warns);color:var(--warnt)}.binf{background:var(--infs);color:var(--inft)}
+.bv{background:var(--vs);color:var(--vt)}.bt{background:var(--ts);color:var(--tt)}
+.bamb{background:var(--ambs);color:var(--ambt)}.bgr{background:#F1F5F9;color:var(--tx2)}
+.bprib{background:var(--pris);color:#4F6EF7}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;flex-shrink:0}
+.dok{background:var(--ok)}.derr{background:var(--err)}
+
+/* DROPZONE */
+.dz{border:2px dashed var(--bdr2);border-radius:10px;padding:26px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFBFD}
+.dz:hover,.dz.ov{border-color:#4F6EF7;background:var(--pris)}
+.dzi{font-size:28px;margin-bottom:6px}
+.dzt{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;color:var(--tx);margin-bottom:3px}
+.dzs{font-size:12px;color:var(--tx3)}
+
+/* PROGRESS */
+.ptrk{background:var(--bdr);border-radius:999px;height:7px;overflow:hidden}
+.pfil{height:100%;border-radius:999px;background:linear-gradient(90deg,#4F6EF7,#7C5CF7);transition:width .4s ease}
+
+/* LOG */
+.logbx{background:#06101E;border-radius:7px;padding:12px 14px;height:150px;overflow-y:auto;font-family:"JetBrains Mono",monospace;font-size:11px;color:#475569;line-height:1.7}
+.lok{color:#34D399}.lerr2{color:#F87171}.linf{color:#60A5FA}.lwrn{color:#FBBF24}
+
+/* ALERTS */
+.al{padding:10px 14px;border-radius:7px;font-size:13px;display:flex;align-items:flex-start;gap:9px;line-height:1.5}
+.ai{background:var(--infs);border:1px solid #BAE6FD;color:var(--inft)}
+.aw{background:var(--warns);border:1px solid #FDE68A;color:var(--warnt)}
+.ao{background:var(--oks);border:1px solid #BBF7D0;color:var(--okt)}
+.ae{background:var(--errs);border:1px solid #FECACA;color:var(--errt)}
+
+/* MODAL */
+#mov{position:fixed;inset:0;background:rgba(7,15,28,.65);z-index:900;display:none;align-items:center;justify-content:center;padding:20px}
+#mov.open{display:flex}
+.modal{background:#fff;border-radius:14px;box-shadow:0 10px 32px rgba(0,0,0,.13);width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
+.mhd{padding:20px 24px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mtt{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:17px;color:var(--tx)}
+.mcl{background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;padding:2px 6px;border-radius:5px;line-height:1}
+.mcl:hover{background:var(--bg)}
+.mbd{padding:22px 24px;flex:1}
+.mft{padding:16px 24px;border-top:1px solid var(--bdr);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+
+/* TOAST */
+#tw{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none}
+.toast{background:#1A2740;color:#fff;padding:12px 16px;border-radius:9px;font-size:13px;box-shadow:0 10px 32px rgba(0,0,0,.13);display:flex;align-items:center;gap:10px;animation:sli .25s ease;max-width:340px;pointer-events:all;border-left:3px solid transparent}
+.toast.ok{border-left-color:#34D399}.toast.er{border-left-color:#F87171}.toast.in{border-left-color:#60A5FA}.toast.wn{border-left-color:#FBBF24}
+@keyframes sli{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* MISC */
+.ra{background:var(--ambs);color:var(--ambt);display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600}
+.ru{background:#F1F5F9;color:var(--tx2);display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600}
+.tr{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:11px 16px;background:#F8FAFC;border-bottom:1px solid var(--bdr)}
+.fsel{padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-size:12.5px;color:var(--tx);background:#fff;outline:none;cursor:pointer}
+.fsel:focus{border-color:#4F6EF7}
+.fsch{padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-size:12.5px;background:#fff;outline:none;width:170px;color:var(--tx)}
+.fsch:focus{border-color:#4F6EF7}
+.ckr{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;border:1.5px solid var(--bdr);cursor:pointer;transition:all .15s;user-select:none}
+.ckr:hover,.ckr.on{border-color:#4F6EF7;background:var(--pris)}
+.ckr input[type=checkbox]{accent-color:#4F6EF7;width:14px;height:14px;cursor:pointer}
+.cors-note{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:14px 16px;font-size:12.5px;color:#78350F;line-height:1.6}
+.cors-note code{background:#FEF3C7;padding:1px 6px;border-radius:4px;font-family:"JetBrains Mono",monospace;font-size:11.5px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:99px}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="lw"><div class="lcard">
+  <div class="llogo"><div class="lic"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div><div class="lbr">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
+  <div class="ltit">Welcome back</div><div class="lsub">Evaluate, classify and measure support tickets</div>
+  <div class="lf"><label class="ll">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
+  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+  <button class="lbtn" id="lbtn">Sign In &#8594;</button>
+  <div class="lerr" id="lerr"></div>
+  <div class="lft"><span class="ldot"></span>Serve from localhost for API access</div>
+</div></div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <nav id="sb">
+    <div class="sbh"><div class="sblo"><div class="sbic"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div><div class="sbbr">DispatchTrack</div><div class="sbbs">Ticket Eval Pro</div></div></div></div>
+    <div class="sbnav">
+      <div class="sbsc">Main</div>
+      <div class="sbi active" data-pg="dashboard"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
+      <div class="sbi" data-pg="evaluate"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>Evaluate<span class="sbbd" id="bd-ev">0</span></div>
+      <div class="sbi" data-pg="smb"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>SMB Database<span class="sbbd" id="bd-smb">&#x25CF;</span></div>
+      <div class="sbi" data-pg="results"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Results<span class="sbbd" id="bd-res">0</span></div>
+      <hr class="sbdv">
+      <div class="sbi" data-pg="categories"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Manage Labels</div>
+      <div class="sbi" data-pg="learning"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>AI Learning<span class="sbbd w" id="bd-lrn">0</span></div>
+      <div class="sbsc" id="sb-adm" style="display:none">Admin</div>
+      <div class="sbi" id="sb-usr" data-pg="users" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>User Management</div>
+      <div class="sbi" id="sb-set" data-pg="settings" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>API Settings</div>
+    </div>
+    <div class="sbusr"><div class="sbav" id="sbav">?</div><div><div class="sbun" id="sbun">--</div><div class="sbur" id="sbur">--</div></div><button class="sbout" id="sblo" title="Sign out"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
+  </nav>
+
+  <div id="main">
+    <header id="topbar">
+      <div style="display:flex;align-items:baseline;gap:8px"><span class="tbt" id="pgtit">Dashboard</span><span class="tbd" id="pgdsc">Overview</span></div>
+      <div style="display:flex;gap:8px" id="tbact"></div>
+    </header>
+    <div id="pgwrap">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pg-dashboard">
+        <div class="g4">
+          <div class="stat"><div class="sic" style="background:#EDE9FE"><svg width="18" height="18" fill="none" stroke="#5B21B6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><div class="slb">Total Evaluated</div><div class="sv" id="s-tot">0</div><div class="ss">All sessions (persistent)</div></div>
+          <div class="stat"><div class="sic" style="background:#DCFCE7"><svg width="18" height="18" fill="none" stroke="#14532D" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="slb">Success Rate</div><div class="sv" id="s-rat">--</div><div class="ss">No API errors</div></div>
+          <div class="stat"><div class="sic" style="background:#E0F2FE"><svg width="18" height="18" fill="none" stroke="#0C4A6E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="slb">Avg FRR</div><div class="sv" id="s-frr">--</div><div class="ss">Technical tickets only</div></div>
+          <div class="stat"><div class="sic" style="background:#FEF3C7"><svg width="18" height="18" fill="none" stroke="#78350F" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div class="slb">AI Corrections</div><div class="sv" id="s-lrn">0</div><div class="ss">Improving accuracy</div></div>
+        </div>
+        <div class="row">
+          <div class="col" style="flex:3"><div class="card"><div class="chd"><span class="ct">Recent Evaluations</span><button class="btn bout bsm" data-pg="evaluate" id="dash-new-btn">+ New Evaluation</button></div><div id="dash-rec"><div class="te">No evaluations yet. Start by uploading a sheet.</div></div></div></div>
+          <div class="col" style="flex:1;display:flex;flex-direction:column;gap:14px">
+            <div class="card cbd"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:14px">Quick Start</div><div style="display:flex;flex-direction:column;gap:10px"><button class="btn bpri blg" data-pg="evaluate" style="justify-content:center">&#9654; Start Evaluation</button><button class="btn bout blg" data-pg="smb" style="justify-content:center">Upload SMB Data</button><button class="btn bout blg" data-pg="results" style="justify-content:center">View All Results</button></div></div>
+            <div class="card cbd"><div class="slb" style="margin-bottom:10px">SMB Database</div><div id="dash-smb"><div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVALUATE -->
+      <div class="page" id="pg-evaluate">
+        <div style="display:flex;align-items:center;gap:6px;padding:12px 16px;background:#fff;border-radius:10px;border:1px solid var(--bdr);flex-wrap:wrap">
+          <span class="bdg bprib" id="phi1" style="font-size:12px;padding:4px 12px">&#9312; Upload</span><span style="color:var(--tx3)">&#8250;</span>
+          <span class="bdg bgr" id="phi2" style="font-size:12px;padding:4px 12px">&#9313; Configure</span><span style="color:var(--tx3)">&#8250;</span>
+          <span class="bdg bgr" id="phi3" style="font-size:12px;padding:4px 12px">&#9314; Process</span><span style="color:var(--tx3)">&#8250;</span>
+          <span class="bdg bgr" id="phi4" style="font-size:12px;padding:4px 12px">&#9315; Review &amp; Correct</span><span style="color:var(--tx3)">&#8250;</span>
+          <span class="bdg bgr" id="phi5" style="font-size:12px;padding:4px 12px">&#9316; Export</span>
+        </div>
+        <div id="ph1">
+          <div class="g2">
+            <div class="card"><div class="chd"><span class="ct">Upload Inflow Sheet</span><span style="font-size:12px;color:var(--tx3)">.xlsx &#183; .xls &#183; .csv</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+              <div class="dz" id="dz-in"><div class="dzi">&#x1F4CA;</div><div class="dzt">Drop evaluation sheet here or click to browse</div><div class="dzs">Must include "Ticket ID" column &#8212; all columns auto-mapped</div><input type="file" id="fi-in" accept=".xlsx,.xls,.csv" style="display:none"></div>
+              <div id="in-info" style="display:none" class="al ao"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><div style="flex:1"><strong id="in-name"></strong> &#8212; <span id="in-rows"></span> rows</div><button id="in-clr" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:20px;margin-left:auto;line-height:1;padding:0">&#215;</button></div>
+              <div id="in-cols" style="display:none"><div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:7px">Detected columns:</div><div id="in-cols-list" style="display:flex;flex-wrap:wrap;gap:5px"></div></div>
+            </div></div>
+            <div class="card"><div class="chd"><span class="ct">SMB Reference Sheet</span><span id="smb-tg"></span></div><div class="cbd" style="display:flex;flex-direction:column;gap:12px">
+              <div id="smb-ph1-st"></div>
+              <div class="dz" id="dz-smb1" style="padding:20px"><div class="dzi" style="font-size:22px">&#x1F3E2;</div><div class="dzt" style="font-size:14px">Drop SMB reference sheet</div><div class="dzs">Activation Code &#8594; SMB / Mega / Micro</div><input type="file" id="fi-smb1" accept=".xlsx,.xls,.csv" style="display:none"></div>
+            </div></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end"><button class="btn bpri blg" id="btn-n1" disabled>Configure Options &#8594;</button></div>
+        </div>
+
+        <div id="ph2" style="display:none">
+          <div class="g2">
+            <div class="card"><div class="chd"><span class="ct">Fields to Auto-Fill</span><div style="display:flex;gap:6px"><button class="btn bgst bsm" id="all-on">All</button><button class="btn bgst bsm" id="all-off">None</button></div></div><div class="cbd" style="display:flex;flex-direction:column;gap:8px">
+              <div class="ckr on" id="cr-frr"><input type="checkbox" id="cb-frr" checked><div><div style="font-weight:500">FRR (First Response Rate)</div><div style="font-size:11.5px;color:var(--tx3)">Minutes from assignment to first reply &#183; Technical tickets only</div></div></div>
+              <div class="ckr on" id="cr-smb"><input type="checkbox" id="cb-smb" checked><div><div style="font-weight:500">SMB Customer Type</div><div style="font-size:11.5px;color:var(--tx3)">Activation code lookup &#8594; SMB / Mega / Micro</div></div></div>
+              <div class="ckr on" id="cr-env"><input type="checkbox" id="cb-env" checked><div><div style="font-weight:500">Environment</div><div style="font-size:11.5px;color:var(--tx3)">Admin, API, Orders, Routing&#8230;</div></div></div>
+              <div class="ckr on" id="cr-cat"><input type="checkbox" id="cb-cat" checked><div><div style="font-weight:500">Category</div><div style="font-size:11.5px;color:var(--tx3)">Bug, WAE, Provisioning, Enhancement&#8230;</div></div></div>
+              <div class="ckr on" id="cr-sub"><input type="checkbox" id="cb-sub" checked><div><div style="font-weight:500">Sub Category</div><div style="font-size:11.5px;color:var(--tx3)">Specific topic from 321 predefined labels</div></div></div>
+            </div></div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card"><div class="chd"><span class="ct">Technical Ticket Types</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:8px"><div style="font-size:12px;color:var(--tx2)">FRR calculated only for these Ticket Type values:</div><div class="tagbox" id="tech-box"></div><div class="tadd"><input class="tin" id="tech-in" placeholder="e.g. Technical"><button class="btn bpri bsm" id="tech-add">Add</button></div></div></div>
+              <div class="card"><div class="chd"><span class="ct">Processing Speed</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:8px">
+                <label class="ckr on"><input type="radio" name="spd" value="1500" checked style="accent-color:#4F6EF7"><div><div style="font-weight:500">Normal &#8212; 1.5s delay (~30/min)</div><div style="font-size:11.5px;color:var(--tx3)">Recommended for free Gemini tier</div></div></label>
+                <label class="ckr"><input type="radio" name="spd" value="2500" style="accent-color:#4F6EF7"><div><div style="font-weight:500">Safe &#8212; 2.5s delay (~20/min)</div><div style="font-size:11.5px;color:var(--tx3)">Most reliable, avoids rate limits</div></div></label>
+                <label class="ckr"><input type="radio" name="spd" value="800" style="accent-color:#4F6EF7"><div><div style="font-weight:500">Fast &#8212; 0.8s delay (~60/min)</div><div style="font-size:11.5px;color:var(--tx3)">Paid Gemini plan recommended</div></div></label>
+              </div></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between"><button class="btn bout" id="btn-b2">&#8592; Back</button><button class="btn bpri blg" id="btn-start">&#9654; Start Processing <span id="pc-lbl"></span></button></div>
+        </div>
+
+        <div id="ph3" style="display:none">
+          <div class="card"><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="ct" id="proc-tit">Processing&#8230;</div><div style="font-size:12.5px;color:var(--tx3);margin-top:2px" id="proc-sub"></div></div><div style="display:flex;gap:8px"><button class="btn bwrn bsm" id="btn-pause">&#x23F8; Pause</button><button class="btn bdan bsm" id="btn-stop">&#x25A0; Stop</button></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:5px"><span id="proc-lbl">Waiting&#8230;</span><span style="color:#4F6EF7;font-weight:500;font-family:'JetBrains Mono',monospace" id="proc-pct">0%</span></div><div class="ptrk"><div class="pfil" id="proc-bar" style="width:0"></div></div>
+            <div style="display:flex;gap:18px;margin-top:8px;font-size:12px"><span><span class="dot dok"></span><span id="pc-ok">0</span> done</span><span><span class="dot derr"></span><span id="pc-er">0</span> errors</span><span><span class="dot" style="background:#60A5FA"></span><span id="pc-fr">0</span> FRR</span><span><span class="dot" style="background:#0D9488"></span><span id="pc-sm">0</span> SMB</span><span style="margin-left:auto;color:var(--tx3);font-size:11px" id="pc-eta"></span></div></div>
+            <div class="logbx" id="proc-log"></div>
+          </div></div>
+          <div class="card"><div class="chd"><span class="ct">Live Results</span><div style="display:flex;gap:8px"><button class="btn bout bsm" id="live-csv">&#8595; CSV</button><button class="btn bok bsm" id="live-xl">&#8595; Excel</button></div></div><div class="tw" style="max-height:280px"><table class="tbl"><thead><tr id="live-hd"></tr></thead><tbody id="live-tb"><tr><td class="te" colspan="9">Waiting&#8230;</td></tr></tbody></table></div></div>
+        </div>
+
+        <div id="ph4" style="display:none">
+          <div class="al aw"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div style="flex:1"><strong>Review &amp; Correct AI Classifications.</strong> Edit any cell &#8212; changes highlight amber and save as AI training data to improve future accuracy.</div><div style="display:flex;gap:8px;flex-shrink:0;align-items:center"><span class="bdg bgr" id="ch-cnt" style="font-size:12px">0 changes</span><button class="btn bpri bsm" id="save-corr">&#10003; Save Corrections</button></div></div>
+          <div class="card"><div class="chd"><span class="ct">Editable Results</span><div style="display:flex;gap:8px"><button class="btn bgst bsm" id="rev-csv">&#8595; CSV</button><button class="btn bok bsm" id="rev-xl">&#8595; Excel</button></div></div>
+            <div class="tw" style="max-height:480px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>Type</th><th style="background:#FFFBEB">FRR (min)</th><th style="background:#FFFBEB">SMB</th><th style="background:#FFFBEB">Environment</th><th style="background:#FFFBEB">Category</th><th style="background:#FFFBEB">Sub Category</th><th>Status</th></tr></thead><tbody id="rev-tb"></tbody></table></div>
+          </div>
+          <div style="display:flex;justify-content:space-between"><button class="btn bout" id="btn-b4">&#8592; Back</button><button class="btn bpri blg" id="btn-ph5">Finish &amp; Export &#8594;</button></div>
+        </div>
+
+        <div id="ph5" style="display:none">
+          <div class="card" style="border:2px solid var(--ok)"><div class="cbd" style="text-align:center;padding:40px 20px">
+            <div style="font-size:48px;margin-bottom:14px">&#x2705;</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px">Evaluation Complete!</div>
+            <div style="font-size:14px;color:var(--tx2);margin-bottom:24px" id="done-sum"></div>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="btn bpri bxl" id="fin-csv">&#8595; Download CSV</button><button class="btn bok bxl" id="fin-xl">&#8595; Download Excel</button><button class="btn bout bxl" data-pg="results">View Results &#8594;</button></div>
+          </div></div>
+          <button class="btn bout" id="new-ev" style="align-self:flex-start">+ New Evaluation</button>
+        </div>
+      </div>
+
+      <!-- SMB -->
+      <div class="page" id="pg-smb">
+        <div class="g2">
+          <div class="card"><div class="chd"><span class="ct">Upload SMB Reference Sheet</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div class="dz" id="dz-smb2"><div class="dzi">&#x1F3E2;</div><div class="dzt">Drop SMB sheet here or click to browse</div><div class="dzs">Excel or CSV: Activation Code + Customer Type columns</div><input type="file" id="fi-smb2" accept=".xlsx,.xls,.csv" style="display:none"></div>
+            <div id="smb-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="smb-cc" class="fin"></select></div><div><label class="flb">Customer Type column</label><select id="smb-tc" class="fin"></select></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="smb-save">&#10003; Save SMB Database</button></div>
+            <div id="smb-pg-msg"></div>
+          </div></div>
+          <div class="card cbd" id="smb-stats"><div style="text-align:center;color:var(--tx3);padding:24px 0">No SMB data loaded.</div></div>
+        </div>
+        <div class="card" id="smb-prev" style="display:none"><div class="chd"><span class="ct">SMB Data Preview</span><span class="bdg bok2" id="smb-prev-cnt"></span></div><div class="tw" style="max-height:320px"><table class="tbl"><thead><tr><th>Activation Code</th><th>Customer Type</th></tr></thead><tbody id="smb-prev-tb"></tbody></table></div></div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="page" id="pg-results">
+        <div class="card">
+          <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace" id="res-lbl">0 records</span><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
+          <div class="fb">
+            <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select><button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
+            <span style="margin-left:auto;font-size:11.5px;color:var(--tx3)" id="f-cnt"></span>
+          </div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:#4F6EF7"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Assignee</th><th>Link</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bdr)">
+            <button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button>
+            <div style="display:flex;align-items:center;gap:10px"><button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORIES -->
+      <div class="page" id="pg-categories">
+        <div class="al ai"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>AI uses these lists to classify each ticket. Changes apply on the next evaluation. Use Export/Import to back up label sets.</div></div>
+        <div class="g3" id="cat-panels"><div class="te">Loading labels&#8230;</div></div>
+      </div>
+
+      <!-- AI LEARNING -->
+      <div class="page" id="pg-learning">
+        <div class="g2">
+          <div class="card"><div class="chd"><span class="ct">Correction History</span><span class="bdg bwrn2" id="lrn-cnt">0 corrections</span></div>
+            <div class="fb"><select class="fsel" id="lf-field"><option value="">All Fields</option><option>environment</option><option>category</option><option>sub_category</option><option>smb_type</option><option>frr</option></select><button class="btn bgst bsm" id="lrn-exp">&#8595; Export JSON</button><button class="btn bdan bsm" id="lrn-clr">Clear All</button></div>
+            <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th>Ticket Subject</th><th>Field</th><th>Original</th><th>Corrected To</th><th>Date</th></tr></thead><tbody id="lrn-tb"><tr><td colspan="5" class="te">No corrections yet.</td></tr></tbody></table></div>
+          </div>
+          <div class="card cbd">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:12px">How AI Learning Works</div>
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--tx2);line-height:1.6">
+              <div class="al ai"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Every correction you make becomes training data for the AI.</div>
+              <p>Future Gemini prompts include your <strong>last 40 corrections</strong> as few-shot examples. The AI learns your team's classification style over time.</p>
+              <p><strong>Best practice:</strong> After each evaluation, spend 5 minutes in Review &amp; Correct to fix mistakes. The system learns quickly and becomes more accurate.</p>
+              <div style="background:#F8FAFC;border-radius:7px;padding:12px;border:1px solid var(--bdr)">
+                <div style="font-size:11.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Learning Stats by Field</div>
+                <div id="lrn-stats"><span style="color:var(--tx3)">No corrections yet.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="page" id="pg-users">
+        <div class="card"><div class="chd"><span class="ct">User Management</span><button class="btn bpri bsm" id="add-usr">+ Add User</button></div><div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="usr-tb"><tr><td colspan="5" class="te">No users yet.</td></tr></tbody></table></div></div>
+        <div class="al ai"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><strong>Roles:</strong> Admin can manage users and access API settings. User can evaluate, review, and export only &#8212; cannot see API credentials.</div></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="pg-settings">
+        <!-- CORS Note -->
+        <div class="cors-note">
+          <strong>&#9888; Important: Serve from localhost to enable API connections.</strong><br>
+          Opening this file directly (<code>file://</code>) causes CORS errors. Run a local server instead:<br>
+          <strong>Python:</strong> <code>python -m http.server 8080</code> then open <code>http://localhost:8080</code><br>
+          <strong>Node:</strong> <code>npx http-server -p 8080</code> then open <code>http://localhost:8080</code><br>
+          Also add <code>http://localhost:8080</code> to Zendesk Admin &#8594; Apps &amp; Integrations &#8594; APIs &#8594; Zendesk API &#8594; Settings &#8594; CORS Origins.
+        </div>
+        <div class="g2">
+          <div class="card"><div class="chd"><span class="ct">Zendesk API</span><button class="btn bout bsm" id="zd-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div><label class="flb">Zendesk Subdomain</label><div class="finrow"><span>https://</span><input id="s-sub" class="fin" placeholder="dispatchtrack"><span>.zendesk.com</span></div><div class="fhi">Enter just the subdomain (e.g., <em>dispatchtrack</em>)</div></div>
+            <div><label class="flb">Agent Email</label><input id="s-em" class="fin" type="email" placeholder="agent@dispatchtrack.com"></div>
+            <div><label class="flb">API Token</label><input id="s-tok" class="fin" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"><div class="fhi">Admin &#8594; Apps &amp; Integrations &#8594; Zendesk API &#8594; Settings &#8594; API token</div></div>
+            <div id="zd-res"></div>
+            <button class="btn bpri" id="zd-save">Save Zendesk Settings</button>
+          </div></div>
+          <div class="card"><div class="chd"><span class="ct">Google Gemini AI</span><button class="btn bout bsm" id="gem-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div><label class="flb">Gemini API Key</label><input id="s-gk" class="fin" type="password" placeholder="AIza&#8230;"><div class="fhi">Get free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4F6EF7">aistudio.google.com</a></div></div>
+            <div><label class="flb">Model</label><select id="s-gm" class="fin"><option value="gemini-1.5-flash">gemini-1.5-flash (Fast &#183; Free)</option><option value="gemini-1.5-pro">gemini-1.5-pro (More accurate)</option><option value="gemini-2.0-flash">gemini-2.0-flash (Latest)</option></select></div>
+            <div id="gem-res"></div>
+            <button class="btn bpri" id="gem-save">Save Gemini Settings</button>
+          </div></div>
+        </div>
+        <div class="card"><div class="chd"><span class="ct">Data Management</span></div><div class="cbd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn bdan" id="clr-res">Clear All Results</button><button class="btn bdan" id="clr-lrn">Clear AI Corrections</button><button class="btn bout" id="clr-smb">Clear SMB Data</button><span style="font-size:12px;color:var(--tx3)" id="dt-stats"></span></div></div>
+      </div>
+
+    </div><!-- /pgwrap -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div id="mov"><div class="modal" id="mbox" style="max-width:500px"><div class="mhd"><div class="mtt" id="mtit">Modal</div><button class="mcl" id="mcl">&#215;</button></div><div class="mbd" id="mbd"></div><div class="mft" id="mft"></div></div></div>
+<div id="tw"></div>
+<script>
+"use strict";
+// ─────────────────────────────────────────────────────
+//  CONFIGURATION  (set in API Settings page or hardcode here)
+// ─────────────────────────────────────────────────────
+var MASTER = {email:"revanth.abbati@dispatchtrack.com",pass:"Test@12322",role:"master",name:"Revanth Abbati",id:"__master__"};
+var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-1.5-flash"};
+
+// ─── DEFAULT CLASSIFICATION LABELS ────────────────────
+var DE = ["API", "Accounting", "Admin", "Home", "Integration", "Login Page", "Mobile", "Notifications", "Orders", "Reports", "Reservations", "Routing", "Service Units", "Settlements", "Survey", "Telematics", "Trials", "Web", "Junk", "Pre-Sale", "Data Migration", "Enhancement", "Training", "Plans", "Metrics", "New Instance"];
+var DC = ["Bug", "Regression", "Enhancement", "How to Question", "Outage", "Product Issue", "Provisioning", "Slowness", "WAE", "Payment", "End Customer / Junk"];
+var DS = ["API Documentation", "API Export", "API Import", "API Key Request", "API spreadsheet", "Account Business Phone Number", "Accounts", "Activation Code", "Adding Driver to Route", "Adding Events to Route", "Adding Stops to the Route", "Adding Truck to Route", "Additional Fields", "Additional Fields Duplication", "Address Resolution", "Alerts", "Api Tags", "Arriving Soon", "Authorization keys", "Auto-routing", "BeeTrack", "Billing related info", "Business API Key", "CNAM", "COD", "CPU 1.0", "CPU 2.0", "CSV Export", "CSV Import", "Cache Issue", "Calculate Time", "Calendar Routing", "Call Notification", "Caller ID", "Cancellation request", "Capacity Settings", "Clear Queued Import", "Clients", "Cluster Orders", "Contact Free Delivery", "Create Service Unit", "Custom Fields", "Custom Forms", "Custom Notification", "Customer Comment Widget", "Customer Contact Mode Preferences", "Customer Escalation Alert", "Customer Import", "Customer Invitation", "Customer Masking", "Customer Search", "Customer Updates", "DT Agent", "DT Agent Configuration", "DTB", "DTB Import", "DTV APIs", "DTV Mapping", "DTV Sync Issue", "DVIR", "Dashboard", "Data Migration from 1 instance to another", "Data Privacy", "Debugging", "Delay Notification", "Delete Customers", "Delete Orders", "Delete Route Locations", "Delete Service Unit", "Delivery Receipt", "Delivery Report", "Disable Order Grouping", "Disable Route Start", "Disable Schedule Call", "DispatchTrack Website Issue", "Driver AI", "Driver Alerts", "Driver Based Login", "Driver Checklist", "Driver Customer Call", "Driver customer chat", "Driver settlements", "Driver unable to finish orders", "Driver unable to log out", "Driver unable to see the stops", "Drivers", "EPASS", "ETA Display Issue", "Email Notification", "Email Survey", "Email Verification", "Enable Breaks Feature", "Enable Cost per day", "Enable Route Start", "Enable Signature", "Enable Text Survey", "Enable Unscheduled Orders Report", "End Customer", "Enhancement Ideas", "Event Retrigger Request", "Events", "Export", "Farthest Optimization", "Feedback on Release Notes", "Ferguson API Sheet Update", "Ferguson Accounts to Parser", "Ferguson Alerts", "Ferguson User - Transferred to Ferguson Team", "Furniture Wizard Import", "GERS", "GPS Points", "GPS Points Not Updating", "How to login", "IP Addresses", "Image Blur", "Image Categorization", "Image Export", "Images in Export API", "Images in Notifications", "Images not visible in web portal", "Import Lock", "Incorrect Customer Location", "Incorrect Stop Sequence", "Instance Active or Inactive", "Instance Consolidation", "Instance Information", "Instance creation", "Internal Server Error", "Issue is not clear", "Item Masters", "License Addition", "License Reduction", "Line Item Sequence", "Line Item Weight", "Load Time", "Load out report", "Loft Import", "Login Issue", "MFRM Alerts", "MFRM User - Transferred to MFRM Team", "Mandatory Photos", "Manifest", "Manifest Export", "Mapping Issue", "Maps Redirect", "Mark as Paid", "Mobile", "Mobile App Upgrade", "Mobile App Version", "Mobile Exception Report", "Mobile Permissions", "Mobile Survey", "Mobile Training", "Multi Day Routing", "Multi Language Support", "Multi Route", "Myraid", "Narrowed Time Windows", "NetSuite", "No Truck Assigned", "Non-Truck Based Route", "Notes", "Notification Automation", "Notification Configuration", "Notification Groups", "Notification Opt In/Out", "Notification Scheduling", "Notification Sequencing", "Notification filter fields", "Notifications", "Notifications Bundle", "Notifications Unsubscribed", "Number Field", "Number for End Customer to Opt in for notifications", "Oauth2 Settings", "Okta SSO Login", "Onboarding", "Order Cloning", "Order Confirmation via Notification", "Order Creation", "Order Description", "Order Dispatch", "Order Duplication", "Order Edit", "Order Grouping", "Order History", "Order Import", "Order Routing", "Order Search", "Order Status", "Order Tracker", "Order Updates", "Order details", "Order filter fields", "Orders Cancellation", "Orders Sync from Mobile app", "Orders didnt import", "Orders not visible", "Orders with Unresolved Addresses", "Orphan Orders", "Outage", "Overlay", "Password Reset", "Payment Due Notice", "Pictures", "Plans", "Plivo", "Podium", "Pricing details", "Profit", "Profit - Imports", "Purge Request", "Quick Stop", "Rails8 Import Issue", "Reactivation", "Recurring Orders", "Release Code", "Report Columns", "Reports", "Request to add Dark Theme", "Reservation Time Windows", "Reservations", "Reservations Capacity Settings", "Return Codes", "Return items", "Route Details", "Route Labels", "Route Locations", "Route Lock", "Route Optimization", "Route Save", "Route Start Notification", "Route Summary", "Route Tags", "Routing", "Routing Icons", "Routing Parameters", "Routing View", "Routing setup", "SFTP", "SFTP Import", "SKU Barcode scanner", "STIA", "Sales Handoff", "Samsung File Processing Alert", "Schedule Notification", "Server Instance - Internal", "Service Compliance forms", "Service Days", "Service Time Calculation", "Service Type", "Service Unavailable", "Service Unit Set-up", "Service Units", "Service Units History", "Shopify Integration", "Shortcuts", "Shortest Optimization", "Signature", "Signature API", "Site Readiness Forms", "SiteOne User - Transferred to SiteOne Team", "Slowness", "Social Review", "Soft move", "Split Order", "Stops Not Showing Up", "Store Stops", "Storis", "Storis Import", "Storis reconciliation", "Survey CSAT Score", "Survey Setup", "Survey Setup Issues", "Sync Import Delete", "TCPA", "TLS 1.2 GERS", "TLS 1.2 Import Issue", "TLS 1.2 Loft", "TLS 1.2 Myriad", "TLS 1.2 Profit", "TLS Migration", "TR-Event Failure", "TSF", "Telematics Integration", "Text Notification", "Text Survey", "Third Party Integration", "Time Window", "Time Window Lock", "Track Widget", "Trash", "Trials Creation", "Trials Extension", "Trucks", "Twilio", "Two Way Communication", "URL Change", "Unable to find feasible routes", "Unload Time", "Update Business name", "Update Credit Card Information", "Upload Now", "User Locked - Invalid Login", "User Privilege", "User Verification", "Users", "V5 Routing", "Video POD", "Wait Time", "Warehouse user", "Web Training", "Web Version Upgrade", "Webpage not loading", "Wrong ETA", "Wrong email sent", "Zones", "account deactivation", "item received", "time zone", "uat creation"];
+var DT = ["Technical"];
+
+// ─── COLUMN MAP ───────────────────────────────────────
+var CM = {
+  ticket_id:["ticket id","ticket_id","id"],
+  assignee:["assignee name","assignee"],
+  ticket_type:["ticket type","type"],
+  priority:["priority"],
+  status:["ticket status","status"],
+  subject:["ticket subject","subject"],
+  ticket_category:["ticket category"],
+  requester:["requester name","requester"],
+  org:["requester organization name","organization"],
+  activation_code:["activation code"],
+  product:["product"],
+  created:["ticket created - date","ticket created","created date"],
+  solved:["ticket solved - date","ticket solved","solved date"],
+  satisfaction:["ticket satisfaction rating"],
+  issue_desc:["issue description","description"],
+  kb:["kb article"],
+  jira:["jira if yes link the jira to the ticket","jira link","jira"],
+  cse_review:["cse review conclusion"],
+  frr:["frr"],smb:["smb"],cse:["cse"],
+  environment:["environment"],category:["category"],
+  sub_category:["sub category","subcategory"],
+  comments:["comments"]
+};
+
+// ─── STORAGE KEYS ─────────────────────────────────────
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty"};
+// ─── UTILS ────────────────────────────────────────────
+function G(id){return document.getElementById(id);}
+function Q(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+function gv(id){var e=G(id);return e?e.value:"";}
+function esc(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function fmtS(s){return s<60?s+"s":Math.floor(s/60)+"m";}
+function stamp(){return new Date().toISOString().slice(0,10);}
+function dlBlob(blob,name){var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u);},1000);}
+function lsG(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsD(k){try{localStorage.removeItem(k);}catch(e){}}
+function cfg(k){var s=lsG(SK.A,{})||{};return({ZD_SUB:s.zs||HC.ZD_SUB,ZD_EM:s.ze||HC.ZD_EM,ZD_TOK:s.zt||HC.ZD_TOK,GEM_KEY:s.gk||HC.GEM_KEY,GEM_MOD:s.gm||HC.GEM_MOD})[k];}
+function toast(msg,t){
+  var w=G("tw");if(!w)return;
+  var d=document.createElement("div");
+  d.className="toast "+(t==="ok"?"ok":t==="err"?"er":t==="warn"?"wn":"in");
+  var sp=document.createElement("span");sp.textContent=msg;
+  var cb=document.createElement("button");cb.textContent="×";cb.style.cssText="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;margin-left:auto;padding:0;line-height:1";
+  cb.onclick=function(){if(d.parentNode)d.parentNode.removeChild(d);};
+  d.appendChild(sp);d.appendChild(cb);w.appendChild(d);
+  setTimeout(function(){if(d.parentNode){d.style.opacity="0";d.style.transition="opacity .3s";setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},300);}},5000);
+}
+function openModal(title,body,footer,maxW){G("mtit").textContent=title;G("mbd").innerHTML=body;G("mft").innerHTML=footer;G("mbox").style.maxWidth=maxW||"500px";G("mov").classList.add("open");}
+function closeModal(){G("mov").classList.remove("open");}
+function setRes(id,msg,type){var el=G(id);if(!el)return;el.className="al "+(type==="ok"?"ao":type==="err"?"ae":"ai");el.innerHTML=msg;el.style.display="block";}
+
+// ─── LABEL ACCESSORS ──────────────────────────────────
+function getEnvs(){return lsG(SK.EN,null)||DE.slice();}
+function getCats(){return lsG(SK.CA,null)||DC.slice();}
+function getSubs(){return lsG(SK.SU,null)||DS.slice();}
+function getTech(){return lsG(SK.TY,null)||DT.slice();}
+
+// ─── STATE ────────────────────────────────────────────
+var ST={
+  sess:null,results:[],filtered:[],smbData:{},smbRaw:[],
+  rows:[],headers:[],colIdx:{},
+  fills:{frr:true,smb:true,env:true,cat:true,sub:true},
+  delay:1500,paused:false,stop:false,
+  tech:[],revChg:{},
+  sortK:null,sortD:"asc",pg:0,pgSz:30,
+  pendSMB:null
+};
+
+// ─── AUTH ─────────────────────────────────────────────
+function doLogin(){
+  var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
+  if(er)er.style.display="none";
+  if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
+  if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){setSess(MASTER);bootApp();return;}
+  var us=lsG(SK.U,[])||[],u=null;
+  for(var i=0;i<us.length;i++){if(us[i].email.toLowerCase()===em.toLowerCase()&&us[i].password===pw){u=us[i];break;}}
+  if(u){setSess(u);bootApp();return;}
+  if(er){er.textContent="Invalid email or password.";er.style.display="block";}
+}
+function setSess(u){var s={id:u.id,email:u.email,name:u.name,role:u.role};try{sessionStorage.setItem("tep_s",JSON.stringify(s));}catch(e){}ST.sess=s;}
+function getSess(){if(ST.sess)return ST.sess;try{return JSON.parse(sessionStorage.getItem("tep_s")||"null");}catch(e){return null;}}
+function doLogout(){try{sessionStorage.removeItem("tep_s");}catch(e){}ST.sess=null;G("app").style.display="none";G("lw").style.display="flex";G("lem").value="";G("lpw").value="";var er=G("lerr");if(er)er.style.display="none";}
+function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master");}
+
+// ─── NAVIGATION ───────────────────────────────────────
+var PM={
+  dashboard:{t:"Dashboard",d:"Overview & quick actions"},
+  evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},
+  smb:{t:"SMB Database",d:"Customer type reference data"},
+  results:{t:"Results",d:"All evaluated tickets"},
+  categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},
+  learning:{t:"AI Learning",d:"Correction history & learning progress"},
+  users:{t:"User Management",d:"Manage platform users"},
+  settings:{t:"API Settings",d:"Zendesk and Gemini configuration"}
+};
+function goPage(pg){
+  if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
+  Q(".sbi").forEach(function(x){x.classList.remove("active");});
+  var nav=document.querySelector(".sbi[data-pg=\""+pg+"\"]");if(nav)nav.classList.add("active");
+  Q(".page").forEach(function(x){x.classList.remove("active");});
+  var pe=G("pg-"+pg);if(pe)pe.classList.add("active");
+  var m=PM[pg]||{t:pg,d:""};
+  if(G("pgtit"))G("pgtit").textContent=m.t;
+  if(G("pgdsc"))G("pgdsc").textContent=m.d;
+  if(pg==="dashboard")renderDash();
+  if(pg==="results"){fillFilters();applyF();}
+  if(pg==="categories")renderCatPanels();
+  if(pg==="learning")renderLrnPage();
+  if(pg==="users")renderUsers();
+  if(pg==="settings")loadSettings();
+  if(pg==="smb")renderSMBPage();
+}
+
+// ─── BADGE HELPERS ────────────────────────────────────
+function normSMB(t){
+  if(!t)return"";
+  var lc=String(t).trim().toLowerCase();
+  if(lc==="micro"||lc==="micro ")return"Micro";
+  if(lc==="mega")return"Mega";
+  if(lc==="smb")return"SMB";
+  return String(t).trim();
+}
+function smbBdg(t){
+  var n=normSMB(t);
+  if(!n||n==="Unknown")return'<span class="bdg bgr">--</span>';
+  var c=n==="SMB"?"bt":n==="Mega"?"bv":n==="Micro"?"bamb":"bgr";
+  return'<span class="bdg '+c+'">'+esc(n)+"</span>";
+}
+function catBdg(c){
+  if(!c||c==="--")return'<span class="bdg bgr">--</span>';
+  var m={Bug:"berr",Regression:"berr",Enhancement:"binf","How to Question":"binf",Outage:"berr","Product Issue":"bwrn2",Provisioning:"bt",Slowness:"bwrn2",WAE:"bok2",Payment:"bamb","End Customer":"bgr"};
+  var cls="bgr";
+  for(var k in m){if(c.indexOf(k)>=0){cls=m[k];break;}}
+  return'<span class="bdg '+cls+'" style="font-size:10.5px">'+esc(c)+"</span>";
+}
+function upBadges(){
+  var rb=G("bd-res");if(rb){rb.textContent=ST.results.length;rb.style.display=ST.results.length?"inline":"none";}
+  var sb=G("bd-smb");if(sb)sb.style.display=Object.keys(ST.smbData).length?"inline":"none";
+  var lc=(lsG(SK.CO,[])||[]).length;var lb=G("bd-lrn");if(lb){lb.textContent=lc;lb.style.display=lc?"inline":"none";}
+}
+
+// ─── DASHBOARD ────────────────────────────────────────
+function renderDash(){
+  try{
+    upBadges();
+    var r=ST.results;
+    if(G("s-tot"))G("s-tot").textContent=r.length;
+    var ok=r.filter(function(x){return x._ok;});
+    if(G("s-rat"))G("s-rat").textContent=r.length?Math.round(ok.length/r.length*100)+"%":"--";
+    var fv=ok.filter(function(x){return x.frr>0;}).map(function(x){return x.frr;});
+    if(G("s-frr"))G("s-frr").textContent=fv.length?Math.round(fv.reduce(function(a,b){return a+b;},0)/fv.length)+"m":"--";
+    if(G("s-lrn"))G("s-lrn").textContent=(lsG(SK.CO,[])||[]).length;
+    var dr=G("dash-rec");
+    if(!dr)return;
+    if(!r.length){dr.innerHTML='<div class="te">No evaluations yet. Click "Start Evaluation" to begin.</div>';return;}
+    var rc=r.slice().reverse().slice(0,8),rows="";
+    for(var i=0;i<rc.length;i++){
+      var v=rc[i];
+      rows+="<tr>";
+      rows+='<td style="font-family:\'JetBrains Mono\',monospace"><a href="'+esc(v.zd_url)+'" target="_blank" style="color:#4F6EF7">#'+esc(v.id)+"</a></td>";
+      rows+='<td class="tr" style="max-width:200px" title="'+esc(v.subject||"")+'">'+esc(v.subject||"--")+"</td>";
+      rows+="<td>"+smbBdg(v.smb_type)+"</td>";
+      rows+='<td style="font-size:11.5px">'+esc(v.environment||"--")+"</td>";
+      rows+="<td>"+catBdg(v.category)+"</td>";
+      rows+='<td style="font-size:11px;color:var(--tx2)">'+esc(v.sub_category||"--")+"</td>";
+      var fc=v.frr>60?"var(--err)":v.frr>0?"var(--ok)":"var(--tx3)";
+      rows+='<td style="font-family:\'JetBrains Mono\',monospace;font-weight:500;color:'+fc+'">'+( v.frr>0?v.frr+"m":"--")+"</td>";
+      rows+="</tr>";
+    }
+    dr.innerHTML='<div class="tw" style="max-height:260px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th></tr></thead><tbody>'+rows+"</tbody></table></div>";
+    var ks=Object.keys(ST.smbData),ds=G("dash-smb");
+    if(!ds)return;
+    if(ks.length){
+      var t={};ks.forEach(function(k){var v=ST.smbData[k];t[v]=(t[v]||0)+1;});
+      var h2="";for(var k in t)h2+='<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px"><span>'+esc(k)+'</span><span style="font-family:\'JetBrains Mono\',monospace">'+t[k]+"</span></div>";
+      ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;
+    }else{ds.innerHTML='<div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div>';}
+  }catch(e){console.error("renderDash error:",e);}
+}
+
+// ─── SMB ──────────────────────────────────────────────
+function parseSMBFile(file,ctx){
+  var ext=file.name.split(".").pop().toLowerCase();
+  var rd=new FileReader();
+  rd.onerror=function(){toast("Cannot read file","err");};
+  rd.onload=function(ev){
+    try{
+      var raw;
+      if(ext==="csv")raw=Papa.parse(ev.target.result,{header:false,skipEmptyLines:true}).data;
+      else{var wb=XLSX.read(ev.target.result,{type:"array"});raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});}
+      if(!raw||raw.length<2){toast("SMB file appears empty","err");return;}
+      var hdrs=raw[0].map(function(c){return String(c||"").trim();}),ci=-1,ti=-1;
+      for(var i=0;i<hdrs.length;i++){if(/activ|code/i.test(hdrs[i])&&ci<0)ci=i;}
+      for(var i=0;i<hdrs.length;i++){if(/type|segment|smb|tier|size|customer/i.test(hdrs[i])&&ti<0)ti=i;}
+      ST.pendSMB={hdrs:hdrs,rows:raw.slice(1),ctx:ctx};
+      if(ctx==="ph1")showSMBModalFn(hdrs,ci,ti);else showSMBMapperFn(hdrs,ci,ti);
+    }catch(e){toast("Error reading SMB file: "+e.message,"err");}
+  };
+  if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
+}
+function mkOpts(hdrs,sel){
+  var h="";for(var i=0;i<hdrs.length;i++){var s=i===sel?" selected":"";h+="<option value=\""+i+"\""+s+">"+esc(hdrs[i]||("Col "+i))+"</option>";}return h;
+}
+function showSMBModalFn(hdrs,ci,ti){
+  openModal("Map SMB Columns",
+    "<div style=\"display:flex;flex-direction:column;gap:14px\">"+
+    "<div class=\"al ai\">Select which columns contain the Activation Code and Customer Type.</div>"+
+    "<div><label class=\"flb\">Activation Code column</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div>"+
+    "<div><label class=\"flb\">Customer Type column</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div>"+
+    "</div>",
+    "<button class=\"btn bgst\" id=\"smb-mod-cancel\">Cancel</button><button class=\"btn bpri\" id=\"smb-mod-ok\">Save SMB Data</button>"
+  );
+  G("smb-mod-cancel").onclick=closeModal;
+  G("smb-mod-ok").onclick=function(){applySMB(+gv("mc"),+gv("mt"));closeModal();};
+}
+function showSMBMapperFn(hdrs,ci,ti){
+  var cc=G("smb-cc"),tc=G("smb-tc");
+  if(!cc||!tc)return;
+  cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);
+  G("smb-mapper").style.display="block";
+  var msg=G("smb-pg-msg");
+  if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready. Map columns then click Save.";}
+}
+function applySMB(ci,ti){
+  if(!ST.pendSMB)return;
+  var rows=ST.pendSMB.rows,data={},raw=[];
+  for(var i=0;i<rows.length;i++){
+    var code=String(rows[i][ci]||"").trim();
+    var type=normSMB(String(rows[i][ti]||"").trim())||"Unknown";
+    if(code){data[code.toLowerCase()]=type;raw.push({code:code,type:type});}
+  }
+  ST.smbData=data;ST.smbRaw=raw;
+  lsS(SK.SM,{data:data,raw:raw});
+  toast("SMB saved: "+Object.keys(data).length+" records","ok");
+  upBadges();
+  var ep=G("smb-ph1-st");if(ep){ep.innerHTML='<div class="al ao"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+Object.keys(data).length+" SMB records loaded</div>";}
+  var tg=G("smb-tg");if(tg){tg.innerHTML='<span class="bdg bok2">'+Object.keys(data).length+" records</span>";}
+}
+function lookupSMB(code){return code?ST.smbData[String(code).trim().toLowerCase()]||"Unknown":"Unknown";}
+function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);renderSMBPage();upBadges();toast("SMB data cleared","ok");}
+function renderSMBPage(){
+  var ks=Object.keys(ST.smbData),sp=G("smb-stats"),pc=G("smb-prev");
+  if(!sp||!pc)return;
+  if(!ks.length){sp.innerHTML='<div style="text-align:center;color:var(--tx3);padding:24px 0">No SMB data loaded.</div>';pc.style.display="none";return;}
+  var t={};ks.forEach(function(k){var v=ST.smbData[k];t[v]=(t[v]||0)+1;});
+  var rows="";for(var k in t)rows+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:7px;margin-bottom:6px">'+smbBdg(k)+'<span style="font-family:\'JetBrains Mono\',monospace;margin-left:auto">'+t[k]+"</span></div>";
+  sp.innerHTML='<div class="cbd"><span class="bdg bok2" style="margin-bottom:12px">'+ks.length+" activation codes</span>"+rows+'<button class="btn bdan bsm" id="clr-smb-inner" style="margin-top:12px;width:100%;justify-content:center">Clear SMB Data</button></div>';
+  var ci=G("clr-smb-inner");if(ci)ci.onclick=clearSMBData;
+  pc.style.display="block";
+  var cnt=G("smb-prev-cnt");if(cnt)cnt.textContent=ST.smbRaw.length+" records";
+  var tb=G("smb-prev-tb");if(!tb)return;
+  var h2="";
+  for(var i=0;i<Math.min(ST.smbRaw.length,80);i++){var rw=ST.smbRaw[i];h2+="<tr><td style=\"font-family:'JetBrains Mono',monospace;font-size:12px\">"+esc(rw.code)+"</td><td>"+smbBdg(rw.type)+"</td></tr>";}
+  if(ST.smbRaw.length>80)h2+='<tr><td colspan="2" class="te">+ '+(ST.smbRaw.length-80)+" more&#8230;</td></tr>";
+  tb.innerHTML=h2;
+}
+
+// ─── INFLOW PARSING ───────────────────────────────────
+function parseInflow(file){
+  if(!file)return;
+  var ext=file.name.split(".").pop().toLowerCase();
+  if(!["xlsx","xls","csv"].includes(ext)){toast("Please upload .xlsx, .xls, or .csv","err");return;}
+  var rd=new FileReader();
+  rd.onerror=function(){toast("Cannot read file","err");};
+  rd.onload=function(ev){
+    try{
+      var data;
+      if(ext==="csv")data=Papa.parse(ev.target.result,{header:false,skipEmptyLines:true}).data;
+      else{var wb=XLSX.read(ev.target.result,{type:"array"});data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});}
+      if(!data||data.length<2){toast("File appears empty","err");return;}
+      var hdrs=data[0].map(function(c){return String(c||"").trim();});
+      var rows=data.slice(1).filter(function(r){return r.some(function(c){return String(c||"").trim();});});
+      var ci={};
+      for(var field in CM){
+        var als=CM[field],idx=-1;
+        for(var i=0;i<hdrs.length&&idx<0;i++){
+          for(var j=0;j<als.length&&idx<0;j++){
+            if(hdrs[i].toLowerCase()===als[j].toLowerCase()||hdrs[i].toLowerCase().indexOf(als[j].toLowerCase())>=0)idx=i;
+          }
+        }
+        if(idx>=0)ci[field]=idx;
+      }
+      if(ci.ticket_id===undefined){toast("No Ticket ID column found. Check column names.","err");return;}
+      ST.rows=rows;ST.headers=hdrs;ST.colIdx=ci;
+      var nin=G("in-name"),nir=G("in-rows"),nif=G("in-info"),nic=G("in-cols"),nicl=G("in-cols-list"),bn1=G("btn-n1"),pcl=G("pc-lbl");
+      if(nin)nin.textContent=file.name;if(nir)nir.textContent=rows.length+" data rows";
+      if(nif)nif.style.display="flex";if(nic)nic.style.display="block";
+      if(nicl){var vs=Object.values(ci),h2="";for(var i=0;i<hdrs.length;i++)h2+='<span class="bdg '+(vs.indexOf(i)>=0?"bok2":"bgr")+'" style="font-size:10.5px">'+esc(hdrs[i]||"(empty)")+"</span>";nicl.innerHTML=h2;}
+      if(bn1)bn1.disabled=false;
+      if(pcl)pcl.textContent="("+rows.length+" rows)";
+      toast(rows.length+" rows loaded from "+file.name,"ok");
+    }catch(e){toast("Error reading file: "+e.message,"err");}
+  };
+  if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
+}
+
+// ─── PHASES ───────────────────────────────────────────
+function showPh(n){
+  for(var i=1;i<=5;i++){
+    var e=G("ph"+i);
+    if(e)e.style.display=i===n?"block":"none";
+  }
+  for(var i=1;i<=5;i++){
+    var e=G("phi"+i);if(!e)continue;
+    e.className="bdg";
+    e.classList.add(i<n?"bok2":i===n?"bprib":"bgr");
+  }
+  if(n===4)buildRevTable();
+}
+function renderTechTags(){
+  var box=G("tech-box");if(!box)return;
+  var h="";
+  for(var i=0;i<ST.tech.length;i++){
+    h+='<span class="tag tdef" data-ti="'+i+'">'+esc(ST.tech[i])+'<button class="trm" data-ti="'+i+'" title="Remove">&#215;</button></span>';
+  }
+  box.innerHTML=h;
+  Q(".trm[data-ti]").forEach(function(btn){
+    btn.addEventListener("click",function(e){e.stopPropagation();var idx=+this.dataset.ti;ST.tech.splice(idx,1);lsS(SK.TY,ST.tech);renderTechTags();});
+  });
+}
+function addTech(){
+  var inp=G("tech-in");if(!inp)return;
+  var v=(inp.value||"").trim();if(!v)return;
+  if(ST.tech.indexOf(v)>=0){toast("Already exists","warn");return;}
+  ST.tech.push(v);lsS(SK.TY,ST.tech);renderTechTags();inp.value="";
+}
+function setAllFills(on){
+  ["frr","smb","env","cat","sub"].forEach(function(k){
+    ST.fills[k]=on;
+    var cb=G("cb-"+k);if(cb)cb.checked=on;
+    var cr=G("cr-"+k);if(cr){if(on)cr.classList.add("on");else cr.classList.remove("on");}
+  });
+}
+
+// ─── PROCESSING ───────────────────────────────────────
+var _pRes=null;
+function togPause(){
+  ST.paused=!ST.paused;
+  var b=G("btn-pause");if(b)b.textContent=ST.paused?"\u25BA Resume":"\u23F8 Pause";
+  if(!ST.paused&&_pRes){_pRes();_pRes=null;}
+}
+function stopEval(){if(confirm("Stop processing?")){ST.stop=true;ST.paused=false;if(_pRes){_pRes();_pRes=null;}}}
+function wPause(){return new Promise(function(r){if(!ST.paused){r();return;}_pRes=r;});}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+async function startEval(){
+  if(!ST.rows.length){toast("No inflow sheet loaded","err");return;}
+  if(!cfg("GEM_KEY")){toast("Gemini API key not set. Go to API Settings first.","err");return;}
+  if(!cfg("ZD_TOK")){toast("Zendesk API token not set. Go to API Settings first.","err");return;}
+  ST.stop=false;ST.paused=false;ST.revChg={};
+  showPh(3);
+  var hd=G("live-hd");if(hd)hd.innerHTML="<th>ID</th><th>Subject</th><th>Type</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th><th>OK</th>";
+  var logEl=G("proc-log");if(logEl)logEl.innerHTML="";
+  function log(m,t){
+    if(!logEl)return;
+    var d=document.createElement("div");
+    d.className="l"+(t==="ok"?"ok":t==="err"?"err2":t==="warn"?"wrn":"inf");
+    d.textContent="["+new Date().toLocaleTimeString()+"] "+m;
+    logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
+  }
+  var ci=ST.colIdx,total=ST.rows.length,start=Date.now(),ok=0,ec=0,fc=0,sc=0;
+  var pt=G("proc-tit");if(pt)pt.textContent="Processing tickets\u2026";
+  log("Starting: "+total+" tickets","inf");
+  for(var i=0;i<total;i++){
+    if(ST.stop){log("Stopped by user","warn");break;}
+    await wPause();
+    var row=ST.rows[i];
+    var tid=String(ci.ticket_id!=null?row[ci.ticket_id]:"").trim();
+    if(!tid||!/^\d+$/.test(tid)){log("Row "+(i+1)+": skipped (invalid ID)","warn");continue;}
+    var pct=Math.round(i/total*100);
+    var pb=G("proc-bar"),pp=G("proc-pct"),pl=G("proc-lbl");
+    if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
+    if(i>1){var el2=(Date.now()-start)/1000,eta=Math.round((el2/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
+    log("\u2192 #"+tid+"\u2026","inf");
+    var res={
+      id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),
+      assignee:String(ci.assignee!=null?row[ci.assignee]:""),
+      ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),
+      priority:String(ci.priority!=null?row[ci.priority]:""),
+      status:String(ci.status!=null?row[ci.status]:""),
+      subject:String(ci.subject!=null?row[ci.subject]:""),
+      ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),
+      requester:String(ci.requester!=null?row[ci.requester]:""),
+      activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),
+      frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",
+      zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,
+      _ok:false,error:""
+    };
+    try{
+      var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");
+      var t=zdR.ticket;
+      res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
+      log("  ZD OK: \""+String(t.subject||"").substring(0,40)+"\"","ok");
+      var comments=[],audits=[];
+      if(ST.fills.frr){
+        var isTech=false;
+        for(var tt=0;tt<ST.tech.length;tt++){if(res.ticket_type.toLowerCase().indexOf(ST.tech[tt].toLowerCase())>=0){isTech=true;break;}}
+        if(isTech){
+          comments=await zdGetComments(tid);audits=await zdGetAudits(tid);
+          var asgn=findAssign(audits),reply=findReply(comments,t.requester_id);
+          if(asgn&&reply){res.frr=Math.round((reply-asgn)/60000);res.frr_txt=res.frr+"m";fc++;log("  FRR: "+res.frr+"m","ok");}
+          else{res.frr_txt=asgn?"No public reply":"Never assigned";log("  FRR: "+res.frr_txt,"warn");}
+        }else res.frr_txt="Non-technical";
+      }
+      if(ST.fills.smb){res.smb_type=lookupSMB(res.activation_code);if(res.smb_type!=="Unknown")sc++;log("  SMB: "+res.smb_type,"ok");}
+      if(ST.fills.env||ST.fills.cat||ST.fills.sub){
+        if(!comments.length)try{comments=await zdGetComments(tid);}catch(ce){}
+        var desc="";
+        for(var ci2=0;ci2<comments.length;ci2++){if(comments[ci2].public){desc=String(comments[ci2].body||"").substring(0,2000);break;}}
+        if(!desc)desc=String(t.description||"").substring(0,2000);
+        log("  Classifying with Gemini\u2026","inf");
+        var cls=await gemCls(res.subject,desc,res.ticket_type,t.tags||[],res.ticket_category);
+        if(ST.fills.env)res.environment=cls.environment||"";
+        if(ST.fills.cat)res.category=cls.category||"";
+        if(ST.fills.sub)res.sub_category=cls.sub_category||"";
+        log("  "+cls.environment+" / "+cls.category+" / "+cls.sub_category,"ok");
+      }
+      res._ok=true;ok++;
+    }catch(e){
+      res.error=e.message;ec++;
+      log("  ERROR: "+e.message,"err");
+    }
+    ST.results.push(res);
+    addLiveRow(res);
+    var pok=G("pc-ok"),per=G("pc-er"),pfr=G("pc-fr"),psm=G("pc-sm");
+    if(pok)pok.textContent=ok;if(per)per.textContent=ec;if(pfr)pfr.textContent=fc;if(psm)psm.textContent=sc;
+    lsS(SK.RE,ST.results);upBadges();
+    if(i<total-1)await sleep(ST.delay);
+  }
+  var pb=G("proc-bar"),pp=G("proc-pct"),pt2=G("proc-tit"),pe=G("pc-eta");
+  if(pb)pb.style.width="100%";if(pp)pp.textContent="100%";if(pt2)pt2.textContent="Processing Complete";if(pe)pe.textContent="";
+  log("DONE: "+ok+" ok, "+ec+" errors, "+fc+" FRR, "+sc+" SMB","ok");
+  var af=fc>0?Math.round(ST.results.filter(function(r){return r.frr>0;}).reduce(function(a,r){return a+r.frr;},0)/fc):"--";
+  var ds=G("done-sum");if(ds)ds.textContent=ok+" evaluated \u00B7 "+ec+" errors \u00B7 "+fc+" FRR \u00B7 Avg FRR: "+af+"m";
+  toast(ok+" tickets evaluated","ok");showPh(4);renderDash();
+}
+
+function addLiveRow(r){
+  var tb=G("live-tb");if(!tb)return;
+  if(tb.querySelector(".te"))tb.innerHTML="";
+  var tr=document.createElement("tr");
+  var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
+  tr.innerHTML="<td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td>"+
+    "<td class=\"tr\" style=\"max-width:160px;font-size:12.5px\">"+esc(r.subject||"--")+"</td>"+
+    "<td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td>"+
+    "<td>"+smbBdg(r.smb_type)+"</td>"+
+    "<td style=\"font-size:11px;max-width:110px\" class=\"tr\">"+esc(r.environment||"--")+"</td>"+
+    "<td>"+catBdg(r.category)+"</td>"+
+    "<td style=\"font-size:11px;color:var(--tx2);max-width:110px\" class=\"tr\">"+esc(r.sub_category||"--")+"</td>"+
+    "<td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc+"\">"+( r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td>"+
+    "<td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td>";
+  tb.appendChild(tr);tb.scrollTop=tb.scrollHeight;
+}
+
+// ─── REVIEW & CORRECT ─────────────────────────────────
+function buildRevTable(){
+  var tb=G("rev-tb");if(!tb)return;
+  ST.revChg={};var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
+  if(!ST.results.length){tb.innerHTML='<tr><td colspan="9" class="te">No results to review.</td></tr>';return;}
+  var envs=getEnvs(),cats=getCats(),subs=getSubs().slice().sort(),h="";
+  for(var i=0;i<ST.results.length;i++){
+    var r=ST.results[i];
+    var eo="",co="",so="";
+    for(var j=0;j<envs.length;j++)eo+="<option"+(envs[j]===r.environment?" selected":"")+">"+esc(envs[j])+"</option>";
+    for(var j=0;j<cats.length;j++)co+="<option"+(cats[j]===r.category?" selected":"")+">"+esc(cats[j])+"</option>";
+    for(var j=0;j<subs.length;j++)so+="<option"+(subs[j]===r.sub_category?" selected":"")+">"+esc(subs[j])+"</option>";
+    var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option>"+
+      "<option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option>"+
+      "<option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option>"+
+      "<option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
+    h+="<tr id=\"rr-"+i+"\">";
+    h+="<td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td>";
+    h+="<td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td>";
+    h+="<td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td>";
+    h+="<td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td>";
+    h+="<td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td>";
+    h+="<td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td>";
+    h+="<td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td>";
+    h+="<td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td>";
+    h+="</tr>";
+  }
+  tb.innerHTML=h;
+  // Use event delegation - no inline handlers so no quote issues
+  tb.addEventListener("change",function(e){
+    var el=e.target;
+    var idx=el.dataset.ri,field=el.dataset.rf;
+    if(idx===undefined||!field)return;
+    idx=+idx;var val=el.value;
+    if(!ST.revChg[idx])ST.revChg[idx]={subject:ST.results[idx].subject,ticket_type:ST.results[idx].ticket_type,orig:{},corr:{}};
+    if(!(field in ST.revChg[idx].orig))ST.revChg[idx].orig[field]=String(ST.results[idx][field]||"");
+    ST.revChg[idx].corr[field]=val;
+    el.parentElement.style.background="#FEF9C3";
+    var row=G("rr-"+idx);if(row)row.classList.add("chrow");
+    var tot=0;for(var k in ST.revChg)tot+=Object.keys(ST.revChg[k].corr||{}).length;
+    var cc=G("ch-cnt");if(cc)cc.textContent=tot+" change"+(tot!==1?"s":"");
+  });
+}
+function saveCorr(){
+  if(!Object.keys(ST.revChg).length){toast("No changes to save","in");return;}
+  var corr=lsG(SK.CO,[])||[];
+  for(var idx in ST.revChg){
+    var chg=ST.revChg[idx],r=ST.results[+idx];
+    for(var field in chg.corr){
+      var val=chg.corr[field],orig=chg.orig[field]||String(r[field]||"");
+      if(field==="frr")r.frr=+val||0;else r[field]=val;
+      corr.push({subject:String(r.subject||"").substring(0,80),ticket_type:r.ticket_type||"",field:field,original:orig,corrected:val,ts:Date.now()});
+    }
+  }
+  if(corr.length>500)corr.splice(0,corr.length-500);
+  lsS(SK.CO,corr);lsS(SK.RE,ST.results);
+  ST.revChg={};
+  var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
+  Q("#rev-tb td").forEach(function(td){td.style.background="";});
+  Q("#rev-tb tr").forEach(function(tr){tr.classList.remove("chrow");});
+  toast("Corrections saved \u2014 AI will use these for future evaluations!","ok");upBadges();
+}
+
+// ─── ZENDESK API ──────────────────────────────────────
+function zdBase(){return"https://"+cfg("ZD_SUB")+".zendesk.com/api/v2";}
+function zdAuth(){return"Basic "+btoa(cfg("ZD_EM")+"/token:"+cfg("ZD_TOK"));}
+async function zdGet(url){
+  var r=await fetch(url,{headers:{"Authorization":zdAuth(),"Content-Type":"application/json"}});
+  if(!r.ok){
+    var e=await r.json().catch(function(){return{};});
+    throw new Error("Zendesk "+r.status+": "+(e.error||e.description||r.statusText));
+  }
+  return r.json();
+}
+async function zdGetComments(id){var all=[],url=zdBase()+"/tickets/"+id+"/comments.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.comments||[]);url=d.next_page||null;}return all;}
+async function zdGetAudits(id){var all=[],url=zdBase()+"/tickets/"+id+"/audits.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.audits||[]);url=d.next_page||null;}return all;}
+function findAssign(au){for(var i=0;i<au.length;i++){var ev=au[i].events||[];for(var j=0;j<ev.length;j++){if(ev[j].type==="Change"&&ev[j].field_name==="assignee_id"&&ev[j].value)return new Date(au[i].created_at);}}return null;}
+function findReply(co,rid){var pub=[];for(var i=0;i<co.length;i++){if(co[i].public&&String(co[i].author_id)!==String(rid))pub.push(co[i]);}if(!pub.length)return null;pub.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});return new Date(pub[0].created_at);}
+
+// ─── GEMINI API ───────────────────────────────────────
+function buildLrnEx(){
+  var corr=lsG(SK.CO,[])||[];if(!corr.length)return"";
+  var seen={},recent=[];
+  for(var i=corr.length-1;i>=0&&recent.length<40;i--){
+    var c=corr[i];var k=c.field+":"+c.corrected+":"+String(c.subject||"").substring(0,15);
+    if(!seen[k]){seen[k]=1;recent.unshift(c);}
+  }
+  if(!recent.length)return"";
+  var lines="\nLEARNED CORRECTIONS (prioritize these):\n";
+  for(var i=0;i<recent.length;i++){
+    var c=recent[i];
+    lines+="- Subject:\""+String(c.subject||"")+"\""+(c.ticket_type?" Type:"+c.ticket_type:"")+" -> "+c.field+": \""+c.corrected+"\"\n";
+  }
+  return lines;
+}
+async function gemCls(subject,description,ticketType,tags,existCat){
+  var envs=getEnvs(),cats=getCats(),subs=getSubs(),ex=buildLrnEx();
+  var prompt="You are a DispatchTrack support QA classifier. Analyze and classify this Zendesk ticket.\n\n"+
+    "TICKET INFO:\nSubject: "+subject+"\nDescription: "+String(description||"").substring(0,1800)+"\nTicket Type: "+ticketType+"\nTags: "+(tags||[]).join(", ")+"\nExisting Category Field: "+(existCat||"not set")+"\n"+ex+
+    "\nVALID ENVIRONMENTS (pick exactly one):\n"+envs.join(", ")+
+    "\n\nVALID CATEGORIES (pick exactly one):\n"+cats.join(", ")+
+    "\n\nVALID SUB CATEGORIES (pick the closest match):\n"+subs.join(", ")+
+    "\n\nRules:\n- Return ONLY a JSON object, no markdown, no backticks, no explanation\n"+
+    "- Use EXACT spelling from the lists above\n"+
+    "- For junk/end-customer/irrelevant tickets: set environment=\"Junk\", category=\"End Customer / Junk\"\n\n"+
+    "{\"environment\":\"...\",\"category\":\"...\",\"sub_category\":\"...\"}";
+  var resp=await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/"+cfg("GEM_MOD")+":generateContent?key="+cfg("GEM_KEY"),
+    {method:"POST",headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:350}})}
+  );
+  if(!resp.ok){
+    var e=await resp.json().catch(function(){return{};});
+    throw new Error("Gemini "+resp.status+": "+(e.error?e.error.message:"API error"));
+  }
+  var d=await resp.json();
+  var txt="";
+  try{txt=d.candidates[0].content.parts[0].text||"";}catch(pe){throw new Error("Gemini response format error");}
+  txt=txt.trim().replace(/```json|```/gi,"").trim();
+  try{return JSON.parse(txt);}catch(je){throw new Error("Gemini parse error: "+txt.substring(0,80));}
+}
+
+// ─── CATEGORIES ───────────────────────────────────────
+function renderCatPanels(){
+  var wrap=G("cat-panels");
+  if(!wrap){console.error("cat-panels not found");return;}
+  try{
+    var defs=[
+      {key:"env",label:"Environments",cls:"tenv",sk:SK.EN,get:getEnvs,def:function(){return DE.slice();}},
+      {key:"cat",label:"Categories",cls:"tcat",sk:SK.CA,get:getCats,def:function(){return DC.slice();}},
+      {key:"sub",label:"Sub Categories",cls:"tsub",sk:SK.SU,get:getSubs,def:function(){return DS.slice();}}
+    ];
+    var html="";
+    for(var di=0;di<defs.length;di++){
+      var p=defs[di],items=p.get(),tagsH="";
+      for(var ti=0;ti<items.length;ti++){
+        tagsH+='<span class="tag '+p.cls+'" data-k="'+p.key+'" data-i="'+ti+'">'+esc(items[ti])+'<button class="trm" data-k="'+p.key+'" data-i="'+ti+'">&#215;</button></span>';
+      }
+      var ll=p.label.toLowerCase(),sgl=ll.replace(/s$/,"");
+      html+='<div class="card">';
+      html+='<div class="chd" style="flex-wrap:wrap;gap:8px">';
+      html+='<span class="ct">'+p.label+' <span class="bdg bprib" id="'+p.key+'-cnt" style="font-size:10px">'+items.length+'</span></span>';
+      html+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+      html+='<button class="btn bgst bsm" data-act="reset" data-k="'+p.key+'">Reset</button>';
+      html+='<button class="btn bout bsm" data-act="export" data-k="'+p.key+'">&#8595; Export</button>';
+      html+='<label class="btn bout bsm" style="cursor:pointer">&#8593; Import<input type="file" accept=".csv,.txt,.json" style="display:none" data-act="import" data-k="'+p.key+'"></label>';
+      html+='</div></div>';
+      html+='<div class="cbd" style="display:flex;flex-direction:column;gap:10px">';
+      html+='<input class="csr" id="csr-'+p.key+'" placeholder="Search '+ll+' ('+items.length+' total)&#8230;">';
+      html+='<div class="tagbox scr" id="'+p.key+'-box">'+tagsH+'</div>';
+      html+='<div class="tadd"><input class="tin" id="'+p.key+'-in" placeholder="Add new '+sgl+' label&#8230;"><button class="btn bpri bsm" data-act="add" data-k="'+p.key+'">Add</button></div>';
+      html+='</div></div>';
+    }
+    wrap.innerHTML=html;
+    // Event delegation for all cat panel actions
+    wrap.addEventListener("click",function(e){
+      var el=e.target;
+      if(el.classList.contains("trm")){
+        var k=el.dataset.k,i=+el.dataset.i;
+        var arr=catGet(k);arr.splice(i,1);catSave(k,arr);renderCatPanels();return;
+      }
+      var act=el.dataset.act,k2=el.dataset.k;
+      if(!act&&el.parentElement){act=el.parentElement.dataset.act;k2=el.parentElement.dataset.k;}
+      if(act==="add"&&k2)addCatItem(k2);
+      if(act==="reset"&&k2){if(confirm("Reset to defaults?"))catSave(k2,catDef(k2)());renderCatPanels();toast("Reset to defaults","ok");}
+      if(act==="export"&&k2)exportCatPanel(k2);
+    });
+    wrap.querySelectorAll("input[type=file]").forEach(function(inp){
+      inp.addEventListener("change",function(e){importCatPanel(e,this.dataset.k);});
+    });
+    wrap.querySelectorAll(".csr").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var q=this.value.toLowerCase(),key=this.id.replace("csr-","");
+        var box=G(key+"-box");if(!box)return;
+        box.querySelectorAll(".tag").forEach(function(tg){tg.style.display=!q||tg.textContent.toLowerCase().indexOf(q)>=0?"":"none";});
+      });
+    });
+    for(var di=0;di<defs.length;di++){
+      (function(k){
+        var inp=G(k+"-in");
+        if(inp)inp.addEventListener("keydown",function(e){if(e.key==="Enter")addCatItem(k);});
+      })(defs[di].key);
+    }
+  }catch(e){
+    console.error("renderCatPanels error:",e);
+    wrap.innerHTML='<div class="al ae" style="grid-column:span 3">Error loading labels: '+esc(e.message)+'</div>';
+  }
+}
+function catGet(k){return k==="env"?getEnvs():k==="cat"?getCats():getSubs();}
+function catSave(k,v){lsS(k==="env"?SK.EN:k==="cat"?SK.CA:SK.SU,v);}
+function catDef(k){return k==="env"?function(){return DE.slice();}:k==="cat"?function(){return DC.slice();}:function(){return DS.slice();};}
+function addCatItem(k){
+  var inp=G(k+"-in");if(!inp)return;
+  var v=(inp.value||"").trim();if(!v)return;
+  var arr=catGet(k);
+  for(var i=0;i<arr.length;i++){if(arr[i].toLowerCase()===v.toLowerCase()){toast("Already exists","warn");return;}}
+  arr.push(v);catSave(k,arr);renderCatPanels();toast("Added \""+v+"\"","ok");
+}
+function exportCatPanel(k){
+  var items=catGet(k);
+  dlBlob(new Blob([items.join("\n")],{type:"text/plain"}),"dispatchtrack-"+k+"-labels-"+stamp()+".csv");
+  toast("Exported "+items.length+" labels","ok");
+}
+function importCatPanel(e,k){
+  var f=e.target.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    var items;
+    if(f.name.endsWith(".json")){
+      try{var d=JSON.parse(ev.target.result);items=Array.isArray(d)?d:[];}
+      catch(je){toast("Invalid JSON file","err");return;}
+    }else{
+      items=ev.target.result.split(/[\n,]/).map(function(s){return s.trim();}).filter(Boolean);
+    }
+    var arr=catGet(k),added=0;
+    for(var i=0;i<items.length;i++){
+      var v=items[i];var ex=false;
+      for(var j=0;j<arr.length;j++){if(arr[j].toLowerCase()===v.toLowerCase()){ex=true;break;}}
+      if(!ex){arr.push(v);added++;}
+    }
+    if(!added){toast("No new items to import","in");return;}
+    catSave(k,arr);renderCatPanels();toast("Added "+added+" new items","ok");
+  };
+  rd.readAsText(f);e.target.value="";
+}
+
+// ─── AI LEARNING ──────────────────────────────────────
+function renderLrnPage(){
+  var corr=lsG(SK.CO,[])||[];
+  var lc=G("lrn-cnt");if(lc)lc.textContent=corr.length+" corrections";
+  var sl=G("s-lrn");if(sl)sl.textContent=corr.length;
+  var t={};for(var i=0;i<corr.length;i++){var f=corr[i].field;t[f]=(t[f]||0)+1;}
+  var h="";for(var k in t)h+="<div style=\"display:flex;justify-content:space-between;margin-bottom:4px\"><span>"+esc(k)+"</span><span style=\"font-family:'JetBrains Mono',monospace\">"+t[k]+"</span></div>";
+  var ls2=G("lrn-stats");if(ls2)ls2.innerHTML=h||'<span style="color:var(--tx3)">No corrections yet.</span>';
+  renderLrnTable();
+}
+function renderLrnTable(){
+  var corr=lsG(SK.CO,[])||[];
+  var field=gv("lf-field");
+  var filtered=field?corr.filter(function(c){return c.field===field;}):corr;
+  var tb=G("lrn-tb");if(!tb)return;
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="5" class="te">No corrections yet. Make corrections in the Review step after evaluation.</td></tr>';return;}
+  var h="",show=filtered.slice().reverse().slice(0,100);
+  for(var i=0;i<show.length;i++){
+    var c=show[i];
+    h+="<tr><td class=\"tr\" style=\"max-width:200px;font-size:12.5px\" title=\""+esc(c.subject||"")+"\">"+esc(c.subject||"--")+"</td>";
+    h+="<td><span class=\"bdg bgr\" style=\"font-size:10px\">"+esc(c.field||"")+"</span></td>";
+    h+="<td style=\"font-size:12px;color:var(--errt)\">"+esc(c.original||"--")+"</td>";
+    h+="<td style=\"font-size:12px;color:var(--okt);font-weight:500\">"+esc(c.corrected||"")+"</td>";
+    h+="<td style=\"font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace\">"+new Date(c.ts).toLocaleDateString()+"</td></tr>";
+  }
+  tb.innerHTML=h;
+}
+function clearLrn(){
+  if(!confirm("Clear all AI corrections? This cannot be undone."))return;
+  lsD(SK.CO);
+  var lc=G("lrn-cnt");if(lc)lc.textContent="0 corrections";
+  var sl=G("s-lrn");if(sl)sl.textContent="0";
+  renderLrnTable();var ls2=G("lrn-stats");if(ls2)ls2.innerHTML='<span style="color:var(--tx3)">No corrections yet.</span>';
+  upBadges();toast("AI corrections cleared","ok");
+}
+function exportLrn(){
+  var d=lsG(SK.CO,[])||[];
+  dlBlob(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}),"dispatchtrack-corrections-"+stamp()+".json");
+  toast("Corrections exported","ok");
+}
+
+// ─── RESULTS TABLE ────────────────────────────────────
+function fillFilters(){
+  function fill(id,key,lbl){
+    var s=G(id);if(!s)return;
+    var vals=[],cur=s.value;
+    ST.results.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});
+    vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";
+    for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";
+  }
+  fill("f-env","environment","Environments");fill("f-cat","category","Categories");fill("f-sub","sub_category","Sub Categories");fill("f-smb","smb_type","SMB Types");
+  var rl=G("res-lbl");if(rl)rl.textContent=ST.results.length+" records";
+}
+function getFiltered(){return ST.filtered.length?ST.filtered:ST.results;}
+function applyF(){
+  var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");
+  ST.filtered=ST.results.filter(function(r){
+    if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
+    if(env&&r.environment!==env)return false;if(cat&&r.category!==cat)return false;
+    if(sub&&r.sub_category!==sub)return false;if(smb&&r.smb_type!==smb)return false;if(st&&r.status!==st)return false;
+    return true;
+  });
+  ST.pg=0;var cnt=G("f-cnt");
+  if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";
+  renderResTable();
+}
+function clearF(){
+  ["f-q","f-env","f-cat","f-sub","f-smb","f-st"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});
+  ST.filtered=[];applyF();
+}
+var _sk=null,_sd="asc";
+function srtBy(k){
+  if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}
+  var all=getFiltered();
+  all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});
+  Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});
+  renderResTable();
+}
+function renderResTable(){
+  var all=getFiltered(),pg=all.slice(ST.pg*ST.pgSz,(ST.pg+1)*ST.pgSz),tb=G("res-tb");if(!tb)return;
+  if(!pg.length){tb.innerHTML='<tr><td colspan="12" class="te">No records match your filters.</td></tr>';return;}
+  var h="";
+  for(var i=0;i<pg.length;i++){
+    var r=pg[i],gi=ST.pg*ST.pgSz+i;
+    var sc=r.status==="open"?"berr":r.status==="solved"?"bok2":"bwrn2";
+    var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
+    h+="<tr>";
+    h+="<td><input type=\"checkbox\" class=\"rcb\" data-gi=\""+gi+"\" style=\"accent-color:#4F6EF7\"></td>";
+    h+="<td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td>";
+    h+="<td class=\"tr\" style=\"max-width:190px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td>";
+    h+="<td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td><span class=\"bdg "+sc+"\" style=\"font-size:10px\">"+esc(r.status||"--")+"</span></td>";
+    h+="<td>"+smbBdg(r.smb_type)+"</td>";
+    h+="<td class=\"tr\" style=\"max-width:130px;font-size:11.5px\">"+esc(r.environment||"--")+"</td>";
+    h+="<td>"+catBdg(r.category)+"</td>";
+    h+="<td class=\"tr\" style=\"max-width:120px;font-size:11px;color:var(--tx2)\">"+esc(r.sub_category||"--")+"</td>";
+    h+="<td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc+"\">"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td>";
+    h+="<td style=\"font-size:12px;color:var(--tx2)\">"+esc(r.assignee||r.requester||"--")+"</td>";
+    h+="<td><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" class=\"btn bgst bsm\" style=\"font-size:11px;padding:4px 8px\">&#8599;</a>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--err);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td>";
+    h+="</tr>";
+  }
+  tb.innerHTML=h;
+  tb.querySelectorAll(".rcb").forEach(function(cb){
+    cb.onchange=function(){var any=Q(".rcb:checked").length>0;var es=G("exp-sel");if(es)es.style.display=any?"inline-flex":"none";};
+  });
+  var pages=Math.ceil(all.length/ST.pgSz)||1;
+  var pl=G("pg-lbl");if(pl)pl.textContent="Page "+(ST.pg+1)+" of "+pages;
+  var rl=G("res-lbl");if(rl)rl.textContent=all.length+" records";
+}
+
+// ─── EXPORT ───────────────────────────────────────────
+function exportR(rows,fmt){
+  if(!rows||!rows.length){toast("No data to export","err");return;}
+  var out=rows.map(function(r){
+    var rd=(r._rd||[]).slice(),hdrs=r._hd||ST.headers,ci=r._ci||ST.colIdx;
+    if(ci.frr!=null)rd[ci.frr]=r.frr>0?r.frr:(r.frr_txt||"");
+    if(ci.smb!=null)rd[ci.smb]=r.smb_type||"";
+    if(ci.environment!=null)rd[ci.environment]=r.environment||"";
+    if(ci.category!=null)rd[ci.category]=r.category||"";
+    if(ci.sub_category!=null)rd[ci.sub_category]=r.sub_category||"";
+    var obj={};for(var i=0;i<hdrs.length;i++)obj[hdrs[i]||("Col"+i)]=rd[i]!=null?rd[i]:"";
+    if(!("FRR"in obj))obj["FRR"]=r.frr>0?r.frr:(r.frr_txt||"");
+    if(!("SMB"in obj))obj["SMB"]=r.smb_type||"";
+    if(!("Environment"in obj))obj["Environment"]=r.environment||"";
+    if(!("Category"in obj))obj["Category"]=r.category||"";
+    if(!("Sub Category"in obj))obj["Sub Category"]=r.sub_category||"";
+    return obj;
+  });
+  var fn="dispatchtrack-eval-"+stamp();
+  if(fmt==="csv"){dlBlob(new Blob([Papa.unparse(out)],{type:"text/csv;charset=utf-8;"}),fn+".csv");toast("CSV exported ("+out.length+" rows)","ok");}
+  else{var ws=XLSX.utils.json_to_sheet(out);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Ticket Evaluation");XLSX.writeFile(wb,fn+".xlsx");toast("Excel exported ("+out.length+" rows)","ok");}
+}
+
+// ─── USERS ────────────────────────────────────────────
+function renderUsers(){
+  var tb=G("usr-tb"),sess=getSess(),users=lsG(SK.U,[])||[];
+  if(!tb)return;
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users yet. Click + Add User.</td></tr>';return;}
+  var h="";
+  for(var i=0;i<users.length;i++){
+    var u=users[i];
+    h+="<tr><td style=\"font-weight:500\">"+esc(u.name||"")+"</td>";
+    h+="<td style=\"font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td>";
+    h+="<td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td>";
+    h+="<td style=\"font-size:12px;color:var(--tx3)\">"+(u.created?new Date(u.created).toLocaleDateString():"--")+"</td>";
+    h+="<td style=\"display:flex;gap:6px\">";
+    if(u.id!==sess.id)h+="<button class=\"btn bout bsm\" data-uid=\""+esc(u.id)+"\" data-uact=\"edit\">Edit</button><button class=\"btn bdan bsm\" data-uid=\""+esc(u.id)+"\" data-uact=\"del\">Delete</button>";
+    h+="</td></tr>";
+  }
+  tb.innerHTML=h;
+  tb.querySelectorAll("[data-uact]").forEach(function(btn){
+    btn.onclick=function(){
+      if(this.dataset.uact==="edit")openUserModal(this.dataset.uid);
+      else delUser(this.dataset.uid);
+    };
+  });
+}
+function openUserModal(id){
+  var users=lsG(SK.U,[])||[],u=null;
+  for(var i=0;i<users.length;i++){if(users[i].id===id){u=users[i];break;}}
+  openModal(u?"Edit User":"Add New User",
+    "<div style=\"display:flex;flex-direction:column;gap:13px\">"+
+    "<div><label class=\"flb\">Full Name</label><input class=\"fin\" id=\"mu-n\" value=\""+esc(u?u.name:"")+"\" placeholder=\"Full name\"></div>"+
+    "<div><label class=\"flb\">Email address</label><input class=\"fin\" id=\"mu-e\" type=\"email\" value=\""+esc(u?u.email:"")+"\" placeholder=\"email@company.com\"></div>"+
+    "<div><label class=\"flb\">Password"+(u?" (leave blank to keep current)":"")+"</label><input class=\"fin\" id=\"mu-p\" type=\"password\"></div>"+
+    "<div><label class=\"flb\">Role</label><select class=\"fin\" id=\"mu-r\"><option value=\"user\""+(u&&u.role==="user"?" selected":"")+">User &#8212; Evaluate &amp; export only</option><option value=\"admin\""+(u&&u.role==="admin"?" selected":"")+">Admin &#8212; Users + API settings</option></select></div>"+
+    "</div>",
+    "<button class=\"btn bgst\" id=\"umod-cancel\">Cancel</button><button class=\"btn bpri\" id=\"umod-save\">"+(u?"Save Changes":"Create User")+"</button>"
+  );
+  G("umod-cancel").onclick=closeModal;
+  G("umod-save").onclick=function(){saveUser(id||"");};
+}
+function saveUser(id){
+  var name=(gv("mu-n")||"").trim(),email=(gv("mu-e")||"").trim(),pass=gv("mu-p")||"",role=gv("mu-r");
+  if(!name||!email){toast("Name and email required","err");return;}
+  var users=lsG(SK.U,[])||[];
+  if(!id){
+    if(!pass){toast("Password required for new users","err");return;}
+    var ex=email.toLowerCase()===MASTER.email.toLowerCase();
+    for(var i=0;i<users.length;i++){if(users[i].email.toLowerCase()===email.toLowerCase())ex=true;}
+    if(ex){toast("Email already exists","err");return;}
+    users.push({id:"u_"+Date.now(),name:name,email:email,password:pass,role:role,created:Date.now()});
+    toast("User created successfully","ok");
+  }else{
+    var idx=-1;for(var i=0;i<users.length;i++){if(users[i].id===id){idx=i;break;}}
+    if(idx<0){toast("User not found","err");return;}
+    users[idx].name=name;users[idx].email=email;users[idx].role=role;
+    if(pass)users[idx].password=pass;
+    toast("User updated","ok");
+  }
+  lsS(SK.U,users);closeModal();renderUsers();
+}
+function delUser(id){
+  if(!confirm("Delete this user? This cannot be undone."))return;
+  lsS(SK.U,(lsG(SK.U,[])||[]).filter(function(u){return u.id!==id;}));renderUsers();toast("User deleted","ok");
+}
+
+// ─── SETTINGS ─────────────────────────────────────────
+function loadSettings(){
+  var s=lsG(SK.A,{})||{};
+  var ss=G("s-sub");if(ss)ss.value=s.zs||HC.ZD_SUB;
+  var se=G("s-em");if(se)se.value=s.ze||HC.ZD_EM;
+  var st=G("s-tok");if(st)st.value=s.zt||HC.ZD_TOK;
+  var sg=G("s-gk");if(sg)sg.value=s.gk||HC.GEM_KEY;
+  var sm=G("s-gm");if(sm)sm.value=s.gm||HC.GEM_MOD;
+  var ds=G("dt-stats");
+  if(ds)ds.textContent=ST.results.length+" results \u00B7 "+(lsG(SK.CO,[])||[]).length+" corrections";
+}
+function saveAPISettings(){
+  lsS(SK.A,{zs:gv("s-sub"),ze:gv("s-em"),zt:gv("s-tok"),gk:gv("s-gk"),gm:gv("s-gm")});
+  toast("Settings saved successfully","ok");
+}
+
+async function testZD(){
+  var res=G("zd-res");if(!res)return;
+  var sub=(gv("s-sub")||"").trim(),em=(gv("s-em")||"").trim(),tok=(gv("s-tok")||"").trim();
+  if(!sub||!em||!tok){setRes("zd-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>&nbsp;Please fill in Subdomain, Email and Token first, then click Save, then Test.","err");return;}
+  setRes("zd-res","<span style=\"font-family:'JetBrains Mono',monospace;font-size:11px\">Testing Zendesk connection&#8230;</span>","info");
+  try{
+    var url="https://"+sub+".zendesk.com/api/v2/users/me.json";
+    var auth="Basic "+btoa(em+"/token:"+tok);
+    var r=await fetch(url,{headers:{"Authorization":auth,"Content-Type":"application/json"}});
+    if(!r.ok){
+      var e=await r.json().catch(function(){return{};});
+      if(r.status===403||r.status===401)throw new Error("Authentication failed. Check your email and API token.");
+      throw new Error("Zendesk "+r.status+": "+(e.error||e.description||r.statusText));
+    }
+    var d=await r.json();
+    var name=d.user&&(d.user.name||d.user.email)||"OK";
+    setRes("zd-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" viewBox=\"0 0 24 24\"><polyline points=\"20 6 9 17 4 12\"/></svg>&nbsp;Connected as: "+esc(name),"ok");
+  }catch(e){
+    var msg=e.message||"Connection failed";
+    if(msg.toLowerCase().indexOf("cors")>=0||msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0){
+      setRes("zd-res","<strong>CORS Error:</strong> Cannot connect from file:// URL. Serve from localhost:<br>"+
+        "1. Open terminal and run: <code>python -m http.server 8080</code><br>"+
+        "2. Open <code>http://localhost:8080</code> in your browser<br>"+
+        "3. In Zendesk Admin &rarr; Apps &amp; Integrations &rarr; APIs &rarr; Zendesk API &rarr; Settings, add <code>http://localhost:8080</code> to CORS Origins","err");
+    }else{
+      setRes("zd-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>&nbsp;"+esc(msg),"err");
+    }
+  }
+}
+async function testGem(){
+  var res=G("gem-res");if(!res)return;
+  var key=(gv("s-gk")||"").trim(),mod=gv("s-gm")||"gemini-1.5-flash";
+  if(!key){setRes("gem-res","Please enter your Gemini API key first.","err");return;}
+  setRes("gem-res","<span style=\"font-family:'JetBrains Mono',monospace;font-size:11px\">Testing Gemini connection&#8230;</span>","info");
+  try{
+    var r=await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,
+      {method:"POST",headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({contents:[{parts:[{text:"Reply with just the word: OK"}]}]})}
+    );
+    if(!r.ok){
+      var e=await r.json().catch(function(){return{};});
+      if(r.status===400&&e.error&&e.error.message&&e.error.message.indexOf("API_KEY_INVALID")>=0)throw new Error("Invalid API key. Get a free key at aistudio.google.com");
+      throw new Error("Gemini "+r.status+": "+(e.error?e.error.message:"API error"));
+    }
+    setRes("gem-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" viewBox=\"0 0 24 24\"><polyline points=\"20 6 9 17 4 12\"/></svg>&nbsp;Gemini connected successfully. Model: "+esc(mod),"ok");
+  }catch(e){
+    var msg=e.message||"Connection failed";
+    if(msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("cors")>=0){
+      setRes("gem-res","Network error connecting to Gemini. Check your internet connection. (Gemini API supports browser CORS &#8212; serving from localhost is not required for Gemini.)","err");
+    }else{
+      setRes("gem-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>&nbsp;"+esc(msg),"err");
+    }
+  }
+}
+
+// ─── BOOT ─────────────────────────────────────────────
+function bootApp(){
+  G("lw").style.display="none";G("app").style.display="flex";
+  var s=getSess();
+  if(G("sbav"))G("sbav").textContent=String(s.name||"?").charAt(0).toUpperCase();
+  if(G("sbun"))G("sbun").textContent=s.name||s.email;
+  if(G("sbur"))G("sbur").textContent=s.role;
+  if(isAdmin()){
+    var sa=G("sb-adm"),su=G("sb-usr"),ss=G("sb-set");
+    if(sa)sa.style.display="block";if(su)su.style.display="flex";if(ss)ss.style.display="flex";
+  }
+  ST.results=lsG(SK.RE,[])||[];
+  var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
+  ST.tech=getTech();
+  renderDash();
+}
+
+// ─── INIT ─────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded",function(){
+  // Login
+  var lb=G("lbtn"),lem=G("lem"),lpw=G("lpw"),slo=G("sblo");
+  if(lb)lb.onclick=doLogin;
+  if(lem)lem.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
+  if(lpw)lpw.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
+  if(slo)slo.onclick=doLogout;
+
+  // Modal
+  var mcl=G("mcl"),mov=G("mov");
+  if(mcl)mcl.onclick=closeModal;
+  if(mov)mov.onclick=function(e){if(e.target===this)closeModal();};
+
+  // Sidebar nav (delegate to all .sbi elements)
+  Q(".sbi").forEach(function(item){
+    item.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});
+  });
+
+  // Buttons with data-pg (navigate on click)
+  Q("[data-pg]").forEach(function(el){
+    if(!el.classList.contains("sbi")){
+      el.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});
+    }
+  });
+
+  // Dropzone: inflow
+  var dzin=G("dz-in"),fiin=G("fi-in"),inclr=G("in-clr"),bn1=G("btn-n1");
+  if(dzin){
+    dzin.onclick=function(){if(fiin)fiin.click();};
+    dzin.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});
+    dzin.addEventListener("dragleave",function(){this.classList.remove("ov");});
+    dzin.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])parseInflow(e.dataTransfer.files[0]);});
+  }
+  if(fiin)fiin.onchange=function(){if(this.files[0])parseInflow(this.files[0]);};
+  if(inclr)inclr.onclick=function(){ST.rows=[];if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;};
+
+  // Dropzone: SMB phase 1
+  var dzs1=G("dz-smb1"),fis1=G("fi-smb1");
+  if(dzs1){
+    dzs1.onclick=function(){if(fis1)fis1.click();};
+    dzs1.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});
+    dzs1.addEventListener("dragleave",function(){this.classList.remove("ov");});
+    dzs1.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])parseSMBFile(e.dataTransfer.files[0],"ph1");});
+  }
+  if(fis1)fis1.onchange=function(){if(this.files[0])parseSMBFile(this.files[0],"ph1");};
+
+  // Dropzone: SMB page
+  var dzs2=G("dz-smb2"),fis2=G("fi-smb2");
+  if(dzs2){
+    dzs2.onclick=function(){if(fis2)fis2.click();};
+    dzs2.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});
+    dzs2.addEventListener("dragleave",function(){this.classList.remove("ov");});
+    dzs2.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])parseSMBFile(e.dataTransfer.files[0],"smb-pg");});
+  }
+  if(fis2)fis2.onchange=function(){if(this.files[0])parseSMBFile(this.files[0],"smb-pg");};
+  var ss=G("smb-save");if(ss)ss.onclick=function(){applySMB(+gv("smb-cc"),+gv("smb-tc"));renderSMBPage();};
+
+  // Evaluate phases
+  if(bn1)bn1.onclick=function(){showPh(2);renderTechTags();};
+  var bb2=G("btn-b2"),bst=G("btn-start");
+  if(bb2)bb2.onclick=function(){showPh(1);};
+  if(bst)bst.onclick=startEval;
+  var bpa=G("btn-pause"),bst2=G("btn-stop");
+  if(bpa)bpa.onclick=togPause;if(bst2)bst2.onclick=stopEval;
+  var bb4=G("btn-b4"),bp5=G("btn-ph5");
+  if(bb4)bb4.onclick=function(){showPh(3);};if(bp5)bp5.onclick=function(){showPh(5);};
+  var aon=G("all-on"),aof=G("all-off");
+  if(aon)aon.onclick=function(){setAllFills(true);};if(aof)aof.onclick=function(){setAllFills(false);};
+
+  // Fill checkboxes
+  ["frr","smb","env","cat","sub"].forEach(function(k){
+    var cb=G("cb-"+k),cr=G("cr-"+k);
+    if(cb)cb.onchange=function(){ST.fills[k]=this.checked;if(cr){if(this.checked)cr.classList.add("on");else cr.classList.remove("on");}};
+    if(cr)cr.onclick=function(e){if(e.target===cb)return;if(cb){cb.checked=!cb.checked;ST.fills[k]=cb.checked;if(cb.checked)this.classList.add("on");else this.classList.remove("on");}};
+  });
+
+  // Speed radios
+  Q("input[name=spd]").forEach(function(r){r.onchange=function(){ST.delay=+this.value;};});
+
+  // Tech types
+  var ta=G("tech-add"),ti=G("tech-in");
+  if(ta)ta.onclick=addTech;
+  if(ti)ti.addEventListener("keydown",function(e){if(e.key==="Enter")addTech();});
+
+  // Export buttons
+  var lcv=G("live-csv"),lxl=G("live-xl"),rcv=G("rev-csv"),rxl=G("rev-xl"),fcv=G("fin-csv"),fxl=G("fin-xl");
+  if(lcv)lcv.onclick=function(){exportR(ST.results,"csv");};if(lxl)lxl.onclick=function(){exportR(ST.results,"xlsx");};
+  if(rcv)rcv.onclick=function(){exportR(ST.results,"csv");};if(rxl)rxl.onclick=function(){exportR(ST.results,"xlsx");};
+  if(fcv)fcv.onclick=function(){exportR(ST.results,"csv");};if(fxl)fxl.onclick=function(){exportR(ST.results,"xlsx");};
+  var sco=G("save-corr");if(sco)sco.onclick=saveCorr;
+
+  // New evaluation
+  var nev=G("new-ev");if(nev)nev.onclick=function(){
+    ST.rows=[];if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols");
+    if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;
+    var pl=G("proc-log"),lt=G("live-tb");
+    if(pl)pl.innerHTML="";if(lt)lt.innerHTML='<tr><td class="te" colspan="9">Waiting&#8230;</td></tr>';
+    showPh(1);
+  };
+
+  // Results
+  var rclr=G("res-clr"),rcsvb=G("res-csv"),rxlb=G("res-xl"),fclr=G("f-clr"),fq=G("f-q"),salb=G("sel-all"),exs=G("exp-sel"),pgp=G("pg-p"),pgn=G("pg-n");
+  if(rclr)rclr.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);renderResTable();upBadges();fillFilters();toast("Results cleared","ok");};
+  if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
+  if(fclr)fclr.onclick=clearF;if(fq)fq.oninput=applyF;
+  ["f-env","f-cat","f-sub","f-smb","f-st"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
+  if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
+  if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
+  if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};
+  if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
+  Q(".tbl th[data-s]").forEach(function(th){th.onclick=function(){srtBy(this.dataset.s);};});
+
+  // Learning
+  var lff=G("lf-field"),lexp=G("lrn-exp"),lclr=G("lrn-clr");
+  if(lff)lff.onchange=renderLrnTable;if(lexp)lexp.onclick=exportLrn;if(lclr)lclr.onclick=clearLrn;
+
+  // Users
+  var addu=G("add-usr");if(addu)addu.onclick=function(){openUserModal("");};
+
+  // Settings
+  var zdt=G("zd-test"),zds=G("zd-save"),gmt=G("gem-test"),gms=G("gem-save");
+  if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
+  var cr2=G("clr-res"),cl2=G("clr-lrn"),cs2=G("clr-smb");
+  if(cr2)cr2.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
+  if(cl2)cl2.onclick=clearLrn;if(cs2)cs2.onclick=clearSMBData;
+
+  // Boot the app
+  var s=getSess();
+  if(s){bootApp();}else{G("lw").style.display="flex";G("app").style.display="none";}
+  ST.tech=getTech();
+  showPh(1);
+});
+</script>
+</body>
+</html>
