@@ -244,7 +244,7 @@ select.fin{cursor:pointer}
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
-  <div class="lft"><span class="ldot"></span>Serve from localhost for API access</div>
+  <div class="lft"><span class="ldot"></span>Connected to GitHub Pages &middot; Firebase ready</div>
 </div></div>
 
 <!-- APP -->
@@ -431,18 +431,21 @@ select.fin{cursor:pointer}
       <!-- SETTINGS -->
       <div class="page" id="pg-settings">
         <!-- CORS Note -->
-        <div class="cors-note">
-          <strong>&#9888; Important: Serve from localhost to enable API connections.</strong><br>
-          Opening this file directly (<code>file://</code>) causes CORS errors. Run a local server instead:<br>
-          <strong>Python:</strong> <code>python -m http.server 8080</code> then open <code>http://localhost:8080</code><br>
-          <strong>Node:</strong> <code>npx http-server -p 8080</code> then open <code>http://localhost:8080</code><br>
-          Also add <code>http://localhost:8080</code> to Zendesk Admin &#8594; Apps &amp; Integrations &#8594; APIs &#8594; Zendesk API &#8594; Settings &#8594; CORS Origins.
-        </div>
+
         <div class="g2">
           <div class="card"><div class="chd"><span class="ct">Zendesk API</span><button class="btn bout bsm" id="zd-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
             <div><label class="flb">Zendesk Subdomain</label><div class="finrow"><span>https://</span><input id="s-sub" class="fin" placeholder="dispatchtrack"><span>.zendesk.com</span></div><div class="fhi">Enter just the subdomain (e.g., <em>dispatchtrack</em>)</div></div>
             <div><label class="flb">Agent Email</label><input id="s-em" class="fin" type="email" placeholder="agent@dispatchtrack.com"></div>
             <div><label class="flb">API Token</label><input id="s-tok" class="fin" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"><div class="fhi">Admin &#8594; Apps &amp; Integrations &#8594; Zendesk API &#8594; Settings &#8594; API token</div></div>
+            <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:8px;padding:14px 16px">
+              <label class="flb" style="color:#1E40AF;font-weight:600">&#127760; Cloudflare Proxy URL <span style="font-weight:400;color:var(--tx3)">(required for GitHub Pages)</span></label>
+              <input id="s-prx" class="fin" type="url" placeholder="https://your-worker.YOUR-NAME.workers.dev" style="margin-top:6px">
+              <div class="fhi" style="margin-top:6px;line-height:1.6">
+                Deploy <code style="background:#DBEAFE;padding:1px 5px;border-radius:4px;font-size:11px">worker.js</code> to
+                <a href="https://workers.cloudflare.com" target="_blank" style="color:#1D4ED8;font-weight:600">Cloudflare Workers (free)</a>
+                to bypass Zendesk CORS. &nbsp;&#10003; No Zendesk admin needed &nbsp;&#10003; Free &nbsp;&#10003; Secure
+              </div>
+            </div>
             <div id="zd-res"></div>
             <button class="btn bpri" id="zd-save">Save Zendesk Settings</button>
           </div></div>
