@@ -231,6 +231,9 @@ select.fin{cursor:pointer}
 .cors-note code{background:#FEF3C7;padding:1px 6px;border-radius:4px;font-family:"JetBrains Mono",monospace;font-size:11.5px}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:99px}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <!-- LOGIN -->
@@ -445,10 +448,31 @@ select.fin{cursor:pointer}
           </div></div>
           <div class="card"><div class="chd"><span class="ct">Google Gemini AI</span><button class="btn bout bsm" id="gem-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
             <div><label class="flb">Gemini API Key</label><input id="s-gk" class="fin" type="password" placeholder="AIza&#8230;"><div class="fhi">Get free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4F6EF7">aistudio.google.com</a></div></div>
-            <div><label class="flb">Model</label><select id="s-gm" class="fin"><option value="gemini-1.5-flash">gemini-1.5-flash (Fast &#183; Free)</option><option value="gemini-1.5-pro">gemini-1.5-pro (More accurate)</option><option value="gemini-2.0-flash">gemini-2.0-flash (Latest)</option></select></div>
+            <div><label class="flb">Model</label><select id="s-gm" class="fin" onchange="togCustomModel(this.value)">
+              <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview (Fastest &middot; Latest)</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Fast &middot; Recommended)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro (Most accurate)</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash (Stable)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash (Classic)</option>
+              <option value="custom">Custom model name&hellip;</option>
+            </select>
+            <input id="s-gm-custom" class="fin" placeholder="e.g. gemini-2.5-flash-lite-preview-06-17" style="display:none;margin-top:6px"></div>
             <div id="gem-res"></div>
             <button class="btn bpri" id="gem-save">Save Gemini Settings</button>
           </div></div>
+        </div>
+
+        <div class="card">
+          <div class="chd"><span class="ct">&#x1F525; Firebase Integration <span class="bdg bgr" id="fb-status-badge" style="font-size:10px">Not configured</span></span><button class="btn bout bsm" id="fb-test-btn">Test Firebase</button></div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:13px">
+            <div class="al ai" style="font-size:12.5px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Paste your Firebase project config below. Results, corrections, and SMB data will sync to Firestore. Login uses Firebase Authentication.</div></div>
+            <div><label class="flb">Firebase Config JSON</label>
+              <textarea id="s-fb" class="fin" rows="8" placeholder='{&#10;  "apiKey": "...",&#10;  "authDomain": "...",&#10;  "projectId": "...",&#10;  "storageBucket": "...",&#10;  "messagingSenderId": "...",&#10;  "appId": "..."&#10;}' style="font-family:JetBrains Mono,monospace;font-size:11.5px;resize:vertical"></textarea>
+              <div class="fhi">Get from Firebase Console &rarr; Project Settings &rarr; Your apps &rarr; Web app &rarr; SDK setup</div>
+            </div>
+            <div id="fb-res"></div>
+            <button class="btn bpri" id="fb-save-btn">Save &amp; Initialize Firebase</button>
+          </div>
         </div>
         <div class="card"><div class="chd"><span class="ct">Data Management</span></div><div class="cbd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn bdan" id="clr-res">Clear All Results</button><button class="btn bdan" id="clr-lrn">Clear AI Corrections</button><button class="btn bout" id="clr-smb">Clear SMB Data</button><span style="font-size:12px;color:var(--tx3)" id="dt-stats"></span></div></div>
       </div>
@@ -461,15 +485,130 @@ select.fin{cursor:pointer}
 <div id="tw"></div>
 <script>
 "use strict";
-// ─── CONFIG ──────────────────────────────────────────────────
+// ─── MASTER CONFIG (hardcoded, always works) ──────────────────
 var MASTER = {email:"revanth.abbati@dispatchtrack.com",pass:"Test@12322",role:"master",name:"Revanth Abbati",id:"__master__"};
-var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-1.5-flash",ZD_PROXY:""};
+var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-2.5-flash-lite-preview-06-17",ZD_PROXY:""};
+
+// ─── DEFAULT LABELS ──────────────────────────────────────────
 var DE = ["API", "Accounting", "Admin", "Home", "Integration", "Login Page", "Mobile", "Notifications", "Orders", "Reports", "Reservations", "Routing", "Service Units", "Settlements", "Survey", "Telematics", "Trials", "Web", "Junk", "Pre-Sale", "Data Migration", "Enhancement", "Training", "Plans", "Metrics", "New Instance"];
 var DC = ["Bug", "Regression", "Enhancement", "How to Question", "Outage", "Product Issue", "Provisioning", "Slowness", "WAE", "Payment", "End Customer / Junk"];
 var DS = ["API Documentation", "API Export", "API Import", "API Key Request", "API spreadsheet", "Account Business Phone Number", "Accounts", "Activation Code", "Adding Driver to Route", "Adding Events to Route", "Adding Stops to the Route", "Adding Truck to Route", "Additional Fields", "Additional Fields Duplication", "Address Resolution", "Alerts", "Api Tags", "Arriving Soon", "Authorization keys", "Auto-routing", "BeeTrack", "Billing related info", "Business API Key", "CNAM", "COD", "CPU 1.0", "CPU 2.0", "CSV Export", "CSV Import", "Cache Issue", "Calculate Time", "Calendar Routing", "Call Notification", "Caller ID", "Cancellation request", "Capacity Settings", "Clear Queued Import", "Clients", "Cluster Orders", "Contact Free Delivery", "Create Service Unit", "Custom Fields", "Custom Forms", "Custom Notification", "Customer Comment Widget", "Customer Contact Mode Preferences", "Customer Escalation Alert", "Customer Import", "Customer Invitation", "Customer Masking", "Customer Search", "Customer Updates", "DT Agent", "DT Agent Configuration", "DTB", "DTB Import", "DTV APIs", "DTV Mapping", "DTV Sync Issue", "DVIR", "Dashboard", "Data Migration from 1 instance to another", "Data Privacy", "Debugging", "Delay Notification", "Delete Customers", "Delete Orders", "Delete Route Locations", "Delete Service Unit", "Delivery Receipt", "Delivery Report", "Disable Order Grouping", "Disable Route Start", "Disable Schedule Call", "DispatchTrack Website Issue", "Driver AI", "Driver Alerts", "Driver Based Login", "Driver Checklist", "Driver Customer Call", "Driver customer chat", "Driver settlements", "Driver unable to finish orders", "Driver unable to log out", "Driver unable to see the stops", "Drivers", "EPASS", "ETA Display Issue", "Email Notification", "Email Survey", "Email Verification", "Enable Breaks Feature", "Enable Cost per day", "Enable Route Start", "Enable Signature", "Enable Text Survey", "Enable Unscheduled Orders Report", "End Customer", "Enhancement Ideas", "Event Retrigger Request", "Events", "Export", "Farthest Optimization", "Feedback on Release Notes", "Ferguson API Sheet Update", "Ferguson Accounts to Parser", "Ferguson Alerts", "Ferguson User - Transferred to Ferguson Team", "Furniture Wizard Import", "GERS", "GPS Points", "GPS Points Not Updating", "How to login", "IP Addresses", "Image Blur", "Image Categorization", "Image Export", "Images in Export API", "Images in Notifications", "Images not visible in web portal", "Import Lock", "Incorrect Customer Location", "Incorrect Stop Sequence", "Instance Active or Inactive", "Instance Consolidation", "Instance Information", "Instance creation", "Internal Server Error", "Issue is not clear", "Item Masters", "License Addition", "License Reduction", "Line Item Sequence", "Line Item Weight", "Load Time", "Load out report", "Loft Import", "Login Issue", "MFRM Alerts", "MFRM User - Transferred to MFRM Team", "Mandatory Photos", "Manifest", "Manifest Export", "Mapping Issue", "Maps Redirect", "Mark as Paid", "Mobile", "Mobile App Upgrade", "Mobile App Version", "Mobile Exception Report", "Mobile Permissions", "Mobile Survey", "Mobile Training", "Multi Day Routing", "Multi Language Support", "Multi Route", "Myraid", "Narrowed Time Windows", "NetSuite", "No Truck Assigned", "Non-Truck Based Route", "Notes", "Notification Automation", "Notification Configuration", "Notification Groups", "Notification Opt In/Out", "Notification Scheduling", "Notification Sequencing", "Notification filter fields", "Notifications", "Notifications Bundle", "Notifications Unsubscribed", "Number Field", "Number for End Customer to Opt in for notifications", "Oauth2 Settings", "Okta SSO Login", "Onboarding", "Order Cloning", "Order Confirmation via Notification", "Order Creation", "Order Description", "Order Dispatch", "Order Duplication", "Order Edit", "Order Grouping", "Order History", "Order Import", "Order Routing", "Order Search", "Order Status", "Order Tracker", "Order Updates", "Order details", "Order filter fields", "Orders Cancellation", "Orders Sync from Mobile app", "Orders didnt import", "Orders not visible", "Orders with Unresolved Addresses", "Orphan Orders", "Outage", "Overlay", "Password Reset", "Payment Due Notice", "Pictures", "Plans", "Plivo", "Podium", "Pricing details", "Profit", "Profit - Imports", "Purge Request", "Quick Stop", "Rails8 Import Issue", "Reactivation", "Recurring Orders", "Release Code", "Report Columns", "Reports", "Request to add Dark Theme", "Reservation Time Windows", "Reservations", "Reservations Capacity Settings", "Return Codes", "Return items", "Route Details", "Route Labels", "Route Locations", "Route Lock", "Route Optimization", "Route Save", "Route Start Notification", "Route Summary", "Route Tags", "Routing", "Routing Icons", "Routing Parameters", "Routing View", "Routing setup", "SFTP", "SFTP Import", "SKU Barcode scanner", "STIA", "Sales Handoff", "Samsung File Processing Alert", "Schedule Notification", "Server Instance - Internal", "Service Compliance forms", "Service Days", "Service Time Calculation", "Service Type", "Service Unavailable", "Service Unit Set-up", "Service Units", "Service Units History", "Shopify Integration", "Shortcuts", "Shortest Optimization", "Signature", "Signature API", "Site Readiness Forms", "SiteOne User - Transferred to SiteOne Team", "Slowness", "Social Review", "Soft move", "Split Order", "Stops Not Showing Up", "Store Stops", "Storis", "Storis Import", "Storis reconciliation", "Survey CSAT Score", "Survey Setup", "Survey Setup Issues", "Sync Import Delete", "TCPA", "TLS 1.2 GERS", "TLS 1.2 Import Issue", "TLS 1.2 Loft", "TLS 1.2 Myriad", "TLS 1.2 Profit", "TLS Migration", "TR-Event Failure", "TSF", "Telematics Integration", "Text Notification", "Text Survey", "Third Party Integration", "Time Window", "Time Window Lock", "Track Widget", "Trash", "Trials Creation", "Trials Extension", "Trucks", "Twilio", "Two Way Communication", "URL Change", "Unable to find feasible routes", "Unload Time", "Update Business name", "Update Credit Card Information", "Upload Now", "User Locked - Invalid Login", "User Privilege", "User Verification", "Users", "V5 Routing", "Video POD", "Wait Time", "Warehouse user", "Web Training", "Web Version Upgrade", "Webpage not loading", "Wrong ETA", "Wrong email sent", "Zones", "account deactivation", "item received", "time zone", "uat creation"];
 var DT = ["Technical"];
+
+// ─── COLUMN MAP ──────────────────────────────────────────────
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"]};
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty"};
+
+// ─── STORAGE KEYS (localStorage fallback) ────────────────────
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb"};
+
+// ─── FIREBASE ────────────────────────────────────────────────
+var FB = {app:null,auth:null,db:null,enabled:false,user:null};
+
+function initFirebase(config) {
+  try {
+    if(FB.app){ try{firebase.app().delete();}catch(e){} }
+    FB.app = firebase.initializeApp(config, "dispatchtrack-app");
+    FB.auth = FB.app.auth();
+    FB.db   = FB.app.firestore();
+    FB.enabled = true;
+    lsS(SK.FB, JSON.stringify(config));
+    console.log("Firebase initialized:", config.projectId);
+    return true;
+  } catch(e) {
+    console.error("Firebase init error:", e);
+    FB.enabled = false;
+    return false;
+  }
+}
+
+function tryAutoInitFirebase() {
+  var saved = lsG(SK.FB, null);
+  if(!saved)return;
+  try {
+    var cfg = typeof saved === "string" ? JSON.parse(saved) : saved;
+    if(cfg && cfg.apiKey && cfg.projectId) {
+      initFirebase(cfg);
+    }
+  } catch(e) {}
+}
+
+// Firestore helpers
+async function fsGet(path) {
+  if(!FB.enabled || !FB.db) return null;
+  try {
+    var parts = path.split("/");
+    var ref = FB.db;
+    for(var i=0;i<parts.length;i+=2) {
+      ref = ref.collection(parts[i]);
+      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    }
+    var snap = await ref.get();
+    return snap.exists ? snap.data() : null;
+  } catch(e) { console.error("fsGet error:", path, e); return null; }
+}
+
+async function fsSet(path, data) {
+  if(!FB.enabled || !FB.db) return;
+  try {
+    var parts = path.split("/");
+    var ref = FB.db;
+    for(var i=0;i<parts.length;i+=2) {
+      ref = ref.collection(parts[i]);
+      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    }
+    await ref.set(data, {merge:true});
+  } catch(e) { console.error("fsSet error:", path, e); }
+}
+
+async function fsAdd(collPath, data) {
+  if(!FB.enabled || !FB.db) return null;
+  try {
+    var parts = collPath.split("/");
+    var ref = FB.db;
+    for(var i=0;i<parts.length;i+=2) {
+      ref = ref.collection(parts[i]);
+      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    }
+    // Last part should be a collection
+    var docRef = await ref.add(data);
+    return docRef.id;
+  } catch(e) { console.error("fsAdd error:", e); return null; }
+}
+
+async function fsQuery(collPath, limit) {
+  if(!FB.enabled || !FB.db) return [];
+  try {
+    var parts = collPath.split("/");
+    var ref = FB.db;
+    for(var i=0;i<parts.length;i+=2) {
+      ref = ref.collection(parts[i]);
+      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    }
+    var q = ref.orderBy("savedAt","desc");
+    if(limit) q = q.limit(limit);
+    var snap = await q.get();
+    return snap.docs.map(function(d){return Object.assign({_fid:d.id}, d.data());});
+  } catch(e) { console.error("fsQuery error:", e); return []; }
+}
+
+async function fsDelete(path) {
+  if(!FB.enabled || !FB.db) return;
+  try {
+    var parts = path.split("/");
+    var ref = FB.db;
+    for(var i=0;i<parts.length;i+=2) {
+      ref = ref.collection(parts[i]);
+      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    }
+    await ref.delete();
+  } catch(e) { console.error("fsDelete error:", e); }
+}
+
+function fsTs() {
+  return FB.enabled ? firebase.firestore.FieldValue.serverTimestamp() : new Date();
+}
+
+function uid() { return FB.enabled && FB.user ? FB.user.uid : "local"; }
 // ─── UTILS ───────────────────────────────────────────────────
 function G(id){return document.getElementById(id);}
 function Q(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
@@ -483,36 +622,40 @@ function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsD(k){try{localStorage.removeItem(k);}catch(e){}}
 function cfg(k){
   var s=lsG(SK.A,{})||{};
-  var map={ZD_SUB:s.zs||HC.ZD_SUB,ZD_EM:s.ze||HC.ZD_EM,ZD_TOK:s.zt||HC.ZD_TOK,GEM_KEY:s.gk||HC.GEM_KEY,GEM_MOD:s.gm||HC.GEM_MOD,ZD_PROXY:s.px||HC.ZD_PROXY};
-  return map[k];
+  return({ZD_SUB:s.zs||HC.ZD_SUB,ZD_EM:s.ze||HC.ZD_EM,ZD_TOK:s.zt||HC.ZD_TOK,GEM_KEY:s.gk||HC.GEM_KEY,GEM_MOD:s.gm||HC.GEM_MOD,ZD_PROXY:s.px||HC.ZD_PROXY})[k];
 }
+function togCustomModel(v){var c=G("s-gm-custom");if(!c)return;c.style.display=v==="custom"?"block":"none";}
+function getActiveModel(){var m=gv("s-gm");return m==="custom"?(gv("s-gm-custom")||"").trim():m;}
 function toast(msg,t){
   var w=G("tw");if(!w)return;
-  var d=document.createElement("div");
-  d.className="toast "+(t==="ok"?"ok":t==="err"?"er":t==="warn"?"wn":"in");
+  var d=document.createElement("div");d.className="toast "+(t==="ok"?"ok":t==="err"?"er":t==="warn"?"wn":"in");
   var sp=document.createElement("span");sp.textContent=msg;
-  var cb=document.createElement("button");
-  cb.textContent="x";cb.style.cssText="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;margin-left:auto;padding:0;line-height:1";
+  var cb=document.createElement("button");cb.textContent="x";cb.style.cssText="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;margin-left:auto;padding:0;line-height:1";
   cb.onclick=function(){if(d.parentNode)d.parentNode.removeChild(d);};
   d.appendChild(sp);d.appendChild(cb);w.appendChild(d);
   setTimeout(function(){if(d.parentNode){d.style.opacity="0";d.style.transition="opacity .3s";setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},300);}},5000);
 }
-function setAlertBox(id,html,type){
-  var el=G(id);if(!el)return;
-  el.className="al "+(type==="ok"?"ao":type==="err"?"ae":"ai");
-  el.innerHTML=html;
-  el.style.display="block";
-}
-function openModal(title,body,footer,maxW){
-  G("mtit").textContent=title;G("mbd").innerHTML=body;G("mft").innerHTML=footer;
-  G("mbox").style.maxWidth=maxW||"500px";G("mov").classList.add("open");
-}
+function setBox(id,html,type){var el=G(id);if(!el)return;el.className="al "+(type==="ok"?"ao":type==="err"?"ae":"ai");el.innerHTML=html;el.style.display="block";}
+function openModal(title,body,footer,maxW){G("mtit").textContent=title;G("mbd").innerHTML=body;G("mft").innerHTML=footer;G("mbox").style.maxWidth=maxW||"500px";G("mov").classList.add("open");}
 function closeModal(){G("mov").classList.remove("open");}
+
 // ─── LABELS ──────────────────────────────────────────────────
 function getEnvs(){return lsG(SK.EN,null)||DE.slice();}
 function getCats(){return lsG(SK.CA,null)||DC.slice();}
 function getSubs(){return lsG(SK.SU,null)||DS.slice();}
 function getTech(){return lsG(SK.TY,null)||DT.slice();}
+async function loadLabelsFromFirestore(){
+  if(!FB.enabled)return;
+  var data=await fsGet("users/"+uid()+"/labels/default");
+  if(!data)return;
+  if(data.envs)lsS(SK.EN,data.envs);if(data.cats)lsS(SK.CA,data.cats);
+  if(data.subs)lsS(SK.SU,data.subs);if(data.tech)lsS(SK.TY,data.tech);
+}
+async function saveLabelsToFirestore(){
+  if(!FB.enabled)return;
+  await fsSet("users/"+uid()+"/labels/default",{envs:getEnvs(),cats:getCats(),subs:getSubs(),tech:getTech(),savedAt:fsTs()});
+}
+
 // ─── STATE ───────────────────────────────────────────────────
 var ST={
   sess:null,results:[],filtered:[],smbData:{},smbRaw:[],
@@ -523,50 +666,168 @@ var ST={
   sortK:null,sortD:"asc",pg:0,pgSz:30,
   pendSMB:null
 };
+
 // ─── AUTH ────────────────────────────────────────────────────
-function doLogin(){
+async function doLogin(){
   var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
   if(er)er.style.display="none";
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
-  if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){setSess(MASTER);bootApp();return;}
-  var us=lsG(SK.U,[])||[],u=null;
-  for(var i=0;i<us.length;i++){if(us[i].email.toLowerCase()===em.toLowerCase()&&us[i].password===pw){u=us[i];break;}}
-  if(u){setSess(u);bootApp();return;}
-  if(er){er.textContent="Invalid email or password.";er.style.display="block";}
+  var lb=G("lbtn");if(lb){lb.textContent="Signing in...";lb.disabled=true;}
+  try{
+    if(FB.enabled){
+      // Firebase Authentication
+      var result=await FB.auth.signInWithEmailAndPassword(em,pw);
+      FB.user=result.user;
+      // Load user profile from Firestore
+      var profile=await fsGet("users/"+result.user.uid+"/profile/data");
+      var role="user",name=em.split("@")[0];
+      if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
+      else if(profile){role=profile.role||"user";name=profile.name||name;}
+      if(!profile){
+        // First login - create profile
+        await fsSet("users/"+result.user.uid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
+      }
+      setSess({id:result.user.uid,email:em,name:name,role:role});
+      await loadDataFromFirestore();
+      bootApp();
+    }else{
+      // Fallback: hardcoded master
+      if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){setSess(MASTER);bootApp();return;}
+      // Fallback: localStorage users
+      var us=lsG(SK.U,[])||[],u=null;
+      for(var i=0;i<us.length;i++){if(us[i].email.toLowerCase()===em.toLowerCase()&&us[i].password===pw){u=us[i];break;}}
+      if(u){setSess(u);bootApp();return;}
+      if(er){er.textContent="Invalid email or password.";er.style.display="block";}
+    }
+  }catch(e){
+    if(er){
+      var msg=e.message||"Login failed";
+      if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0)msg="Invalid email or password.";
+      else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please try again later.";
+      er.textContent=msg;er.style.display="block";
+    }
+  }finally{
+    if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
+  }
 }
+
+async function doSignUp(){
+  if(!FB.enabled){toast("Firebase not configured. Set up Firebase first.","err");return;}
+  var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
+  if(er)er.style.display="none";
+  if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
+  if(pw.length<6){if(er){er.textContent="Password must be at least 6 characters.";er.style.display="block";}return;}
+  try{
+    var result=await FB.auth.createUserWithEmailAndPassword(em,pw);
+    FB.user=result.user;
+    var name=em.split("@")[0];
+    // Check if first user (make admin) - query users collection
+    var role="user";
+    try{var snap=await FB.db.collection("users").limit(2).get();if(snap.size===0)role="admin";}catch(e){}
+    await fsSet("users/"+result.user.uid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
+    setSess({id:result.user.uid,email:em,name:name,role:role});
+    bootApp();
+    toast("Account created! Welcome, "+name,"ok");
+  }catch(e){
+    if(er){var msg=e.message||"Sign up failed";if(msg.indexOf("email-already-in-use")>=0)msg="Email already registered. Try signing in.";er.textContent=msg;er.style.display="block";}
+  }
+}
+
+async function doResetPassword(){
+  var em=(gv("lem")||"").trim();
+  if(!em){toast("Enter your email address first","warn");return;}
+  if(!FB.enabled){toast("Firebase not configured","err");return;}
+  try{await FB.auth.sendPasswordResetEmail(em);toast("Password reset email sent to "+em,"ok");}
+  catch(e){toast(e.message||"Failed to send reset email","err");}
+}
+
 function setSess(u){var s={id:u.id,email:u.email,name:u.name,role:u.role};try{sessionStorage.setItem("tep_s",JSON.stringify(s));}catch(e){}ST.sess=s;}
 function getSess(){if(ST.sess)return ST.sess;try{return JSON.parse(sessionStorage.getItem("tep_s")||"null");}catch(e){return null;}}
-function doLogout(){try{sessionStorage.removeItem("tep_s");}catch(e){}ST.sess=null;G("app").style.display="none";G("lw").style.display="flex";G("lem").value="";G("lpw").value="";var er=G("lerr");if(er)er.style.display="none";}
+function doLogout(){
+  if(FB.enabled&&FB.auth)FB.auth.signOut();
+  try{sessionStorage.removeItem("tep_s");}catch(e){}
+  ST.sess=null;ST.results=[];ST.filtered=[];ST.smbData={};ST.smbRaw=[];
+  G("app").style.display="none";G("lw").style.display="flex";G("lem").value="";G("lpw").value="";var er=G("lerr");if(er)er.style.display="none";
+}
 function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master");}
+
+// ─── FIRESTORE DATA SYNC ─────────────────────────────────────
+async function loadDataFromFirestore(){
+  if(!FB.enabled)return;
+  var u=uid();
+  // Load results
+  try{
+    var results=await fsQuery("users/"+u+"/results",500);
+    if(results.length){
+      ST.results=results.map(function(r){return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""}, r);});
+    }else{
+      ST.results=lsG(SK.RE,[])||[];
+    }
+  }catch(e){ST.results=lsG(SK.RE,[])||[];}
+  // Load SMB
+  try{var smb=await fsGet("users/"+u+"/smb/data");if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}}
+  catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
+  // Load labels
+  await loadLabelsFromFirestore();
+  upBadges();
+}
+
+async function saveResultToFirestore(res){
+  if(!FB.enabled)return;
+  var u=uid();
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",savedAt:fsTs()};
+  await fsAdd("users/"+u+"/results",toSave);
+}
+
+async function saveCorrectionsToFirestore(corrections){
+  if(!FB.enabled)return;
+  var u=uid();
+  for(var i=0;i<corrections.length;i++){
+    var c=corrections[i];
+    await fsAdd("users/"+u+"/corrections",{subject:c.subject||"",ticket_type:c.ticket_type||"",field:c.field||"",original:c.original||"",corrected:c.corrected||"",ts:c.ts||Date.now(),savedAt:fsTs()});
+  }
+}
+
+async function loadCorrectionsFromFirestore(){
+  if(!FB.enabled)return lsG(SK.CO,[])||[];
+  var u=uid();
+  try{
+    var snap=await FB.db.collection("users").doc(u).collection("corrections").orderBy("ts","desc").limit(500).get();
+    return snap.docs.map(function(d){return d.data();});
+  }catch(e){return lsG(SK.CO,[])||[];}
+}
+
+async function saveSMBToFirestore(){
+  if(!FB.enabled)return;
+  var u=uid();
+  await fsSet("users/"+u+"/smb/data",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
+}
+
 // ─── NAV ─────────────────────────────────────────────────────
-var PM={
-  dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},
-  smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},
-  categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},
-  learning:{t:"AI Learning",d:"Correction history & learning progress"},
-  users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk and Gemini configuration"}
-};
+var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
   var pe=G("pg-"+pg);if(pe)pe.classList.add("active");
-  var m=PM[pg]||{t:pg,d:""};
-  if(G("pgtit"))G("pgtit").textContent=m.t;if(G("pgdsc"))G("pgdsc").textContent=m.d;
+  var m=PM[pg]||{t:pg,d:""};if(G("pgtit"))G("pgtit").textContent=m.t;if(G("pgdsc"))G("pgdsc").textContent=m.d;
   if(pg==="dashboard")renderDash();if(pg==="results"){fillFilters();applyF();}
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
 }
+
 // ─── BADGES ──────────────────────────────────────────────────
-function normSMB(t){if(!t)return"";var lc=String(t).trim().toLowerCase();if(lc==="micro"||lc==="micro ")return"Micro";if(lc==="mega")return"Mega";if(lc==="smb")return"SMB";return String(t).trim();}
+function normSMB(t){if(!t)return"";var lc=String(t).trim().toLowerCase();if(lc==="micro")return"Micro";if(lc==="mega")return"Mega";if(lc==="smb")return"SMB";return String(t).trim();}
 function smbBdg(t){var n=normSMB(t);if(!n||n==="Unknown")return'<span class="bdg bgr">--</span>';var c=n==="SMB"?"bt":n==="Mega"?"bv":n==="Micro"?"bamb":"bgr";return'<span class="bdg '+c+'">'+esc(n)+"</span>";}
 function catBdg(c){if(!c||c==="--")return'<span class="bdg bgr">--</span>';var m={"Bug":"berr","Regression":"berr","Enhancement":"binf","How to Question":"binf","Outage":"berr","Product Issue":"bwrn2","Provisioning":"bt","Slowness":"bwrn2","WAE":"bok2","Payment":"bamb","End Customer":"bgr"};var cls="bgr";for(var k in m){if(c.indexOf(k)>=0){cls=m[k];break;}}return'<span class="bdg '+cls+'" style="font-size:10.5px">'+esc(c)+"</span>";}
 function upBadges(){
   var rb=G("bd-res");if(rb){rb.textContent=ST.results.length;rb.style.display=ST.results.length?"inline":"none";}
   var sb=G("bd-smb");if(sb)sb.style.display=Object.keys(ST.smbData).length?"inline":"none";
-  var lc=(lsG(SK.CO,[])||[]).length;var lb=G("bd-lrn");if(lb){lb.textContent=lc;lb.style.display=lc?"inline":"none";}
+  var corr=lsG(SK.CO,[])||[];var lc=corr.length;var lb=G("bd-lrn");if(lb){lb.textContent=lc;lb.style.display=lc?"inline":"none";}
+  var fbb=G("fb-status-badge");if(fbb){fbb.textContent=FB.enabled?"Connected":"Not configured";fbb.className="bdg "+(FB.enabled?"bok2":"bgr");fbb.style.fontSize="10px";}
 }
+
 // ─── DASHBOARD ───────────────────────────────────────────────
 function renderDash(){
   try{
@@ -576,17 +837,18 @@ function renderDash(){
     if(G("s-rat"))G("s-rat").textContent=r.length?Math.round(ok.length/r.length*100)+"%":"--";
     var fv=ok.filter(function(x){return x.frr>0;}).map(function(x){return x.frr;});
     if(G("s-frr"))G("s-frr").textContent=fv.length?Math.round(fv.reduce(function(a,b){return a+b;},0)/fv.length)+"m":"--";
-    if(G("s-lrn"))G("s-lrn").textContent=(lsG(SK.CO,[])||[]).length;
+    var corr=lsG(SK.CO,[])||[];if(G("s-lrn"))G("s-lrn").textContent=corr.length;
     var dr=G("dash-rec");if(!dr)return;
     if(!r.length){dr.innerHTML='<div class="te">No evaluations yet.</div>';return;}
     var rc=r.slice().reverse().slice(0,8),rows="";
-    for(var i=0;i<rc.length;i++){var v=rc[i];var fc2=v.frr>60?"var(--err)":v.frr>0?"var(--ok)":"var(--tx3)";rows+="<tr><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(v.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(v.id)+"</a></td><td class=\"tr\" style=\"max-width:200px\" title=\""+esc(v.subject||"")+"\">"+esc(v.subject||"--")+"</td><td>"+smbBdg(v.smb_type)+"</td><td style=\"font-size:11.5px\">"+esc(v.environment||"--")+"</td><td>"+catBdg(v.category)+"</td><td style=\"font-size:11px;color:var(--tx2)\">"+esc(v.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc2+"\">"+(v.frr>0?v.frr+"m":"--")+"</td></tr>";}
+    for(var i=0;i<rc.length;i++){var v=rc[i];var fc2=v.frr>60?"var(--err)":v.frr>0?"var(--ok)":"var(--tx3)";rows+="<tr><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(v.zd_url||"#")+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(v.id)+"</a></td><td class=\"tr\" style=\"max-width:200px\" title=\""+esc(v.subject||"")+"\">"+esc(v.subject||"--")+"</td><td>"+smbBdg(v.smb_type)+"</td><td style=\"font-size:11.5px\">"+esc(v.environment||"--")+"</td><td>"+catBdg(v.category)+"</td><td style=\"font-size:11px;color:var(--tx2)\">"+esc(v.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc2+"\">"+(v.frr>0?v.frr+"m":"--")+"</td></tr>";}
     dr.innerHTML='<div class="tw" style="max-height:260px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th></tr></thead><tbody>'+rows+"</tbody></table></div>";
     var ks=Object.keys(ST.smbData),ds=G("dash-smb");if(!ds)return;
     if(ks.length){var t={};ks.forEach(function(k){var v2=ST.smbData[k];t[v2]=(t[v2]||0)+1;});var h2="";for(var k2 in t)h2+="<div style=\"display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px\"><span>"+esc(k2)+"</span><span style=\"font-family:'JetBrains Mono',monospace\">"+t[k2]+"</span></div>";ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;}
     else ds.innerHTML='<div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div>';
   }catch(e){console.error("renderDash:",e);}
 }
+
 // ─── SMB ─────────────────────────────────────────────────────
 function parseSMBFile(file,ctx){
   var ext=file.name.split(".").pop().toLowerCase(),rd=new FileReader();
@@ -601,46 +863,41 @@ function parseSMBFile(file,ctx){
       for(var i=0;i<hdrs.length;i++){if(/activ|code/i.test(hdrs[i])&&ci<0)ci=i;}
       for(var i=0;i<hdrs.length;i++){if(/type|segment|smb|tier|size|customer/i.test(hdrs[i])&&ti<0)ti=i;}
       ST.pendSMB={hdrs:hdrs,rows:raw.slice(1),ctx:ctx};
-      if(ctx==="ph1")showSMBModalFn(hdrs,ci,ti);else showSMBMapperFn(hdrs,ci,ti);
+      if(ctx==="ph1")showSMBModal(hdrs,ci,ti);else showSMBMapper(hdrs,ci,ti);
     }catch(e){toast("Error: "+e.message,"err");}
   };
   if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
 }
 function mkOpts(hdrs,sel){var h="";for(var i=0;i<hdrs.length;i++)h+="<option value=\""+i+"\""+(i===sel?" selected":"")+">"+esc(hdrs[i]||"Col "+i)+"</option>";return h;}
-function showSMBModalFn(hdrs,ci,ti){
-  openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select which columns contain Activation Code and Customer Type.</div><div><label class=\"flb\">Activation Code column</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">Customer Type column</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");
-  G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){applySMB(+gv("mc"),+gv("mt"));closeModal();};
-}
-function showSMBMapperFn(hdrs,ci,ti){
-  var cc=G("smb-cc"),tc=G("smb-tc");if(!cc||!tc)return;
-  cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);
-  G("smb-mapper").style.display="block";
-  var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready. Map columns then Save.";}
-}
-function applySMB(ci,ti){
+function showSMBModal(hdrs,ci,ti){openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select Activation Code and Customer Type columns.</div><div><label class=\"flb\">Activation Code</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">Customer Type</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){applySMB(+gv("mc"),+gv("mt"));closeModal();};}
+function showSMBMapper(hdrs,ci,ti){var cc=G("smb-cc"),tc=G("smb-tc");if(!cc||!tc)return;cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);G("smb-mapper").style.display="block";var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready.";}}
+async function applySMB(ci,ti){
   if(!ST.pendSMB)return;
   var rows=ST.pendSMB.rows,data={},raw=[];
   for(var i=0;i<rows.length;i++){var code=String(rows[i][ci]||"").trim(),type=normSMB(String(rows[i][ti]||"").trim())||"Unknown";if(code){data[code.toLowerCase()]=type;raw.push({code:code,type:type});}}
-  ST.smbData=data;ST.smbRaw=raw;lsS(SK.SM,{data:data,raw:raw});
+  ST.smbData=data;ST.smbRaw=raw;
+  lsS(SK.SM,{data:data,raw:raw});
+  await saveSMBToFirestore();
   toast("SMB saved: "+Object.keys(data).length+" records","ok");upBadges();
   var ep=G("smb-ph1-st");if(ep)ep.innerHTML='<div class="al ao"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+Object.keys(data).length+" SMB records loaded</div>";
   var tg=G("smb-tg");if(tg)tg.innerHTML='<span class="bdg bok2">'+Object.keys(data).length+" records</span>";
 }
 function lookupSMB(code){return code?ST.smbData[String(code).trim().toLowerCase()]||"Unknown":"Unknown";}
-function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);renderSMBPage();upBadges();toast("SMB cleared","ok");}
+async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled)await fsDelete("users/"+uid()+"/smb/data");renderSMBPage();upBadges();toast("SMB cleared","ok");}
 function renderSMBPage(){
   var ks=Object.keys(ST.smbData),sp=G("smb-stats"),pc=G("smb-prev");if(!sp||!pc)return;
   if(!ks.length){sp.innerHTML='<div style="text-align:center;color:var(--tx3);padding:24px 0">No SMB data loaded.</div>';pc.style.display="none";return;}
   var t={};ks.forEach(function(k){var v=ST.smbData[k];t[v]=(t[v]||0)+1;});
   var rows="";for(var k in t)rows+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:7px;margin-bottom:6px">'+smbBdg(k)+'<span style="font-family:\'JetBrains Mono\',monospace;margin-left:auto">'+t[k]+"</span></div>";
-  sp.innerHTML='<div class="cbd"><span class="bdg bok2" style="margin-bottom:12px">'+ks.length+" activation codes</span>"+rows+'<button class="btn bdan bsm" id="clr-smb-inner" style="margin-top:12px;width:100%;justify-content:center">Clear SMB Data</button></div>';
+  sp.innerHTML='<div class="cbd"><span class="bdg bok2" style="margin-bottom:12px">'+ks.length+" codes</span>"+rows+'<button class="btn bdan bsm" id="clr-smb-inner" style="margin-top:12px;width:100%;justify-content:center">Clear SMB Data</button></div>';
   var ci=G("clr-smb-inner");if(ci)ci.onclick=clearSMBData;
   pc.style.display="block";var cnt=G("smb-prev-cnt");if(cnt)cnt.textContent=ST.smbRaw.length+" records";
   var tb=G("smb-prev-tb");if(!tb)return;
   var h2="";for(var i=0;i<Math.min(ST.smbRaw.length,80);i++){var rw=ST.smbRaw[i];h2+="<tr><td style=\"font-family:'JetBrains Mono',monospace;font-size:12px\">"+esc(rw.code)+"</td><td>"+smbBdg(rw.type)+"</td></tr>";}
-  if(ST.smbRaw.length>80)h2+='<tr><td colspan="2" class="te">+ '+(ST.smbRaw.length-80)+" more...</td></tr>";
+  if(ST.smbRaw.length>80)h2+='<tr><td colspan="2" class="te">+'+(ST.smbRaw.length-80)+" more</td></tr>";
   tb.innerHTML=h2;
 }
+
 // ─── INFLOW ──────────────────────────────────────────────────
 function parseInflow(file){
   if(!file)return;
@@ -669,100 +926,61 @@ function parseInflow(file){
   };
   if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
 }
+
 // ─── PHASES ──────────────────────────────────────────────────
-function showPh(n){
-  for(var i=1;i<=5;i++){var e=G("ph"+i);if(e)e.style.display=i===n?"block":"none";}
-  for(var i=1;i<=5;i++){var e=G("phi"+i);if(!e)continue;e.className="bdg";e.classList.add(i<n?"bok2":i===n?"bprib":"bgr");}
-  if(n===4)buildRevTable();
-}
-function renderTechTags(){
-  var box=G("tech-box");if(!box)return;
-  var h="";for(var i=0;i<ST.tech.length;i++)h+='<span class="tag tdef" data-ti="'+i+'">'+esc(ST.tech[i])+'<button class="trm" data-ti="'+i+'">&#215;</button></span>';
-  box.innerHTML=h;
-  box.querySelectorAll(".trm[data-ti]").forEach(function(btn){btn.addEventListener("click",function(e){e.stopPropagation();var idx=+this.dataset.ti;ST.tech.splice(idx,1);lsS(SK.TY,ST.tech);renderTechTags();});});
-}
+function showPh(n){for(var i=1;i<=5;i++){var e=G("ph"+i);if(e)e.style.display=i===n?"block":"none";}for(var i=1;i<=5;i++){var e=G("phi"+i);if(!e)continue;e.className="bdg";e.classList.add(i<n?"bok2":i===n?"bprib":"bgr");}if(n===4)buildRevTable();}
+function renderTechTags(){var box=G("tech-box");if(!box)return;var h="";for(var i=0;i<ST.tech.length;i++)h+='<span class="tag tdef" data-ti="'+i+'">'+esc(ST.tech[i])+'<button class="trm" data-ti="'+i+'">&#215;</button></span>';box.innerHTML=h;box.querySelectorAll(".trm[data-ti]").forEach(function(btn){btn.addEventListener("click",function(e){e.stopPropagation();var idx=+this.dataset.ti;ST.tech.splice(idx,1);lsS(SK.TY,ST.tech);renderTechTags();});});}
 function addTech(){var inp=G("tech-in");if(!inp)return;var v=(inp.value||"").trim();if(!v)return;if(ST.tech.indexOf(v)>=0){toast("Already exists","warn");return;}ST.tech.push(v);lsS(SK.TY,ST.tech);renderTechTags();inp.value="";}
 function setAllFills(on){["frr","smb","env","cat","sub"].forEach(function(k){ST.fills[k]=on;var cb=G("cb-"+k);if(cb)cb.checked=on;var cr=G("cr-"+k);if(cr){if(on)cr.classList.add("on");else cr.classList.remove("on");}});}
-// ─── ZENDESK API ─────────────────────────────────────────────
-// Returns proxy URL (if configured) or direct Zendesk base URL
-function zdBase(){
-  var px=(cfg("ZD_PROXY")||"").trim().replace(/\/+$/,"");
-  return px||("https://"+cfg("ZD_SUB")+".zendesk.com/api/v2");
-}
+
+// ─── ZENDESK ─────────────────────────────────────────────────
+function zdBase(){var px=(cfg("ZD_PROXY")||"").trim().replace(/\/+$/,"");return px||("https://"+cfg("ZD_SUB")+".zendesk.com/api/v2");}
 function zdAuth(){return"Basic "+btoa(cfg("ZD_EM")+"/token:"+cfg("ZD_TOK"));}
-// When proxy configured: browser->worker->Zendesk (no CORS restriction)
-// When no proxy: browser->Zendesk directly (needs Zendesk CORS config)
-async function zdGet(url){
-  var r=await fetch(url,{headers:{
-    "Authorization":zdAuth(),
-    "Content-Type":"application/json",
-    "Accept":"application/json"
-  }});
-  if(!r.ok){
-    var e=await r.json().catch(function(){return{};});
-    throw new Error("Zendesk "+r.status+": "+(e.error||e.description||r.statusText));
-  }
-  return r.json();
-}
-// Convert next_page URLs to go through proxy when proxy is active
-function proxyifyUrl(url){
-  var px=(cfg("ZD_PROXY")||"").trim().replace(/\/+$/,"");
-  if(!px||!url)return url;
-  if(url.indexOf(".zendesk.com")>=0){
-    var m=url.match(/\/api\/v2\/(.*)/);
-    if(m)return px+"/"+m[1];
-  }
-  return url;
-}
-async function zdGetComments(id){
-  var all=[],url=zdBase()+"/tickets/"+id+"/comments.json?per_page=100";
-  while(url){var d=await zdGet(url);all=all.concat(d.comments||[]);url=proxyifyUrl(d.next_page||null);}
-  return all;
-}
-async function zdGetAudits(id){
-  var all=[],url=zdBase()+"/tickets/"+id+"/audits.json?per_page=100";
-  while(url){var d=await zdGet(url);all=all.concat(d.audits||[]);url=proxyifyUrl(d.next_page||null);}
-  return all;
-}
+async function zdGet(url){var r=await fetch(url,{headers:{"Authorization":zdAuth(),"Content-Type":"application/json","Accept":"application/json"}});if(!r.ok){var e=await r.json().catch(function(){return{};});throw new Error("ZD "+r.status+": "+(e.error||e.description||r.statusText));}return r.json();}
+function proxyifyUrl(url){var px=(cfg("ZD_PROXY")||"").trim().replace(/\/+$/,"");if(!px||!url)return url;if(url.indexOf(".zendesk.com")>=0){var m=url.match(/\/api\/v2\/(.*)/);if(m)return px+"/"+m[1];}return url;}
+async function zdGetComments(id){var all=[],url=zdBase()+"/tickets/"+id+"/comments.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.comments||[]);url=proxyifyUrl(d.next_page||null);}return all;}
+async function zdGetAudits(id){var all=[],url=zdBase()+"/tickets/"+id+"/audits.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.audits||[]);url=proxyifyUrl(d.next_page||null);}return all;}
 function findAssign(au){for(var i=0;i<au.length;i++){var ev=au[i].events||[];for(var j=0;j<ev.length;j++){if(ev[j].type==="Change"&&ev[j].field_name==="assignee_id"&&ev[j].value)return new Date(au[i].created_at);}}return null;}
 function findReply(co,rid){var pub=[];for(var i=0;i<co.length;i++){if(co[i].public&&String(co[i].author_id)!==String(rid))pub.push(co[i]);}if(!pub.length)return null;pub.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});return new Date(pub[0].created_at);}
-// ─── GEMINI API ──────────────────────────────────────────────
+
+// ─── GEMINI ──────────────────────────────────────────────────
 function buildLrnEx(){
   var corr=lsG(SK.CO,[])||[];if(!corr.length)return"";
   var seen={},recent=[];
   for(var i=corr.length-1;i>=0&&recent.length<40;i--){var c=corr[i];var k=c.field+":"+c.corrected+":"+String(c.subject||"").substring(0,15);if(!seen[k]){seen[k]=1;recent.unshift(c);}}
   if(!recent.length)return"";
-  var lines="\nLEARNED CORRECTIONS (prioritize these patterns):\n";
+  var lines="\nLEARNED CORRECTIONS:\n";
   for(var i=0;i<recent.length;i++){var c=recent[i];lines+="- Subject:\""+String(c.subject||"")+"\""+(c.ticket_type?" Type:"+c.ticket_type:"")+" -> "+c.field+": \""+c.corrected+"\"\n";}
   return lines;
 }
 async function gemCls(subject,description,ticketType,tags,existCat){
-  var envs=getEnvs(),cats=getCats(),subs=getSubs(),ex=buildLrnEx();
-  var prompt="You are a DispatchTrack support QA classifier. Classify this ticket.\n\nTICKET:\nSubject: "+subject+"\nDescription: "+String(description||"").substring(0,1800)+"\nTicket Type: "+ticketType+"\nTags: "+(tags||[]).join(", ")+"\nExisting Category: "+(existCat||"not set")+"\n"+ex+"\nVALID ENVIRONMENTS (pick exactly one):\n"+envs.join(", ")+"\n\nVALID CATEGORIES (pick exactly one):\n"+cats.join(", ")+"\n\nVALID SUB CATEGORIES (pick closest match):\n"+subs.join(", ")+"\n\nRules: Return ONLY a JSON object, no markdown. Use EXACT text from lists. Junk/end-customer: environment=\"Junk\", category=\"End Customer / Junk\"\n\n{\"environment\":\"...\",\"category\":\"...\",\"sub_category\":\"...\"}";
-  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+cfg("GEM_MOD")+":generateContent?key="+cfg("GEM_KEY"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:350}})});
+  var envs=getEnvs(),cats=getCats(),subs=getSubs(),ex=buildLrnEx(),mod=cfg("GEM_MOD"),key=cfg("GEM_KEY");
+  var prompt="Classify this DispatchTrack support ticket.\n\nSubject: "+subject+"\nDescription: "+String(description||"").substring(0,1800)+"\nType: "+ticketType+"\nTags: "+(tags||[]).join(", ")+"\nExisting Category: "+(existCat||"not set")+"\n"+ex+"\nEnvironments: "+envs.join(", ")+"\nCategories: "+cats.join(", ")+"\nSub Categories: "+subs.join(", ")+"\n\nReturn ONLY JSON. Use exact text from lists. For junk: environment=\"Junk\", category=\"End Customer / Junk\"\n\n{\"environment\":\"...\",\"category\":\"...\",\"sub_category\":\"...\"}";
+  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:350}})});
   if(!resp.ok){var e=await resp.json().catch(function(){return{};});throw new Error("Gemini "+resp.status+": "+(e.error?e.error.message:"API error"));}
   var d=await resp.json();
   var txt="";try{txt=d.candidates[0].content.parts[0].text||"";}catch(pe){throw new Error("Gemini response format error");}
   txt=txt.trim().replace(/```json|```/gi,"").trim();
-  try{return JSON.parse(txt);}catch(je){throw new Error("Gemini JSON parse error: "+txt.substring(0,60));}
+  try{return JSON.parse(txt);}catch(je){throw new Error("Gemini parse error: "+txt.substring(0,60));}
 }
+
 // ─── EVAL PIPELINE ───────────────────────────────────────────
 var _pRes=null;
 function togPause(){ST.paused=!ST.paused;var b=G("btn-pause");if(b)b.textContent=ST.paused?"\u25BA Resume":"\u23F8 Pause";if(!ST.paused&&_pRes){_pRes();_pRes=null;}}
-function stopEval(){if(confirm("Stop processing?")){ST.stop=true;ST.paused=false;if(_pRes){_pRes();_pRes=null;}}}
+function stopEval(){if(confirm("Stop?")){ST.stop=true;ST.paused=false;if(_pRes){_pRes();_pRes=null;}}}
 function wPause(){return new Promise(function(r){if(!ST.paused){r();return;}_pRes=r;});}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 async function startEval(){
   if(!ST.rows.length){toast("No inflow sheet loaded","err");return;}
-  if(!cfg("GEM_KEY")){toast("Gemini API key not set — go to API Settings","err");return;}
-  if(!cfg("ZD_TOK")){toast("Zendesk API token not set — go to API Settings","err");return;}
+  if(!cfg("GEM_KEY")){toast("Gemini API key not set","err");return;}
+  if(!cfg("ZD_TOK")){toast("Zendesk API token not set","err");return;}
   ST.stop=false;ST.paused=false;ST.revChg={};showPh(3);
   var hd=G("live-hd");if(hd)hd.innerHTML="<th>ID</th><th>Subject</th><th>Type</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th><th>OK</th>";
   var logEl=G("proc-log");if(logEl)logEl.innerHTML="";
   function log(m,t){if(!logEl)return;var d=document.createElement("div");d.className="l"+(t==="ok"?"ok":t==="err"?"err2":t==="warn"?"wrn":"inf");d.textContent="["+new Date().toLocaleTimeString()+"] "+m;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}
   var ci=ST.colIdx,total=ST.rows.length,start=Date.now(),ok=0,ec=0,fc=0,sc=0;
   var pt=G("proc-tit");if(pt)pt.textContent="Processing tickets\u2026";
-  log("Starting: "+total+" tickets using "+(cfg("ZD_PROXY")?"proxy":"direct")+" connection","inf");
+  log("Starting: "+total+" tickets, model: "+cfg("GEM_MOD"),"inf");
   for(var i=0;i<total;i++){
     if(ST.stop){log("Stopped","warn");break;}
     await wPause();
@@ -772,31 +990,23 @@ async function startEval(){
     if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),
-      assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),
-      priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),
-      subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),
-      requester:String(ci.requester!=null?row[ci.requester]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),
-      frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",
-      zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:""};
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:""};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
       log("  ZD OK: \""+String(t.subject||"").substring(0,40)+"\"","ok");
       var comments=[],audits=[];
-      if(ST.fills.frr){
-        var isTech=false;for(var tt=0;tt<ST.tech.length;tt++){if(res.ticket_type.toLowerCase().indexOf(ST.tech[tt].toLowerCase())>=0){isTech=true;break;}}
+      if(ST.fills.frr){var isTech=false;for(var tt=0;tt<ST.tech.length;tt++){if(res.ticket_type.toLowerCase().indexOf(ST.tech[tt].toLowerCase())>=0){isTech=true;break;}}
         if(isTech){comments=await zdGetComments(tid);audits=await zdGetAudits(tid);var asgn=findAssign(audits),reply=findReply(comments,t.requester_id);
           if(asgn&&reply){res.frr=Math.round((reply-asgn)/60000);res.frr_txt=res.frr+"m";fc++;log("  FRR: "+res.frr+"m","ok");}
           else{res.frr_txt=asgn?"No public reply":"Never assigned";log("  FRR: "+res.frr_txt,"warn");}
-        }else res.frr_txt="Non-technical";
-      }
+        }else res.frr_txt="Non-technical";}
       if(ST.fills.smb){res.smb_type=lookupSMB(res.activation_code);if(res.smb_type!=="Unknown")sc++;log("  SMB: "+res.smb_type,"ok");}
       if(ST.fills.env||ST.fills.cat||ST.fills.sub){
         if(!comments.length)try{comments=await zdGetComments(tid);}catch(ce){}
         var desc="";for(var ci2=0;ci2<comments.length;ci2++){if(comments[ci2].public){desc=String(comments[ci2].body||"").substring(0,2000);break;}}
         if(!desc)desc=String(t.description||"").substring(0,2000);
-        log("  Classifying with Gemini\u2026","inf");
+        log("  Classifying with Gemini ("+cfg("GEM_MOD")+")\u2026","inf");
         var cls=await gemCls(res.subject,desc,res.ticket_type,t.tags||[],res.ticket_category);
         if(ST.fills.env)res.environment=cls.environment||"";if(ST.fills.cat)res.category=cls.category||"";if(ST.fills.sub)res.sub_category=cls.sub_category||"";
         log("  "+cls.environment+" / "+cls.category+" / "+cls.sub_category,"ok");
@@ -804,11 +1014,14 @@ async function startEval(){
       res._ok=true;ok++;
     }catch(e){res.error=e.message;ec++;log("  ERROR: "+e.message,"err");}
     ST.results.push(res);
+    // Save to Firestore (non-blocking)
+    saveResultToFirestore(res).catch(function(e){console.warn("Firestore save error:",e);});
+    lsS(SK.RE,ST.results.slice(-200)); // keep last 200 in localStorage
     // Add live row
     var tb=G("live-tb");if(tb){if(tb.querySelector(".te"))tb.innerHTML="";var tr=document.createElement("tr");var fcc=res.frr>60?"var(--err)":res.frr>0?"var(--ok)":"var(--tx3)";tr.innerHTML="<td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(res.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(res.id)+"</a></td><td class=\"tr\" style=\"max-width:160px;font-size:12.5px\">"+esc(res.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(res.ticket_type||"--")+"</td><td>"+smbBdg(res.smb_type)+"</td><td style=\"font-size:11px;max-width:110px\" class=\"tr\">"+esc(res.environment||"--")+"</td><td>"+catBdg(res.category)+"</td><td style=\"font-size:11px;color:var(--tx2);max-width:110px\" class=\"tr\">"+esc(res.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fcc+"\">"+(res.frr>0?res.frr+"m":res.frr_txt||"--")+"</td><td><span class=\"bdg "+(res._ok?"bok2":"berr")+"\">"+(res._ok?"OK":"Err")+"</span></td>";tb.appendChild(tr);tb.scrollTop=tb.scrollHeight;}
     var pok=G("pc-ok"),per=G("pc-er"),pfr=G("pc-fr"),psm=G("pc-sm");
     if(pok)pok.textContent=ok;if(per)per.textContent=ec;if(pfr)pfr.textContent=fc;if(psm)psm.textContent=sc;
-    lsS(SK.RE,ST.results);upBadges();if(i<total-1)await sleep(ST.delay);
+    upBadges();if(i<total-1)await sleep(ST.delay);
   }
   var pb2=G("proc-bar"),pp2=G("proc-pct"),pt2=G("proc-tit"),pe2=G("pc-eta");
   if(pb2)pb2.style.width="100%";if(pp2)pp2.textContent="100%";if(pt2)pt2.textContent="Processing Complete";if(pe2)pe2.textContent="";
@@ -817,6 +1030,7 @@ async function startEval(){
   var ds=G("done-sum");if(ds)ds.textContent=ok+" evaluated \u00B7 "+ec+" errors \u00B7 "+fc+" FRR \u00B7 Avg FRR: "+af+"m";
   toast(ok+" tickets evaluated","ok");showPh(4);renderDash();
 }
+
 // ─── REVIEW & CORRECT ────────────────────────────────────────
 function buildRevTable(){
   var tb=G("rev-tb");if(!tb)return;
@@ -829,33 +1043,26 @@ function buildRevTable(){
     for(var j=0;j<cats.length;j++)co+="<option"+(cats[j]===r.category?" selected":"")+">"+esc(cats[j])+"</option>";
     for(var j=0;j<subs.length;j++)so+="<option"+(subs[j]===r.sub_category?" selected":"")+">"+esc(subs[j])+"</option>";
     var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option><option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option><option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option><option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
-    h+="<tr id=\"rr-"+i+"\"><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td><td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td><td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td></tr>";
+    h+="<tr id=\"rr-"+i+"\"><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td><td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td><td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td></tr>";
   }
   tb.innerHTML=h;
-  tb.addEventListener("change",function(e){
-    var el=e.target,idx=el.dataset.ri,field=el.dataset.rf;if(idx===undefined||!field)return;
-    idx=+idx;var val=el.value;
-    if(!ST.revChg[idx])ST.revChg[idx]={subject:ST.results[idx].subject,ticket_type:ST.results[idx].ticket_type,orig:{},corr:{}};
-    if(!(field in ST.revChg[idx].orig))ST.revChg[idx].orig[field]=String(ST.results[idx][field]||"");
-    ST.revChg[idx].corr[field]=val;
-    el.parentElement.style.background="#FEF9C3";
-    var rrow=G("rr-"+idx);if(rrow)rrow.classList.add("chrow");
-    var tot=0;for(var k in ST.revChg)tot+=Object.keys(ST.revChg[k].corr||{}).length;
-    var cc=G("ch-cnt");if(cc)cc.textContent=tot+" change"+(tot!==1?"s":"");
-  });
+  tb.addEventListener("change",function(e){var el=e.target,idx=el.dataset.ri,field=el.dataset.rf;if(idx===undefined||!field)return;idx=+idx;var val=el.value;if(!ST.revChg[idx])ST.revChg[idx]={subject:ST.results[idx].subject,ticket_type:ST.results[idx].ticket_type,orig:{},corr:{}};if(!(field in ST.revChg[idx].orig))ST.revChg[idx].orig[field]=String(ST.results[idx][field]||"");ST.revChg[idx].corr[field]=val;el.parentElement.style.background="#FEF9C3";var rrow=G("rr-"+idx);if(rrow)rrow.classList.add("chrow");var tot=0;for(var k in ST.revChg)tot+=Object.keys(ST.revChg[k].corr||{}).length;var cc=G("ch-cnt");if(cc)cc.textContent=tot+" change"+(tot!==1?"s":"");});
 }
-function saveCorr(){
+async function saveCorr(){
   if(!Object.keys(ST.revChg).length){toast("No changes to save","in");return;}
-  var corr=lsG(SK.CO,[])||[];
+  var corr=lsG(SK.CO,[])||[],newCorr=[];
   for(var idx in ST.revChg){var chg=ST.revChg[idx],r=ST.results[+idx];
-    for(var field in chg.corr){var val=chg.corr[field],orig=chg.orig[field]||String(r[field]||"");if(field==="frr")r.frr=+val||0;else r[field]=val;corr.push({subject:String(r.subject||"").substring(0,80),ticket_type:r.ticket_type||"",field:field,original:orig,corrected:val,ts:Date.now()});}
+    for(var field in chg.corr){var val=chg.corr[field],orig=chg.orig[field]||String(r[field]||"");if(field==="frr")r.frr=+val||0;else r[field]=val;var c={subject:String(r.subject||"").substring(0,80),ticket_type:r.ticket_type||"",field:field,original:orig,corrected:val,ts:Date.now()};corr.push(c);newCorr.push(c);}
   }
   if(corr.length>500)corr.splice(0,corr.length-500);
-  lsS(SK.CO,corr);lsS(SK.RE,ST.results);ST.revChg={};
-  var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
+  lsS(SK.CO,corr);lsS(SK.RE,ST.results.slice(-200));
+  // Save to Firestore
+  if(FB.enabled && newCorr.length) await saveCorrectionsToFirestore(newCorr);
+  ST.revChg={};var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
   Q("#rev-tb td").forEach(function(td){td.style.background="";});Q("#rev-tb tr").forEach(function(tr){tr.classList.remove("chrow");});
   toast("Corrections saved \u2014 AI will use these for future evaluations!","ok");upBadges();
 }
+
 // ─── CATEGORIES ──────────────────────────────────────────────
 function renderCatPanels(){
   var wrap=G("cat-panels");if(!wrap)return;
@@ -883,41 +1090,41 @@ function renderCatPanels(){
   }catch(e){console.error("renderCatPanels:",e);if(wrap)wrap.innerHTML='<div class="al ae" style="grid-column:span 3">Error: '+esc(e.message)+'</div>';}
 }
 function catGet(k){return k==="env"?getEnvs():k==="cat"?getCats():getSubs();}
-function catSave(k,v){lsS(k==="env"?SK.EN:k==="cat"?SK.CA:SK.SU,v);}
+function catSave(k,v){lsS(k==="env"?SK.EN:k==="cat"?SK.CA:SK.SU,v);saveLabelsToFirestore();}
 function catDef(k){return k==="env"?function(){return DE.slice();}:k==="cat"?function(){return DC.slice();}:function(){return DS.slice();};}
 function addCatItem(k){var inp=G(k+"-in");if(!inp)return;var v=(inp.value||"").trim();if(!v)return;var arr=catGet(k);for(var i=0;i<arr.length;i++){if(arr[i].toLowerCase()===v.toLowerCase()){toast("Already exists","warn");return;}}arr.push(v);catSave(k,arr);renderCatPanels();toast("Added \""+v+"\"","ok");}
 function exportCatPanel(k){var items=catGet(k);dlBlob(new Blob([items.join("\n")],{type:"text/plain"}),"dt-"+k+"-labels-"+stamp()+".csv");toast("Exported "+items.length+" labels","ok");}
-function importCatPanel(e,k){
-  var f=e.target.files[0];if(!f)return;
-  var rd=new FileReader();
-  rd.onload=function(ev){
-    var items;
-    if(f.name.endsWith(".json")){try{var d=JSON.parse(ev.target.result);items=Array.isArray(d)?d:[];}catch(je){toast("Invalid JSON","err");return;}}
-    else items=ev.target.result.split(/[\n,]/).map(function(s){return s.trim();}).filter(Boolean);
-    var arr=catGet(k),added=0;
-    for(var i=0;i<items.length;i++){var v=items[i];var ex=false;for(var j=0;j<arr.length;j++){if(arr[j].toLowerCase()===v.toLowerCase()){ex=true;break;}}if(!ex){arr.push(v);added++;}}
-    if(!added){toast("No new items","in");return;}catSave(k,arr);renderCatPanels();toast("Added "+added+" items","ok");
-  };
-  rd.readAsText(f);e.target.value="";
-}
+function importCatPanel(e,k){var f=e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(ev){var items;if(f.name.endsWith(".json")){try{var d=JSON.parse(ev.target.result);items=Array.isArray(d)?d:[];}catch(je){toast("Invalid JSON","err");return;}}else items=ev.target.result.split(/[\n,]/).map(function(s){return s.trim();}).filter(Boolean);var arr=catGet(k),added=0;for(var i=0;i<items.length;i++){var v=items[i];var ex=false;for(var j=0;j<arr.length;j++){if(arr[j].toLowerCase()===v.toLowerCase()){ex=true;break;}}if(!ex){arr.push(v);added++;}}if(!added){toast("No new items","in");return;}catSave(k,arr);renderCatPanels();toast("Added "+added+" items","ok");};rd.readAsText(f);e.target.value="";}
+
 // ─── AI LEARNING ─────────────────────────────────────────────
-function renderLrnPage(){
-  var corr=lsG(SK.CO,[])||[];var lc=G("lrn-cnt");if(lc)lc.textContent=corr.length+" corrections";var sl=G("s-lrn");if(sl)sl.textContent=corr.length;
+async function renderLrnPage(){
+  var corr=lsG(SK.CO,[])||[];
+  if(FB.enabled){try{corr=await loadCorrectionsFromFirestore();}catch(e){}}
+  var lc=G("lrn-cnt");if(lc)lc.textContent=corr.length+" corrections";var sl=G("s-lrn");if(sl)sl.textContent=corr.length;
   var t={};for(var i=0;i<corr.length;i++){var f=corr[i].field;t[f]=(t[f]||0)+1;}
   var h="";for(var k in t)h+="<div style=\"display:flex;justify-content:space-between;margin-bottom:4px\"><span>"+esc(k)+"</span><span style=\"font-family:'JetBrains Mono',monospace\">"+t[k]+"</span></div>";
   var ls2=G("lrn-stats");if(ls2)ls2.innerHTML=h||'<span style="color:var(--tx3)">No corrections yet.</span>';
-  renderLrnTable();
+  renderLrnTableWith(corr);
 }
-function renderLrnTable(){
-  var corr=lsG(SK.CO,[])||[],field=gv("lf-field"),filtered=field?corr.filter(function(c){return c.field===field;}):corr;
+function renderLrnTableWith(corr){
+  var field=gv("lf-field"),filtered=field?corr.filter(function(c){return c.field===field;}):corr;
   var tb=G("lrn-tb");if(!tb)return;
   if(!filtered.length){tb.innerHTML='<tr><td colspan="5" class="te">No corrections yet.</td></tr>';return;}
   var h="",show=filtered.slice().reverse().slice(0,100);
   for(var i=0;i<show.length;i++){var c=show[i];h+="<tr><td class=\"tr\" style=\"max-width:200px;font-size:12.5px\" title=\""+esc(c.subject||"")+"\">"+esc(c.subject||"--")+"</td><td><span class=\"bdg bgr\" style=\"font-size:10px\">"+esc(c.field||"")+"</span></td><td style=\"font-size:12px;color:var(--errt)\">"+esc(c.original||"--")+"</td><td style=\"font-size:12px;color:var(--okt);font-weight:500\">"+esc(c.corrected||"")+"</td><td style=\"font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace\">"+new Date(c.ts).toLocaleDateString()+"</td></tr>";}
   tb.innerHTML=h;
 }
-function clearLrn(){if(!confirm("Clear all AI corrections?"))return;lsD(SK.CO);var lc=G("lrn-cnt");if(lc)lc.textContent="0 corrections";var sl=G("s-lrn");if(sl)sl.textContent="0";renderLrnTable();var ls2=G("lrn-stats");if(ls2)ls2.innerHTML='<span style="color:var(--tx3)">No corrections yet.</span>';upBadges();toast("Cleared","ok");}
-function exportLrn(){dlBlob(new Blob([JSON.stringify(lsG(SK.CO,[])||[],null,2)],{type:"application/json"}),"dt-corrections-"+stamp()+".json");toast("Exported","ok");}
+function renderLrnTable(){renderLrnPage();}
+async function clearLrn(){
+  if(!confirm("Clear all AI corrections?"))return;
+  lsD(SK.CO);
+  if(FB.enabled){
+    try{var snap=await FB.db.collection("users").doc(uid()).collection("corrections").get();var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();}catch(e){console.warn("Firebase corrections clear error:",e);}
+  }
+  var lc=G("lrn-cnt");if(lc)lc.textContent="0 corrections";var sl=G("s-lrn");if(sl)sl.textContent="0";var ls2=G("lrn-stats");if(ls2)ls2.innerHTML='<span style="color:var(--tx3)">No corrections yet.</span>';var tb=G("lrn-tb");if(tb)tb.innerHTML='<tr><td colspan="5" class="te">No corrections yet.</td></tr>';upBadges();toast("Cleared","ok");
+}
+function exportLrn(){var d=lsG(SK.CO,[])||[];dlBlob(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}),"dt-corrections-"+stamp()+".json");toast("Exported","ok");}
+
 // ─── RESULTS ─────────────────────────────────────────────────
 function fillFilters(){
   function fill(id,key,lbl){var s=G(id);if(!s)return;var vals=[],cur=s.value;ST.results.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";}
@@ -925,173 +1132,175 @@ function fillFilters(){
   var rl=G("res-lbl");if(rl)rl.textContent=ST.results.length+" records";
 }
 function getFiltered(){return ST.filtered.length?ST.filtered:ST.results;}
-function applyF(){
-  var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");
-  ST.filtered=ST.results.filter(function(r){
-    if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
-    if(env&&r.environment!==env)return false;if(cat&&r.category!==cat)return false;if(sub&&r.sub_category!==sub)return false;if(smb&&r.smb_type!==smb)return false;if(st&&r.status!==st)return false;return true;
-  });
-  ST.pg=0;var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";renderResTable();
-}
+function applyF(){var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");ST.filtered=ST.results.filter(function(r){if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;if(env&&r.environment!==env)return false;if(cat&&r.category!==cat)return false;if(sub&&r.sub_category!==sub)return false;if(smb&&r.smb_type!==smb)return false;if(st&&r.status!==st)return false;return true;});ST.pg=0;var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";renderResTable();}
 function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
 function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
 function renderResTable(){
   var all=getFiltered(),pg=all.slice(ST.pg*ST.pgSz,(ST.pg+1)*ST.pgSz),tb=G("res-tb");if(!tb)return;
   if(!pg.length){tb.innerHTML='<tr><td colspan="12" class="te">No records match your filters.</td></tr>';return;}
-  var h="";
-  for(var i=0;i<pg.length;i++){var r=pg[i],gi=ST.pg*ST.pgSz+i,sc2=r.status==="open"?"berr":r.status==="solved"?"bok2":"bwrn2",fc3=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
-    h+="<tr><td><input type=\"checkbox\" class=\"rcb\" data-gi=\""+gi+"\" style=\"accent-color:#4F6EF7\"></td><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:190px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td><td><span class=\"bdg "+sc2+"\" style=\"font-size:10px\">"+esc(r.status||"--")+"</span></td><td>"+smbBdg(r.smb_type)+"</td><td class=\"tr\" style=\"max-width:130px;font-size:11.5px\">"+esc(r.environment||"--")+"</td><td>"+catBdg(r.category)+"</td><td class=\"tr\" style=\"max-width:120px;font-size:11px;color:var(--tx2)\">"+esc(r.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc3+"\">"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td><td style=\"font-size:12px;color:var(--tx2)\">"+esc(r.assignee||r.requester||"--")+"</td><td><a href=\""+esc(r.zd_url)+"\" target=\"_blank\" class=\"btn bgst bsm\" style=\"font-size:11px;padding:4px 8px\">&#8599;</a>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--err);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td></tr>";
-  }
+  var h="";for(var i=0;i<pg.length;i++){var r=pg[i],gi=ST.pg*ST.pgSz+i,sc2=r.status==="open"?"berr":r.status==="solved"?"bok2":"bwrn2",fc3=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";h+="<tr><td><input type=\"checkbox\" class=\"rcb\" data-gi=\""+gi+"\" style=\"accent-color:#4F6EF7\"></td><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:190px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td><td><span class=\"bdg "+sc2+"\" style=\"font-size:10px\">"+esc(r.status||"--")+"</span></td><td>"+smbBdg(r.smb_type)+"</td><td class=\"tr\" style=\"max-width:130px;font-size:11.5px\">"+esc(r.environment||"--")+"</td><td>"+catBdg(r.category)+"</td><td class=\"tr\" style=\"max-width:120px;font-size:11px;color:var(--tx2)\">"+esc(r.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fc3+"\">"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td><td style=\"font-size:12px;color:var(--tx2)\">"+esc(r.assignee||r.requester||"--")+"</td><td><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" class=\"btn bgst bsm\" style=\"font-size:11px;padding:4px 8px\">&#8599;</a>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--err);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td></tr>";}
   tb.innerHTML=h;
   tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){var any=Q(".rcb:checked").length>0;var es=G("exp-sel");if(es)es.style.display=any?"inline-flex":"none";};});
   var pages=Math.ceil(all.length/ST.pgSz)||1,pl=G("pg-lbl");if(pl)pl.textContent="Page "+(ST.pg+1)+" of "+pages;var rl=G("res-lbl");if(rl)rl.textContent=all.length+" records";
 }
+
 // ─── EXPORT ──────────────────────────────────────────────────
 function exportR(rows,fmt){
   if(!rows||!rows.length){toast("No data to export","err");return;}
-  var out=rows.map(function(r){
-    var rd=(r._rd||[]).slice(),hdrs=r._hd||ST.headers,ci=r._ci||ST.colIdx;
-    if(ci.frr!=null)rd[ci.frr]=r.frr>0?r.frr:(r.frr_txt||"");if(ci.smb!=null)rd[ci.smb]=r.smb_type||"";
-    if(ci.environment!=null)rd[ci.environment]=r.environment||"";if(ci.category!=null)rd[ci.category]=r.category||"";if(ci.sub_category!=null)rd[ci.sub_category]=r.sub_category||"";
-    var obj={};for(var i=0;i<hdrs.length;i++)obj[hdrs[i]||("Col"+i)]=rd[i]!=null?rd[i]:"";
-    if(!("FRR"in obj))obj["FRR"]=r.frr>0?r.frr:(r.frr_txt||"");if(!("SMB"in obj))obj["SMB"]=r.smb_type||"";
-    if(!("Environment"in obj))obj["Environment"]=r.environment||"";if(!("Category"in obj))obj["Category"]=r.category||"";if(!("Sub Category"in obj))obj["Sub Category"]=r.sub_category||"";
-    return obj;
-  });
+  var out=rows.map(function(r){var rd=(r._rd||[]).slice(),hdrs=r._hd||ST.headers,ci=r._ci||ST.colIdx;if(ci.frr!=null)rd[ci.frr]=r.frr>0?r.frr:(r.frr_txt||"");if(ci.smb!=null)rd[ci.smb]=r.smb_type||"";if(ci.environment!=null)rd[ci.environment]=r.environment||"";if(ci.category!=null)rd[ci.category]=r.category||"";if(ci.sub_category!=null)rd[ci.sub_category]=r.sub_category||"";var obj={};for(var i=0;i<hdrs.length;i++)obj[hdrs[i]||("Col"+i)]=rd[i]!=null?rd[i]:"";if(!("FRR"in obj))obj["FRR"]=r.frr>0?r.frr:(r.frr_txt||"");if(!("SMB"in obj))obj["SMB"]=r.smb_type||"";if(!("Environment"in obj))obj["Environment"]=r.environment||"";if(!("Category"in obj))obj["Category"]=r.category||"";if(!("Sub Category"in obj))obj["Sub Category"]=r.sub_category||"";return obj;});
   var fn="dt-eval-"+stamp();
   if(fmt==="csv"){dlBlob(new Blob([Papa.unparse(out)],{type:"text/csv;charset=utf-8;"}),fn+".csv");toast("CSV exported ("+out.length+" rows)","ok");}
   else{var ws=XLSX.utils.json_to_sheet(out);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Evaluation");XLSX.writeFile(wb,fn+".xlsx");toast("Excel exported ("+out.length+" rows)","ok");}
 }
+
 // ─── USERS ───────────────────────────────────────────────────
-function renderUsers(){
-  var tb=G("usr-tb"),sess=getSess(),users=lsG(SK.U,[])||[];if(!tb)return;
-  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users yet.</td></tr>';return;}
+async function renderUsers(){
+  var tb=G("usr-tb"),sess=getSess();if(!tb)return;
+  var users=[];
+  if(FB.enabled){
+    try{
+      var snap=await FB.db.collection("users").orderBy("createdAt","desc").limit(100).get();
+      snap.docs.forEach(function(d){var profile=d.data().data||d.data();if(profile)users.push(Object.assign({id:d.id},profile));});
+    }catch(e){users=lsG(SK.U,[])||[];}
+  }else{users=lsG(SK.U,[])||[];}
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found. Users appear here after their first login.</td></tr>';return;}
   var h="";
-  for(var i=0;i<users.length;i++){var u=users[i];h+="<tr><td style=\"font-weight:500\">"+esc(u.name||"")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td><td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td><td style=\"font-size:12px;color:var(--tx3)\">"+(u.created?new Date(u.created).toLocaleDateString():"--")+"</td><td style=\"display:flex;gap:6px\">"+(u.id!==sess.id?"<button class=\"btn bout bsm\" data-uid=\""+esc(u.id)+"\" data-uact=\"edit\">Edit</button><button class=\"btn bdan bsm\" data-uid=\""+esc(u.id)+"\" data-uact=\"del\">Delete</button>":"")+"</td></tr>";}
-  tb.innerHTML=h;
-  tb.querySelectorAll("[data-uact]").forEach(function(btn){btn.onclick=function(){if(this.dataset.uact==="edit")openUserModal(this.dataset.uid);else delUser(this.dataset.uid);};});
+  for(var i=0;i<users.length;i++){
+    var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue; // hide master
+    h+="<tr><td style=\"font-weight:500\">"+esc(u.name||"")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td><td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td><td style=\"font-size:12px;color:var(--tx3)\">"+(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():u.created?new Date(u.created).toLocaleDateString():"--")+"</td><td style=\"display:flex;gap:6px\">"+(u.id!==sess.id?"<select class=\"fsel\" style=\"font-size:11px;padding:4px 8px\" onchange=\"changeRole('"+esc(u.id)+"',this.value)\"><option"+(u.role==="user"?" selected":"")+">user</option><option"+(u.role==="admin"?" selected":"")+">admin</option></select>":"<span style=\"font-size:12px;color:var(--tx3)\">(you)</span>")+"</td></tr>";
+  }
+  tb.innerHTML=h||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
+}
+async function changeRole(userId, newRole){
+  if(!confirm("Change this user's role to "+newRole+"?"))return;
+  if(FB.enabled){
+    await fsSet("users/"+userId+"/profile/data",{role:newRole});
+    toast("Role updated to "+newRole,"ok");
+  }else{
+    var us=lsG(SK.U,[])||[];for(var i=0;i<us.length;i++){if(us[i].id===userId){us[i].role=newRole;break;}}lsS(SK.U,us);toast("Role updated","ok");
+  }
 }
 function openUserModal(id){
-  var users=lsG(SK.U,[])||[],u=null;for(var i=0;i<users.length;i++){if(users[i].id===id){u=users[i];break;}}
-  openModal(u?"Edit User":"Add New User","<div style=\"display:flex;flex-direction:column;gap:13px\"><div><label class=\"flb\">Full Name</label><input class=\"fin\" id=\"mu-n\" value=\""+esc(u?u.name:"")+"\" placeholder=\"Full name\"></div><div><label class=\"flb\">Email</label><input class=\"fin\" id=\"mu-e\" type=\"email\" value=\""+esc(u?u.email:"")+"\" placeholder=\"email@company.com\"></div><div><label class=\"flb\">Password"+(u?" (blank = keep)":"")+"</label><input class=\"fin\" id=\"mu-p\" type=\"password\"></div><div><label class=\"flb\">Role</label><select class=\"fin\" id=\"mu-r\"><option value=\"user\""+(u&&u.role==="user"?" selected":"")+">User</option><option value=\"admin\""+(u&&u.role==="admin"?" selected":"")+">Admin</option></select></div></div>","<button class=\"btn bgst\" id=\"umc\">Cancel</button><button class=\"btn bpri\" id=\"ums\">"+(u?"Save Changes":"Create User")+"</button>");
-  G("umc").onclick=closeModal;G("ums").onclick=function(){saveUser(id||"");};
+  openModal("Add New User","<div style=\"display:flex;flex-direction:column;gap:13px\"><div class=\"al ai\">Users can also self-register if Firebase is configured.</div><div><label class=\"flb\">Email</label><input class=\"fin\" id=\"mu-e\" type=\"email\" placeholder=\"email@company.com\"></div><div><label class=\"flb\">Password (min 6 chars)</label><input class=\"fin\" id=\"mu-p\" type=\"password\"></div><div><label class=\"flb\">Display Name</label><input class=\"fin\" id=\"mu-n\" placeholder=\"Full name\"></div><div><label class=\"flb\">Role</label><select class=\"fin\" id=\"mu-r\"><option value=\"user\">User</option><option value=\"admin\">Admin</option></select></div></div>","<button class=\"btn bgst\" id=\"umc\">Cancel</button><button class=\"btn bpri\" id=\"ums\">Create User</button>");
+  G("umc").onclick=closeModal;G("ums").onclick=function(){createUserFromAdmin();};
 }
-function saveUser(id){
-  var name=(gv("mu-n")||"").trim(),email=(gv("mu-e")||"").trim(),pass=gv("mu-p")||"",role=gv("mu-r");
-  if(!name||!email){toast("Name and email required","err");return;}
-  var users=lsG(SK.U,[])||[];
-  if(!id){
-    if(!pass){toast("Password required","err");return;}
-    var ex=email.toLowerCase()===MASTER.email.toLowerCase();for(var i=0;i<users.length;i++){if(users[i].email.toLowerCase()===email.toLowerCase())ex=true;}
-    if(ex){toast("Email already exists","err");return;}
-    users.push({id:"u_"+Date.now(),name:name,email:email,password:pass,role:role,created:Date.now()});toast("User created","ok");
+async function createUserFromAdmin(){
+  var em=(gv("mu-e")||"").trim(),pw=gv("mu-p"),name=(gv("mu-n")||"").trim()||em.split("@")[0],role=gv("mu-r");
+  if(!em||!pw){toast("Email and password required","err");return;}
+  if(pw.length<6){toast("Password must be at least 6 characters","err");return;}
+  if(FB.enabled){
+    // Create in Firebase (Note: this changes the current user in the browser)
+    // Best practice: use a secondary Firebase app for admin user creation
+    try{
+      var secondaryApp=firebase.initializeApp(FB.app.options,"secondaryForUserCreation-"+Date.now());
+      var secondaryAuth=secondaryApp.auth();
+      var result=await secondaryAuth.createUserWithEmailAndPassword(em,pw);
+      var newUid=result.user.uid;
+      await secondaryAuth.signOut();await secondaryApp.delete();
+      await fsSet("users/"+newUid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
+      closeModal();renderUsers();toast("User created: "+em,"ok");
+    }catch(e){toast(e.message||"Error creating user","err");}
   }else{
-    var idx=-1;for(var i=0;i<users.length;i++){if(users[i].id===id){idx=i;break;}}if(idx<0){toast("Not found","err");return;}
-    users[idx].name=name;users[idx].email=email;users[idx].role=role;if(pass)users[idx].password=pass;toast("Updated","ok");
+    var us=lsG(SK.U,[])||[];us.push({id:"u_"+Date.now(),name:name,email:em,password:pw,role:role,created:Date.now()});lsS(SK.U,us);closeModal();renderUsers();toast("User created","ok");
   }
-  lsS(SK.U,users);closeModal();renderUsers();
 }
-function delUser(id){if(!confirm("Delete user?"))return;lsS(SK.U,(lsG(SK.U,[])||[]).filter(function(u){return u.id!==id;}));renderUsers();toast("Deleted","ok");}
+
 // ─── SETTINGS ────────────────────────────────────────────────
 function loadSettings(){
   var s=lsG(SK.A,{})||{};
-  var els={zs:"s-sub",ze:"s-em",zt:"s-tok",px:"s-prx",gk:"s-gk",gm:"s-gm"};
-  for(var k in els){var e=G(els[k]);if(e)e.value=s[k]||"";}
-  var ds=G("dt-stats");if(ds)ds.textContent=ST.results.length+" results / "+(lsG(SK.CO,[])||[]).length+" corrections";
-  // Show current origin in CORS note
-  var co=G("current-origin");
-  if(co){
-    var origin=window.location.origin;
-    if(origin==="null"||!origin||origin.indexOf("file")===0){co.textContent="file:// (upload to GitHub Pages first)";}
-    else{co.textContent=origin;}
-  }
+  var map={zs:"s-sub",ze:"s-em",zt:"s-tok",px:"s-prx",gk:"s-gk"};
+  for(var k in map){var e=G(map[k]);if(e)e.value=s[k]||"";}
+  var gm=G("s-gm");if(gm){var savedMod=s.gm||HC.GEM_MOD;var found=false;for(var i=0;i<gm.options.length;i++){if(gm.options[i].value===savedMod){gm.value=savedMod;found=true;break;}}if(!found){gm.value="custom";var cust=G("s-gm-custom");if(cust){cust.style.display="block";cust.value=savedMod;}}}
+  var ds=G("dt-stats");if(ds)ds.textContent=ST.results.length+" results / "+(lsG(SK.CO,[])||[]).length+" corrections / "+(FB.enabled?"Firebase: "+FB.app.options.projectId:"localStorage only");
+  // Load Firebase config
+  var fbc=G("s-fb");if(fbc){var saved=lsG(SK.FB,null);if(saved){try{fbc.value=typeof saved==="string"?saved:JSON.stringify(typeof saved==="object"?saved:JSON.parse(saved),null,2);}catch(e){}}}
+  upBadges();
 }
 function saveAPISettings(){
-  lsS(SK.A,{zs:(gv("s-sub")||"").trim(),ze:(gv("s-em")||"").trim(),zt:(gv("s-tok")||"").trim(),px:(gv("s-prx")||"").trim(),gk:(gv("s-gk")||"").trim(),gm:gv("s-gm")});
+  var mod=getActiveModel();
+  lsS(SK.A,{zs:(gv("s-sub")||"").trim(),ze:(gv("s-em")||"").trim(),zt:(gv("s-tok")||"").trim(),px:(gv("s-prx")||"").trim(),gk:(gv("s-gk")||"").trim(),gm:mod});
   toast("Settings saved","ok");
 }
-// ─── TEST ZENDESK ─────────────────────────────────────────────
+async function saveFirebaseSettings(){
+  var raw=(gv("s-fb")||"").trim();
+  if(!raw){toast("Please enter Firebase config JSON","err");return;}
+  try{
+    var config=JSON.parse(raw);
+    if(!config.apiKey||!config.projectId)throw new Error("Config must include apiKey and projectId");
+    var ok=initFirebase(config);
+    if(ok){
+      lsS(SK.FB,JSON.stringify(config));
+      setBox("fb-res","<b>Firebase connected!</b> Project: "+esc(config.projectId)+"<br>Auth and Firestore are ready.","ok");
+      upBadges();toast("Firebase initialized: "+config.projectId,"ok");
+      // Reload data from Firestore
+      if(getSess())await loadDataFromFirestore();
+    }else{
+      setBox("fb-res","Firebase initialization failed. Check console for details.","err");
+    }
+  }catch(e){setBox("fb-res","Invalid config: "+esc(e.message),"err");}
+}
+async function testFirebase(){
+  if(!FB.enabled){setBox("fb-res","Firebase not configured. Enter your config JSON and click Save.","err");return;}
+  try{
+    setBox("fb-res","Testing Firebase...","info");
+    var testRef=await FB.db.collection("_test").add({ts:fsTs()});
+    await FB.db.collection("_test").doc(testRef.id).delete();
+    setBox("fb-res","<b>Firebase connected!</b> Project: "+esc(FB.app.options.projectId)+". Firestore read/write works.","ok");
+  }catch(e){setBox("fb-res","Firebase test failed: "+esc(e.message),"err");}
+}
+
+// ─── TEST ZENDESK ────────────────────────────────────────────
 async function testZD(){
   var res=G("zd-res");if(!res)return;
   var sub=(gv("s-sub")||"").trim(),em=(gv("s-em")||"").trim(),tok=(gv("s-tok")||"").trim(),prx=(gv("s-prx")||"").trim();
-  if(!sub||!em||!tok){setAlertBox("zd-res","Please fill in Subdomain, Email and Token first, then Save, then Test.","err");return;}
-  // Save settings so cfg() is up to date
+  if(!sub||!em||!tok){setBox("zd-res","Fill in Subdomain, Email and Token first, then Save, then Test.","err");return;}
   saveAPISettings();
   var usingProxy=!!prx;
   var testUrl=usingProxy?prx.replace(/\/+$/,"")+"/users/me.json":"https://"+sub+".zendesk.com/api/v2/users/me.json";
-  setAlertBox("zd-res","<span style=\"font-size:11px;font-family:'JetBrains Mono',monospace\">"+(usingProxy?"Testing via Cloudflare proxy...":"Testing direct Zendesk connection...")+"</span>","info");
+  setBox("zd-res","<span style=\"font-size:11px\">Testing "+(usingProxy?"via proxy":"direct")+"...</span>","info");
   try{
     var r=await fetch(testUrl,{headers:{"Authorization":"Basic "+btoa(em+"/token:"+tok),"Content-Type":"application/json","Accept":"application/json"}});
-    if(!r.ok){
-      var e=await r.json().catch(function(){return{};});
-      if(r.status===401)throw new Error("Authentication failed (401). Double-check the email and API token.");
-      if(r.status===403)throw new Error("Forbidden (403). Token may not have agent permissions.");
-      throw new Error("Zendesk "+r.status+": "+(e.error||e.description||r.statusText));
-    }
-    var d=await r.json();
-    var name=d.user&&(d.user.name||d.user.email)||"Connected";
-    setAlertBox("zd-res","<b>Connected"+(usingProxy?" via proxy":"")+" as: "+esc(name)+"</b>"+(usingProxy?"<br><small style='color:var(--okt)'>Proxy: "+esc(prx)+"</small>":""),"ok");
+    if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Authentication failed (401). Check email and token.");throw new Error("Zendesk "+r.status+": "+(e.error||e.description||r.statusText));}
+    var d=await r.json();var name=d.user&&(d.user.name||d.user.email)||"Connected";
+    setBox("zd-res","<b>Connected"+(usingProxy?" via proxy":"")+" as: "+esc(name)+"</b>","ok");
   }catch(e){
     var msg=e.message||"Connection failed";
-    var isNet=msg.toLowerCase().indexOf("cors")>=0||msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0||msg.toLowerCase().indexOf("load failed")>=0;
-    if(usingProxy&&isNet){
-      setAlertBox("zd-res",
-        "<b>Cannot reach the Cloudflare proxy.</b><br><br>"+
-        "Proxy URL tried: <code>"+esc(testUrl)+"</code><br><br>"+
-        "<b>Fix checklist:</b><br>"+
-        "1. Open <a href='"+esc(prx)+"' target='_blank' style='color:#1D4ED8'>"+esc(prx)+"</a> in a new tab — should return JSON (not 404)<br>"+
-        "2. Did you use <b>addEventListener format</b> (NOT <code>export default</code>) in worker.js?<br>"+
-        "3. Did you click <b>Deploy</b> (not just Save) in Cloudflare?<br>"+
-        "4. Copy the URL from the Cloudflare editor after deploying — should end in <code>.workers.dev</code>",
-        "err");
-    }else if(!usingProxy&&isNet){
-      setAlertBox("zd-res",
-        "<b>CORS Error from Zendesk.</b><br>"+
-        "Your origin ("+esc(window.location.origin)+") is blocked by Zendesk.<br><br>"+
-        "<b>Fix:</b> Enter your Cloudflare proxy URL above and test again.",
-        "err");
-    }else{
-      setAlertBox("zd-res",esc(msg),"err");
-    }
+    var isNet=msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0||msg.toLowerCase().indexOf("cors")>=0||msg.toLowerCase().indexOf("load failed")>=0;
+    if(usingProxy&&isNet){setBox("zd-res","<b>Cannot reach proxy.</b> URL: <code>"+esc(testUrl)+"</code><br>Check: 1) Worker deployed? 2) Used addEventListener format? 3) Clicked Deploy (not Save)?","err");}
+    else if(!usingProxy&&isNet){setBox("zd-res","<b>CORS Error.</b> Add your origin ("+esc(window.location.origin)+") to Zendesk CORS Origins, OR use the Cloudflare proxy.","err");}
+    else{setBox("zd-res",esc(msg),"err");}
   }
 }
-// ─── TEST GEMINI ──────────────────────────────────────────────
+
+// ─── TEST GEMINI ─────────────────────────────────────────────
 async function testGem(){
   var res=G("gem-res");if(!res)return;
-  var key=(gv("s-gk")||"").trim(),mod=gv("s-gm")||"gemini-1.5-flash";
-  if(!key){setAlertBox("gem-res","Please enter your Gemini API key first.","err");return;}
-  // Validate key format
-  if(!key.startsWith("AIza")){
-    setAlertBox("gem-res",
-      "<b>Wrong key type!</b> Your key starts with <code>"+esc(key.substring(0,10))+"...</code><br><br>"+
-      "Keys starting with <code>AQ.</code> or <code>ya29.</code> are <b>OAuth tokens</b>, not API keys.<br><br>"+
-      "<b>Get the correct key:</b><br>"+
-      "1. Go to <a href='https://aistudio.google.com/app/apikey' target='_blank' style='color:#1D4ED8;font-weight:600'>aistudio.google.com/app/apikey</a><br>"+
-      "2. Click <b>Create API key</b><br>"+
-      "3. The key will start with <b>AIzaSy...</b> — copy that one",
-      "err");
-    return;
-  }
+  var key=(gv("s-gk")||"").trim(),mod=getActiveModel();
+  if(!key){setBox("gem-res","Enter your Gemini API key first.","err");return;}
+  // No prefix restriction - Google now uses AQ. format for new Auth Keys
+  // Old AIza format still works, AQ. format is the new standard
+  if(key.startsWith("ya29.")){setBox("gem-res","This looks like a Google OAuth Bearer token (ya29...), not an API key. Get an API key from aistudio.google.com/app/apikey","err");return;}
   saveAPISettings();
-  setAlertBox("gem-res","<span style=\"font-size:11px;font-family:'JetBrains Mono',monospace\">Testing Gemini API...</span>","info");
+  setBox("gem-res","<span style=\"font-size:11px\">Testing Gemini ("+esc(mod)+")...</span>","info");
   try{
-    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,
-      {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Say OK"}]}]})});
+    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Say OK"}]}]})});
     if(!r.ok){
       var e=await r.json().catch(function(){return{};});
       var emsg=e.error?e.error.message:"API error";
-      if(emsg.indexOf("API_KEY_INVALID")>=0)throw new Error("API key invalid. Make sure you copied the AIzaSy... key from AI Studio, not an OAuth token.");
+      if(emsg.indexOf("API_KEY_INVALID")>=0||emsg.indexOf("INVALID_ARGUMENT")>=0||r.status===400)throw new Error("API key not valid. Check the key in aistudio.google.com/app/apikey");
+      if(r.status===404)throw new Error("Model not found: "+mod+". Try gemini-2.5-flash or gemini-1.5-flash");
       throw new Error("Gemini "+r.status+": "+emsg);
     }
-    setAlertBox("gem-res","<b>Gemini connected.</b> Model: "+esc(mod),"ok");
+    setBox("gem-res","<b>Gemini connected!</b> Model: "+esc(mod)+" | Key type: "+(key.startsWith("AQ.")?"Auth Key (new format)":"Standard Key"),"ok");
   }catch(e){
     var msg=e.message||"Connection failed";
-    var isNet=msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0||msg.toLowerCase().indexOf("load failed")>=0;
-    if(isNet)setAlertBox("gem-res","Network error connecting to Gemini. Check internet connection. (Gemini API supports browser requests from any origin.)","err");
-    else setAlertBox("gem-res",esc(msg),"err");
+    var isNet=msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0;
+    if(isNet)setBox("gem-res","Network error. Check internet connection.","err");
+    else setBox("gem-res",esc(msg),"err");
   }
 }
+
 // ─── BOOT ────────────────────────────────────────────────────
 function bootApp(){
   G("lw").style.display="none";G("app").style.display="flex";
@@ -1102,34 +1311,59 @@ function bootApp(){
   ST.results=lsG(SK.RE,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   ST.tech=getTech();renderDash();
+  // Add Sign Up link to login page if Firebase enabled
+  updateLoginUI();
 }
+function updateLoginUI(){
+  var lft=document.querySelector(".lft");
+  if(!lft)return;
+  if(FB.enabled){
+    var existing=G("signup-row");
+    if(!existing){
+      var row=document.createElement("div");row.id="signup-row";row.style.cssText="text-align:center;margin-top:14px;font-size:12.5px;color:rgba(255,255,255,.45)";
+      row.innerHTML='Don\'t have an account? <button onclick="doSignUp()" style="background:none;border:none;color:#93C5FD;cursor:pointer;font-size:12.5px;text-decoration:underline">Sign Up</button> | <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px">Forgot password?</button>';
+      var lcard=document.querySelector(".lcard");if(lcard)lcard.appendChild(row);
+    }
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded",function(){
-  // Login
+  // Auto-init Firebase if saved config exists
+  tryAutoInitFirebase();
+
+  // Login listeners
   var lb=G("lbtn"),lem=G("lem"),lpw=G("lpw"),slo=G("sblo");
   if(lb)lb.onclick=doLogin;if(lem)lem.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});if(lpw)lpw.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});if(slo)slo.onclick=doLogout;
+
   // Modal
   var mcl=G("mcl"),mov=G("mov");if(mcl)mcl.onclick=closeModal;if(mov)mov.onclick=function(e){if(e.target===this)closeModal();};
+
   // Sidebar
   Q(".sbi").forEach(function(item){item.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});});
   Q("[data-pg]").forEach(function(el){if(!el.classList.contains("sbi"))el.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});});
-  // Dropzones
+
+  // Dropzone helper
   function setupDZ(dzId,fiId,handler){var dz=G(dzId),fi=G(fiId);if(dz){dz.onclick=function(){if(fi)fi.click();};dz.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});dz.addEventListener("dragleave",function(){this.classList.remove("ov");});dz.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])handler(e.dataTransfer.files[0]);});}if(fi)fi.onchange=function(){if(this.files[0])handler(this.files[0]);};}
   setupDZ("dz-in","fi-in",parseInflow);setupDZ("dz-smb1","fi-smb1",function(f){parseSMBFile(f,"ph1");});setupDZ("dz-smb2","fi-smb2",function(f){parseSMBFile(f,"smb-pg");});
+
   var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;};
   var ss=G("smb-save");if(ss)ss.onclick=function(){applySMB(+gv("smb-cc"),+gv("smb-tc"));renderSMBPage();};
+
   // Evaluate
   var bn1=G("btn-n1");if(bn1)bn1.onclick=function(){showPh(2);renderTechTags();};var bb2=G("btn-b2");if(bb2)bb2.onclick=function(){showPh(1);};var bst=G("btn-start");if(bst)bst.onclick=startEval;var bpa=G("btn-pause");if(bpa)bpa.onclick=togPause;var bst2=G("btn-stop");if(bst2)bst2.onclick=stopEval;var bb4=G("btn-b4");if(bb4)bb4.onclick=function(){showPh(3);};var bp5=G("btn-ph5");if(bp5)bp5.onclick=function(){showPh(5);};
   var aon=G("all-on"),aof=G("all-off");if(aon)aon.onclick=function(){setAllFills(true);};if(aof)aof.onclick=function(){setAllFills(false);};
   ["frr","smb","env","cat","sub"].forEach(function(k){var cb=G("cb-"+k),cr=G("cr-"+k);if(cb)cb.onchange=function(){ST.fills[k]=this.checked;if(cr){if(this.checked)cr.classList.add("on");else cr.classList.remove("on");}};if(cr)cr.onclick=function(e){if(e.target===cb)return;if(cb){cb.checked=!cb.checked;ST.fills[k]=cb.checked;if(cb.checked)this.classList.add("on");else this.classList.remove("on");}};});
   Q("input[name=spd]").forEach(function(r){r.onchange=function(){ST.delay=+this.value;};});
   var ta=G("tech-add"),ti=G("tech-in");if(ta)ta.onclick=addTech;if(ti)ti.addEventListener("keydown",function(e){if(e.key==="Enter")addTech();});
+
   // Export buttons
-  var expBtns={"live-csv":function(){exportR(ST.results,"csv");},"live-xl":function(){exportR(ST.results,"xlsx");},"rev-csv":function(){exportR(ST.results,"csv");},"rev-xl":function(){exportR(ST.results,"xlsx");},"fin-csv":function(){exportR(ST.results,"csv");},"fin-xl":function(){exportR(ST.results,"xlsx");}};
-  for(var bid in expBtns){var be=G(bid);if(be)(function(fn){be.onclick=fn;})(expBtns[bid]);}
+  var expMap={"live-csv":function(){exportR(ST.results,"csv");},"live-xl":function(){exportR(ST.results,"xlsx");},"rev-csv":function(){exportR(ST.results,"csv");},"rev-xl":function(){exportR(ST.results,"xlsx");},"fin-csv":function(){exportR(ST.results,"csv");},"fin-xl":function(){exportR(ST.results,"xlsx");}};
+  for(var bid in expMap){(function(id,fn){var be=G(id);if(be)be.onclick=fn;})(bid,expMap[bid]);}
   var sco=G("save-corr");if(sco)sco.onclick=saveCorr;
   var nev=G("new-ev");if(nev)nev.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn=G("btn-n1"),pl=G("proc-log"),lt=G("live-tb");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn)bn.disabled=true;if(pl)pl.innerHTML="";if(lt)lt.innerHTML='<tr><td class="te" colspan="9">Waiting...</td></tr>';showPh(1);};
   var fnres=G("fin-res");if(fnres)fnres.onclick=function(){goPage("results");};
+
   // Results
   var rclr=G("res-clr");if(rclr)rclr.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);renderResTable();upBadges();fillFilters();toast("Cleared","ok");};
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
@@ -1139,16 +1373,38 @@ document.addEventListener("DOMContentLoaded",function(){
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
   Q(".tbl th[data-s]").forEach(function(th){th.onclick=function(){srtBy(this.dataset.s);};});
+
   // Learning
-  var lff=G("lf-field"),lexp=G("lrn-exp"),lclr=G("lrn-clr");if(lff)lff.onchange=renderLrnTable;if(lexp)lexp.onclick=exportLrn;if(lclr)lclr.onclick=clearLrn;
+  var lff=G("lf-field"),lexp=G("lrn-exp"),lclr=G("lrn-clr");if(lff)lff.onchange=function(){renderLrnPage();};if(lexp)lexp.onclick=exportLrn;if(lclr)lclr.onclick=clearLrn;
+
   // Users
   var addu=G("add-usr");if(addu)addu.onclick=function(){openUserModal("");};
+
   // Settings
-  var zdt=G("zd-test"),zds=G("zd-save"),gmt=G("gem-test"),gms=G("gem-save");
+  var zdt=G("zd-test"),zds=G("zd-save"),gmt=G("gem-test"),gms=G("gem-save"),fbt=G("fb-test-btn"),fbs=G("fb-save-btn");
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
+  if(fbt)fbt.onclick=testFirebase;if(fbs)fbs.onclick=saveFirebaseSettings;
   var cr2=G("clr-res"),cl2=G("clr-lrn"),cs2=G("clr-smb");
   if(cr2)cr2.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
   if(cl2)cl2.onclick=clearLrn;if(cs2)cs2.onclick=clearSMBData;
+
+  // Firebase Auth state listener
+  setTimeout(function(){
+    if(FB.enabled && FB.auth){
+      FB.auth.onAuthStateChanged(function(user){
+        if(user && !getSess()){
+          FB.user=user;
+          fsGet("users/"+user.uid+"/profile/data").then(function(profile){
+            if(profile){var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":(profile.role||"user");setSess({id:user.uid,email:user.email,name:profile.name||user.email.split("@")[0],role:role});if(!G("app")||G("app").style.display==="none")bootApp();}
+          });
+        }
+      });
+    }
+  }, 500);
+
+  // Login UI
+  updateLoginUI();
+
   // Boot
   var s=getSess();if(s)bootApp();else{G("lw").style.display="flex";G("app").style.display="none";}
   ST.tech=getTech();showPh(1);
