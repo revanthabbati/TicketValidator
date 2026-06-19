@@ -241,7 +241,7 @@ select.fin{cursor:pointer}
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
-  <div class="lft"><span class="ldot"></span>Serve from localhost for API access</div>
+  <div class="lft"><span class="ldot"></span>Hosted on GitHub Pages &middot; Secure &amp; persistent</div>
 </div></div>
 
 <!-- APP -->
@@ -427,13 +427,12 @@ select.fin{cursor:pointer}
 
       <!-- SETTINGS -->
       <div class="page" id="pg-settings">
-        <!-- CORS Note -->
-        <div class="cors-note">
-          <strong>&#9888; Important: Serve from localhost to enable API connections.</strong><br>
-          Opening this file directly (<code>file://</code>) causes CORS errors. Run a local server instead:<br>
-          <strong>Python:</strong> <code>python -m http.server 8080</code> then open <code>http://localhost:8080</code><br>
-          <strong>Node:</strong> <code>npx http-server -p 8080</code> then open <code>http://localhost:8080</code><br>
-          Also add <code>http://localhost:8080</code> to Zendesk Admin &#8594; Apps &amp; Integrations &#8594; APIs &#8594; Zendesk API &#8594; Settings &#8594; CORS Origins.
+        <!-- GitHub Pages CORS Note -->
+        <div id="cors-setup-note" class="cors-note" style="background:#EFF6FF;border-color:#BFDBFE;color:#1E40AF">
+          <strong>&#9432; One-time Zendesk CORS setup required.</strong><br>
+          Your GitHub Pages URL must be whitelisted in Zendesk before API calls will work.<br>
+          <strong>Step:</strong> Go to <a href="https://dispatchtrack.zendesk.com/admin/apps-and-integrations/apis/zendesk-api" target="_blank" style="color:#1D4ED8;font-weight:600">Zendesk Admin &#8594; Apps &amp; Integrations &#8594; APIs &#8594; Zendesk API &#8594; Settings</a><br>
+          Scroll to <strong>CORS Origins</strong> and add: <code id="current-origin">Loading&#8230;</code> then click <strong>Save</strong>.
         </div>
         <div class="g2">
           <div class="card"><div class="chd"><span class="ct">Zendesk API</span><button class="btn bout bsm" id="zd-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
@@ -1364,6 +1363,18 @@ function loadSettings(){
   var sm=G("s-gm");if(sm)sm.value=s.gm||HC.GEM_MOD;
   var ds=G("dt-stats");
   if(ds)ds.textContent=ST.results.length+" results \u00B7 "+(lsG(SK.CO,[])||[]).length+" corrections";
+  // Show current origin in CORS note
+  var co=G("current-origin");
+  if(co){
+    var origin=window.location.origin;
+    co.textContent=origin;
+    // If on file://, show warning
+    if(origin==="null"||!origin||origin==="file://"){
+      var note=G("cors-setup-note");
+      if(note){note.style.background="#FEF3C7";note.style.borderColor="#FDE68A";note.style.color="#78350F";}
+      co.textContent="⚠ file:// (upload to GitHub Pages first)";
+    }
+  }
 }
 function saveAPISettings(){
   lsS(SK.A,{zs:gv("s-sub"),ze:gv("s-em"),zt:gv("s-tok"),gk:gv("s-gk"),gm:gv("s-gm")});
@@ -1390,10 +1401,12 @@ async function testZD(){
   }catch(e){
     var msg=e.message||"Connection failed";
     if(msg.toLowerCase().indexOf("cors")>=0||msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("networkerror")>=0){
-      setRes("zd-res","<strong>CORS Error:</strong> Cannot connect from file:// URL. Serve from localhost:<br>"+
-        "1. Open terminal and run: <code>python -m http.server 8080</code><br>"+
-        "2. Open <code>http://localhost:8080</code> in your browser<br>"+
-        "3. In Zendesk Admin &rarr; Apps &amp; Integrations &rarr; APIs &rarr; Zendesk API &rarr; Settings, add <code>http://localhost:8080</code> to CORS Origins","err");
+      setRes("zd-res","<strong>&#9888; CORS Error &#8212; Zendesk is blocking this origin.</strong><br><br>"+
+        "Your GitHub Pages URL (<code>"+window.location.origin+"</code>) is not yet in Zendesk's CORS allowlist.<br><br>"+
+        "<strong>Fix (30 seconds):</strong><br>"+
+        "1. Go to <a href=\"https://dispatchtrack.zendesk.com/admin/apps-and-integrations/apis/zendesk-api\" target=\"_blank\" style=\"color:#1D4ED8\">Zendesk Admin &#8594; Apps &amp; Integrations &#8594; APIs &#8594; Zendesk API &#8594; Settings</a><br>"+
+        "2. Scroll to <strong>CORS Origins</strong> and add: <code>"+window.location.origin+"</code><br>"+
+        "3. Click <strong>Save</strong>, then come back and click <strong>Test Connection</strong> again.","err");
     }else{
       setRes("zd-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>&nbsp;"+esc(msg),"err");
     }
@@ -1419,7 +1432,7 @@ async function testGem(){
   }catch(e){
     var msg=e.message||"Connection failed";
     if(msg.toLowerCase().indexOf("failed to fetch")>=0||msg.toLowerCase().indexOf("cors")>=0){
-      setRes("gem-res","Network error connecting to Gemini. Check your internet connection. (Gemini API supports browser CORS &#8212; serving from localhost is not required for Gemini.)","err");
+      setRes("gem-res","Network error. Check your internet connection and that the API key is correct. (Gemini API supports browser CORS from any origin &#8212; no special server setup needed.)","err");
     }else{
       setRes("gem-res","<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>&nbsp;"+esc(msg),"err");
     }
