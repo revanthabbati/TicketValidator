@@ -534,6 +534,26 @@ select.fin{cursor:pointer}
               <div class="fhi">Get from Firebase Console &rarr; Project Settings &rarr; Your apps &rarr; Web app &rarr; SDK setup</div>
             </div>
             <div id="fb-res"></div>
+            <details style="margin-top:8px">
+              <summary style="font-size:12px;color:var(--tx2);cursor:pointer;user-select:none">&#x1F4CB; Firestore Security Rules (click to view)</summary>
+              <pre style="background:#1E293B;color:#94A3B8;border-radius:7px;padding:12px;font-size:11px;margin-top:8px;overflow-x:auto;line-height:1.7">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own document
+    match /users/{uid} {
+      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+      // Admins can read all user documents (for User Management page)
+      allow read: if request.auth != null &amp;&amp;
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin','master'];
+    }
+    // User subcollections (results, corrections, training)
+    match /users/{uid}/{col}/{doc} {
+      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+    }
+  }
+}</pre>
+              <div class="fhi">Copy these rules into Firebase Console &#8594; Firestore Database &#8594; Rules &#8594; Publish</div>
+            </details>
             <button class="btn bpri" id="fb-save-btn">Save &amp; Initialize Firebase</button>
           </div>
         </div>
@@ -742,13 +762,13 @@ async function doLogin(){
       var result=await FB.auth.signInWithEmailAndPassword(em,pw);
       FB.user=result.user;
       // Load user profile from Firestore
-      var profile=await fsGet("users/"+result.user.uid+"/profile/data");
+      var profile=await FB.db.collection("users").doc(result.user.uid).get().then(function(s){return s.exists?s.data():null;}).catch(function(){return null;});
       var role="user",name=em.split("@")[0];
       if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
       else if(profile){role=profile.role||"user";name=profile.name||name;}
       if(!profile){
         // First login - create profile
-        await fsSet("users/"+result.user.uid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
+        await FB.db.collection("users").doc(result.user.uid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
       }
       setSess({id:result.user.uid,email:em,name:name,role:role});
       await loadDataFromFirestore();
@@ -788,7 +808,7 @@ async function doSignUp(){
     // Check if first user (make admin) - query users collection
     var role="user";
     try{var snap=await FB.db.collection("users").limit(2).get();if(snap.size===0)role="admin";}catch(e){}
-    await fsSet("users/"+result.user.uid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
+    await FB.db.collection("users").doc(result.user.uid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
     setSess({id:result.user.uid,email:em,name:name,role:role});
     bootApp();
     toast("Account created! Welcome, "+name,"ok");
@@ -1413,26 +1433,57 @@ function exportR(rows,fmt){
 // ─── USERS ───────────────────────────────────────────────────
 async function renderUsers(){
   var tb=G("usr-tb"),sess=getSess();if(!tb)return;
+  var authAlert=G("auth-not-enabled-alert");if(authAlert)authAlert.style.display="none";
+  tb.innerHTML='<tr><td colspan="5" class="te">Loading users…</td></tr>';
   var users=[];
   if(FB.enabled){
     try{
-      var snap=await FB.db.collection("users").orderBy("createdAt","desc").limit(100).get();
-      snap.docs.forEach(function(d){var profile=d.data().data||d.data();if(profile)users.push(Object.assign({id:d.id},profile));});
-    }catch(e){users=lsG(SK.U,[])||[];}
+      // Query users collection - profiles now stored directly at users/{uid}
+      var snap=await FB.db.collection("users").get();
+      snap.docs.forEach(function(d){
+        var data=d.data();
+        if(data&&data.email)users.push(Object.assign({id:d.id},data));
+      });
+      // Sort by createdAt desc in JS (no index required)
+      users.sort(function(a,b){
+        var ta=a.createdAt&&a.createdAt.toDate?a.createdAt.toDate().getTime():(a.created||0);
+        var tb2=b.createdAt&&b.createdAt.toDate?b.createdAt.toDate().getTime():(b.created||0);
+        return tb2-ta;
+      });
+    }catch(e){
+      console.error("renderUsers error:",e);
+      users=lsG(SK.U,[])||[];
+      if(authAlert&&e.message&&(e.message.indexOf("permission")>=0||e.message.indexOf("Missing")>=0)){authAlert.style.display="block";}
+    }
   }else{users=lsG(SK.U,[])||[];}
-  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found. Users appear here after their first login.</td></tr>';return;}
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found yet. Users appear here after first login or after being created.</td></tr>';return;}
   var h="";
   for(var i=0;i<users.length;i++){
-    var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue; // hide master
-    h+="<tr><td style=\"font-weight:500\">"+esc(u.name||"")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td><td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td><td style=\"font-size:12px;color:var(--tx3)\">"+(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():u.created?new Date(u.created).toLocaleDateString():"--")+"</td><td style=\"display:flex;gap:6px\">"+(u.id!==sess.id?"<select class=\"fsel\" style=\"font-size:11px;padding:4px 8px\" onchange=\"changeRole('"+esc(u.id)+"',this.value)\"><option"+(u.role==="user"?" selected":"")+">user</option><option"+(u.role==="admin"?" selected":"")+">admin</option></select>":"<span style=\"font-size:12px;color:var(--tx3)\">(you)</span>")+"</td></tr>";
+    var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
+    var createdStr=u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():(u.created?new Date(u.created).toLocaleDateString():"--");
+    h+="<tr>";
+    h+="<td style=\"font-weight:500\">"+esc(u.name||u.email||"")+"</td>";
+    h+="<td style=\"font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td>";
+    h+="<td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td>";
+    h+="<td style=\"font-size:12px;color:var(--tx3)\">"+createdStr+"</td>";
+    if(u.id!==sess.id){
+      h+="<td><select class=\"fsel\" style=\"font-size:11px;padding:4px 8px\" data-uid=\""+esc(u.id)+"\"><option value=\"user\""+(u.role==="user"?" selected":"")+" >user</option><option value=\"admin\""+(u.role==="admin"?" selected":"")+" >admin</option></select></td>";
+    }else{
+      h+="<td><span style=\"font-size:12px;color:var(--tx3)\">(you)</span></td>";
+    }
+    h+="</tr>";
   }
   tb.innerHTML=h||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
+  // Attach role change handlers via event delegation (avoids inline JS quote issues)
+  if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){
+    sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});
+  });
 }
 async function changeRole(userId, newRole){
   if(!confirm("Change this user's role to "+newRole+"?"))return;
   if(FB.enabled){
-    await fsSet("users/"+userId+"/profile/data",{role:newRole});
-    toast("Role updated to "+newRole,"ok");
+    await FB.db.collection("users").doc(userId).set({role:newRole},{merge:true});
+    toast("Role updated to "+newRole,"ok");setTimeout(function(){renderUsers();},500);
   }else{
     var us=lsG(SK.U,[])||[];for(var i=0;i<us.length;i++){if(us[i].id===userId){us[i].role=newRole;break;}}lsS(SK.U,us);toast("Role updated","ok");
   }
@@ -1454,16 +1505,20 @@ async function createUserFromAdmin(){
       var result=await secondaryAuth.createUserWithEmailAndPassword(em,pw);
       var newUid=result.user.uid;
       await secondaryAuth.signOut();await secondaryApp.delete();
-      await fsSet("users/"+newUid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
-      closeModal();renderUsers();toast("User created: "+em,"ok");
+      await FB.db.collection("users").doc(newUid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
+      closeModal();toast("User created: "+em,"ok");
+      // Small delay then refresh so Firestore write is visible
+      setTimeout(function(){renderUsers();},800);
     }catch(e){
       var msg=e.message||"Error creating user";
       if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0){
-        msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Get started → Sign-in method → Email/Password → Enable → Save.";
+        msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Sign-in method → Email/Password → Enable.";
       }else if(msg.indexOf("email-already-in-use")>=0){
-        msg="Email already registered in Firebase.";
+        msg="This email is already registered in Firebase Auth. The user exists but may not have a profile yet.";
       }else if(msg.indexOf("weak-password")>=0){
         msg="Password must be at least 6 characters.";
+      }else if(msg.indexOf("invalid-email")>=0){
+        msg="Invalid email address format.";
       }
       toast(msg,"err");
     }
@@ -1691,7 +1746,7 @@ document.addEventListener("DOMContentLoaded",function(){
       FB.auth.onAuthStateChanged(function(user){
         if(user && !getSess()){
           FB.user=user;
-          fsGet("users/"+user.uid+"/profile/data").then(function(profile){
+          FB.db.collection("users").doc(user.uid).get().then(function(snap){var profile=snap.exists?snap.data():null;
             if(profile){var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":(profile.role||"user");setSess({id:user.uid,email:user.email,name:profile.name||user.email.split("@")[0],role:role});if(!G("app")||G("app").style.display==="none")bootApp();}
           });
         }
