@@ -539,20 +539,19 @@ select.fin{cursor:pointer}
               <pre style="background:#1E293B;color:#94A3B8;border-radius:7px;padding:12px;font-size:11px;margin-top:8px;overflow-x:auto;line-height:1.7">rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own document
-    match /users/{uid} {
-      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
-      // Admins can read all user documents (for User Management page)
-      allow read: if request.auth != null &amp;&amp;
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin','master'];
-    }
-    // User subcollections (results, corrections, training)
-    match /users/{uid}/{col}/{doc} {
-      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+    // Allow any authenticated Firebase user full access
+    // (Simple rule — works for single-org apps like DispatchTrack Ticket Eval)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }</pre>
-              <div class="fhi">Copy these rules into Firebase Console &#8594; Firestore Database &#8594; Rules &#8594; Publish</div>
+              <div class="fhi" style="margin-top:6px;line-height:1.6">
+                Copy these rules into <a href="https://console.firebase.google.com" target="_blank" style="color:#4F6EF7">Firebase Console</a>
+                &#8594; Firestore Database &#8594; Rules &#8594; Edit rules &#8594; Paste &#8594; <strong>Publish</strong><br>
+                <span style="color:var(--ok);font-weight:500">&#10003;</span> This allows any signed-in user to read/write Firestore.
+                <span style="color:var(--warn);font-weight:500">&#9888;</span> Only share the app with trusted team members.
+              </div>
             </details>
             <button class="btn bpri" id="fb-save-btn">Save &amp; Initialize Firebase</button>
           </div>
@@ -691,7 +690,12 @@ function fsTs() {
   return FB.enabled ? firebase.firestore.FieldValue.serverTimestamp() : new Date();
 }
 
-function uid() { return FB.enabled && FB.user ? FB.user.uid : "local"; }
+function uid(){
+  if(FB.enabled&&FB.user)return FB.user.uid;
+  var s=getSess();
+  if(s&&s.id&&s.id!=="__master__"&&s.id!=="local")return s.id;
+  return"local";
+}
 // ─── UTILS ───────────────────────────────────────────────────
 function G(id){return document.getElementById(id);}
 function Q(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
@@ -757,8 +761,15 @@ async function doLogin(){
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
   var lb=G("lbtn");if(lb){lb.textContent="Signing in...";lb.disabled=true;}
   try{
+    // ── Master login ALWAYS works (bypass Firebase Auth for master account) ──
+    if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){
+      setSess(MASTER);
+      // Optionally try Firebase Auth for master (so Firestore works) — ignore failure
+      if(FB.enabled){try{var mr=await FB.auth.signInWithEmailAndPassword(em,pw);FB.user=mr.user;}catch(me){FB.user=null;}}
+      bootApp();return;
+    }
     if(FB.enabled){
-      // Firebase Authentication
+      // Firebase Authentication for regular users
       var result=await FB.auth.signInWithEmailAndPassword(em,pw);
       FB.user=result.user;
       // Load user profile from Firestore
@@ -840,7 +851,7 @@ function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master
 
 // ─── FIRESTORE DATA SYNC ─────────────────────────────────────
 async function loadDataFromFirestore(){
-  if(!FB.enabled)return;
+  if(!FB.enabled||uid()==="local")return; // skip if not authenticated with Firebase Auth
   var u=uid();
   // Load results
   try{
@@ -862,14 +873,14 @@ async function loadDataFromFirestore(){
 }
 
 async function saveResultToFirestore(res){
-  if(!FB.enabled)return;
+  if(!FB.enabled||uid()==="local")return; // skip if not authenticated with Firebase
   var u=uid();
   var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",savedAt:fsTs()};
   await fsAdd("users/"+u+"/results",toSave);
 }
 
 async function saveCorrectionsToFirestore(corrections){
-  if(!FB.enabled)return;
+  if(!FB.enabled||uid()==="local")return;
   var u=uid();
   for(var i=0;i<corrections.length;i++){
     var c=corrections[i];
@@ -887,7 +898,7 @@ async function loadCorrectionsFromFirestore(){
 }
 
 async function saveSMBToFirestore(){
-  if(!FB.enabled)return;
+  if(!FB.enabled||uid()==="local")return;
   var u=uid();
   await fsSet("users/"+u+"/smb/data",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
 }
@@ -1291,7 +1302,7 @@ async function startEval(){
     }catch(e){res.error=e.message;ec++;log("  ERROR: "+e.message,"err");}
     ST.results.push(res);
     // Save to Firestore (non-blocking)
-    saveResultToFirestore(res).catch(function(e){console.warn("Firestore save error:",e);});
+    if(uid()!=="local")saveResultToFirestore(res).catch(function(e){console.warn("Firestore save error:",e);});
     lsS(SK.RE,ST.results.slice(-200)); // keep last 200 in localStorage
     // Add live row
     var tb=G("live-tb");if(tb){if(tb.querySelector(".te"))tb.innerHTML="";var tr=document.createElement("tr");var fcc=res.frr>60?"var(--err)":res.frr>0?"var(--ok)":"var(--tx3)";tr.innerHTML="<td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(res.zd_url)+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(res.id)+"</a></td><td class=\"tr\" style=\"max-width:160px;font-size:12.5px\">"+esc(res.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(res.ticket_type||"--")+"</td><td>"+smbBdg(res.smb_type)+"</td><td style=\"font-size:11px;max-width:110px\" class=\"tr\">"+esc(res.environment||"--")+"</td><td>"+catBdg(res.category)+"</td><td style=\"font-size:11px;color:var(--tx2);max-width:110px\" class=\"tr\">"+esc(res.sub_category||"--")+"</td><td style=\"font-family:'JetBrains Mono',monospace;font-weight:500;color:"+fcc+"\">"+(res.frr>0?res.frr+"m":res.frr_txt||"--")+"</td><td><span class=\"bdg "+(res._ok?"bok2":"berr")+"\">"+(res._ok?"OK":"Err")+"</span></td>";tb.appendChild(tr);tb.scrollTop=tb.scrollHeight;}
@@ -1579,12 +1590,44 @@ async function saveFirebaseSettings(){
 }
 async function testFirebase(){
   if(!FB.enabled){setBox("fb-res","Firebase not configured. Enter your config JSON and click Save.","err");return;}
+  setBox("fb-res","Testing Firebase connection...","info");
+  // Check Auth status first
+  var u=uid();
+  if(u==="local"||!FB.user){
+    setBox("fb-res",
+      "<b>Firebase Auth not active for this session.</b><br><br>"+
+      "Firebase is connected but you are logged in as Master without going through Firebase Auth.<br><br>"+
+      "<b>Fix:</b> Log out, then log back in with your Firebase-registered email. "+
+      "If this is the master account, make sure <code>"+esc(MASTER.email)+"</code> is registered in "+
+      "<a href=\"https://console.firebase.google.com\" target=\"_blank\" style=\"color:#1D4ED8\">Firebase Console → Authentication → Users</a>.",
+      "warn");
+    return;
+  }
   try{
-    setBox("fb-res","Testing Firebase...","info");
-    var testRef=await FB.db.collection("_test").add({ts:fsTs()});
-    await FB.db.collection("_test").doc(testRef.id).delete();
-    setBox("fb-res","<b>Firebase connected!</b> Project: "+esc(FB.app.options.projectId)+". Firestore read/write works.","ok");
-  }catch(e){setBox("fb-res","Firebase test failed: "+esc(e.message),"err");}
+    // Test Firestore by writing to user's own path (covered by security rules)
+    var testPath=FB.db.collection("users").doc(u).collection("_conn_test");
+    var docRef=await testPath.add({ts:fsTs(),test:true});
+    var snap=await docRef.get();
+    await docRef.delete();
+    if(!snap.exists)throw new Error("Write succeeded but read returned no data");
+    setBox("fb-res",
+      "<b>Firebase fully connected!</b><br>"+
+      "✓ Auth: "+esc(FB.user.email)+"<br>"+
+      "✓ Firestore: read/write works<br>"+
+      "✓ Project: "+esc(FB.app.options.projectId),
+      "ok");
+  }catch(e){
+    var msg=e.message||"Test failed";
+    if(msg.indexOf("permission")>=0||msg.indexOf("insufficient")>=0){
+      setBox("fb-res",
+        "<b>Firestore permission denied.</b><br><br>"+
+        "Your security rules are blocking access. Copy the rules shown below into:<br>"+
+        "<a href=\"https://console.firebase.google.com/project/"+esc(FB.app.options.projectId)+"/firestore/rules\" target=\"_blank\" style=\"color:#1D4ED8\">Firebase Console → Firestore Database → Rules → Publish</a>",
+        "err");
+    }else{
+      setBox("fb-res","Firebase test failed: "+esc(msg),"err");
+    }
+  }
 }
 
 // ─── TEST ZENDESK ────────────────────────────────────────────
