@@ -260,6 +260,7 @@ select.fin{cursor:pointer}
       <hr class="sbdv">
       <div class="sbi" data-pg="categories"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Manage Labels</div>
       <div class="sbi" data-pg="learning"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>AI Learning<span class="sbbd w" id="bd-lrn">0</span></div>
+      <div class="sbi" data-pg="training"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>AI Training<span class="sbbd" id="bd-trn" style="background:#7C3AED">0</span></div>
       <div class="sbsc" id="sb-adm" style="display:none">Admin</div>
       <div class="sbi" id="sb-usr" data-pg="users" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>User Management</div>
       <div class="sbi" id="sb-set" data-pg="settings" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>API Settings</div>
@@ -398,6 +399,65 @@ select.fin{cursor:pointer}
       <div class="page" id="pg-categories">
         <div class="al ai"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>AI uses these lists to classify each ticket. Changes apply on the next evaluation. Use Export/Import to back up label sets.</div></div>
         <div class="g3" id="cat-panels"><div class="te">Loading labels&#8230;</div></div>
+      </div>
+
+      <!-- AI TRAINING -->
+      <div class="page" id="pg-training">
+        <div class="row">
+          <div class="col" style="flex:3;display:flex;flex-direction:column;gap:16px">
+            <div class="card">
+              <div class="chd"><span class="ct">&#x1F4DA; Upload Reviewed Sheets for Training</span><span class="bdg bprib" id="trn-count-badge">0 examples</span></div>
+              <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+                <div class="al ai"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Upload sheets that have already been <strong>evaluated and reviewed</strong> (with correct Environment, Category, Sub Category filled in). The AI will use these as ground-truth training examples for all future classifications.</div></div>
+                <div class="dz" id="dz-trn"><div class="dzi">&#x1F4C4;</div><div class="dzt">Drop reviewed evaluation sheet here or click to browse</div><div class="dzs">Needs columns: Subject, Environment, Category, Sub Category &middot; .xlsx &middot; .xls &middot; .csv</div><input type="file" id="fi-trn" accept=".xlsx,.xls,.csv" style="display:none"></div>
+                <div id="trn-col-mapper" style="display:none">
+                  <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Map columns from your sheet:</div>
+                  <div class="g2" style="gap:10px">
+                    <div><label class="flb">Subject column <span style="color:var(--err)">*</span></label><select id="trn-c-sub" class="fin"></select></div>
+                    <div><label class="flb">Ticket Type column</label><select id="trn-c-typ" class="fin"><option value="">-- not available --</option></select></div>
+                    <div><label class="flb">Environment column <span style="color:var(--err)">*</span></label><select id="trn-c-env" class="fin"></select></div>
+                    <div><label class="flb">Category column <span style="color:var(--err)">*</span></label><select id="trn-c-cat" class="fin"></select></div>
+                    <div><label class="flb">Sub Category column <span style="color:var(--err)">*</span></label><select id="trn-c-scat" class="fin"></select></div>
+                    <div><label class="flb">Description / Comment column</label><select id="trn-c-desc" class="fin"><option value="">-- not available --</option></select></div>
+                  </div>
+                  <div style="display:flex;gap:10px;margin-top:14px">
+                    <button class="btn bgst" id="trn-map-cancel">Cancel</button>
+                    <button class="btn bpri" style="flex:1;justify-content:center" id="trn-map-ok">&#x2713; Import Training Examples</button>
+                  </div>
+                </div>
+                <div id="trn-import-msg"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="chd">
+                <span class="ct">Training Examples</span>
+                <div style="display:flex;gap:8px">
+                  <select class="fsel" id="trn-filter-field"><option value="">All Fields</option><option>environment</option><option>category</option><option>sub_category</option></select>
+                  <button class="btn bout bsm" id="trn-exp-btn">&#x2B07; Export</button>
+                  <button class="btn bdan bsm" id="trn-clr-btn">Clear All</button>
+                </div>
+              </div>
+              <div class="tw" style="max-height:400px"><table class="tbl"><thead><tr><th>Subject</th><th>Type</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>Source</th></tr></thead><tbody id="trn-tb"><tr><td colspan="6" class="te">No training data yet. Upload a reviewed sheet above.</td></tr></tbody></table></div>
+              <div style="padding:10px 16px;font-size:12px;color:var(--tx3);border-top:1px solid var(--bdr)" id="trn-footer"></div>
+            </div>
+          </div>
+          <div class="col" style="flex:1;display:flex;flex-direction:column;gap:14px">
+            <div class="card cbd">
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:12px">&#x1F9E0; How Training Works</div>
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--tx2);line-height:1.6">
+                <div class="al ao"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Every training example becomes a few-shot prompt for Gemini.</div>
+                <p><strong>Step 1:</strong> Upload a sheet that has been fully reviewed &mdash; with correct Environment, Category and Sub Category filled in by a human.</p>
+                <p><strong>Step 2:</strong> The app extracts each row as a ground-truth training example.</p>
+                <p><strong>Step 3:</strong> During every future classification, Gemini receives up to <strong>60 training examples</strong> as context, making it learn your team&rsquo;s exact classification patterns.</p>
+                <p><strong>Training vs Corrections:</strong> Training examples come from bulk uploads. Corrections come from the Review &amp; Correct step. Both are used together.</p>
+                <div style="background:#F8FAFC;border-radius:7px;padding:12px;border:1px solid var(--bdr)">
+                  <div style="font-size:11.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Training Stats</div>
+                  <div id="trn-stats"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- AI LEARNING -->
@@ -772,6 +832,8 @@ async function loadDataFromFirestore(){
   catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   // Load labels
   await loadLabelsFromFirestore();
+  // Load training data
+  await loadTrainingFromFirestore();
   upBadges();
 }
 
@@ -807,7 +869,7 @@ async function saveSMBToFirestore(){
 }
 
 // ─── NAV ─────────────────────────────────────────────────────
-var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
+var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
@@ -817,6 +879,7 @@ function goPage(pg){
   var m=PM[pg]||{t:pg,d:""};if(G("pgtit"))G("pgtit").textContent=m.t;if(G("pgdsc"))G("pgdsc").textContent=m.d;
   if(pg==="dashboard")renderDash();if(pg==="results"){fillFilters();applyF();}
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
+  if(pg==="training")renderTrainingPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
 }
 
@@ -824,11 +887,167 @@ function goPage(pg){
 function normSMB(t){if(!t)return"";var lc=String(t).trim().toLowerCase();if(lc==="micro")return"Micro";if(lc==="mega")return"Mega";if(lc==="smb")return"SMB";return String(t).trim();}
 function smbBdg(t){var n=normSMB(t);if(!n||n==="Unknown")return'<span class="bdg bgr">--</span>';var c=n==="SMB"?"bt":n==="Mega"?"bv":n==="Micro"?"bamb":"bgr";return'<span class="bdg '+c+'">'+esc(n)+"</span>";}
 function catBdg(c){if(!c||c==="--")return'<span class="bdg bgr">--</span>';var m={"Bug":"berr","Regression":"berr","Enhancement":"binf","How to Question":"binf","Outage":"berr","Product Issue":"bwrn2","Provisioning":"bt","Slowness":"bwrn2","WAE":"bok2","Payment":"bamb","End Customer":"bgr"};var cls="bgr";for(var k in m){if(c.indexOf(k)>=0){cls=m[k];break;}}return'<span class="bdg '+cls+'" style="font-size:10.5px">'+esc(c)+"</span>";}
+// ─── TRAINING MODULE ─────────────────────────────────────────
+var _trnData = null; // pending import data
+
+function renderTrainingPage(){
+  renderTrnTable();renderTrnStats();
+  var badge=G("bd-trn");if(badge){var n=getTraining().length;badge.textContent=n;badge.style.display=n?"inline":"none";}
+}
+
+function renderTrnStats(){
+  var arr=getTraining(),ts=G("trn-stats"),cb=G("trn-count-badge"),tf=G("trn-footer");
+  if(cb)cb.textContent=arr.length+" examples";
+  if(!ts)return;
+  if(!arr.length){ts.innerHTML='<span style="color:var(--tx3)">No training data yet.</span>';return;}
+  var envCnt={},catCnt={},src={};
+  for(var i=0;i<arr.length;i++){
+    var t=arr[i];envCnt[t.environment]=(envCnt[t.environment]||0)+1;
+    catCnt[t.category]=(catCnt[t.category]||0)+1;
+    src[t.source||"upload"]=(src[t.source||"upload"]||0)+1;
+  }
+  var envTop=Object.keys(envCnt).sort(function(a,b){return envCnt[b]-envCnt[a];}).slice(0,4);
+  var catTop=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];}).slice(0,4);
+  var h='<div style="font-size:12.5px;margin-bottom:6px"><strong>'+arr.length+' total examples</strong></div>';
+  h+='<div style="font-size:11.5px;color:var(--tx2);margin-bottom:4px">Top environments:</div>';
+  for(var i=0;i<envTop.length;i++)h+='<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px"><span>'+esc(envTop[i])+'</span><span style="font-family:\'JetBrains Mono\',monospace">'+envCnt[envTop[i]]+'</span></div>';
+  h+='<div style="font-size:11.5px;color:var(--tx2);margin-top:6px;margin-bottom:4px">Top categories:</div>';
+  for(var i=0;i<catTop.length;i++)h+='<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px"><span>'+esc(catTop[i])+'</span><span style="font-family:\'JetBrains Mono\',monospace">'+catCnt[catTop[i]]+'</span></div>';
+  ts.innerHTML=h;
+  if(tf)tf.textContent=arr.length+" training examples loaded \u00B7 AI uses up to 40 per classification";
+}
+
+function renderTrnTable(){
+  var arr=getTraining(),tb=G("trn-tb");if(!tb)return;
+  if(!arr.length){tb.innerHTML='<tr><td colspan="6" class="te">No training data yet. Upload a reviewed sheet above.</td></tr>';return;}
+  var field=(G("trn-filter-field")&&G("trn-filter-field").value)||"";
+  var show=field?arr:arr;
+  show=show.slice().reverse().slice(0,200);
+  var h="";
+  for(var i=0;i<show.length;i++){
+    var t=show[i];
+    h+="<tr><td class='tr' style='max-width:220px;font-size:12.5px' title='"+esc(t.subject||"")+"'>"+esc(t.subject||"--")+"</td><td style='font-size:11.5px;color:var(--tx2)'>"+esc(t.ticket_type||"--")+"</td><td><span style='font-size:11px;background:var(--vs);color:var(--vt);padding:2px 6px;border-radius:4px'>"+esc(t.environment||"")+"</span></td><td>"+catBdg(t.category)+"</td><td style='font-size:11px;color:var(--tx2)'>"+esc(t.sub_category||"--")+"</td><td><span class='bdg bgr' style='font-size:9.5px'>"+esc(t.source||"upload")+"</span></td></tr>";
+  }
+  if(arr.length>200)h+='<tr><td colspan="6" class="te">Showing 200 of '+arr.length+' examples</td></tr>';
+  tb.innerHTML=h;
+}
+
+function parseTrnFile(file){
+  var ext=file.name.split(".").pop().toLowerCase(),rd=new FileReader();
+  rd.onerror=function(){toast("Cannot read file","err");};
+  rd.onload=function(ev){
+    try{
+      var raw;
+      if(ext==="csv")raw=Papa.parse(ev.target.result,{header:false,skipEmptyLines:true}).data;
+      else{var wb=XLSX.read(ev.target.result,{type:"array"});raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});}
+      if(!raw||raw.length<2){toast("File appears empty","err");return;}
+      var hdrs=raw[0].map(function(c){return String(c||"").trim();});
+      _trnData={hdrs:hdrs,rows:raw.slice(1),file:file.name};
+      showTrnMapper(hdrs);
+    }catch(e){toast("Error: "+e.message,"err");}
+  };
+  if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
+}
+
+function showTrnMapper(hdrs){
+  var mapper=G("trn-col-mapper");if(!mapper)return;
+  // Auto-detect columns
+  function findCol(aliases){for(var i=0;i<hdrs.length;i++){for(var j=0;j<aliases.length;j++){if(hdrs[i].toLowerCase().indexOf(aliases[j].toLowerCase())>=0)return i;}}return -1;}
+  var subIdx=findCol(["subject","ticket subject","title"]);
+  var typIdx=findCol(["ticket type","type","type "]);
+  var envIdx=findCol(["environment","env"]);
+  var catIdx=findCol(["category"]);
+  var scatIdx=findCol(["sub category","subcategory","sub_category"]);
+  var descIdx=findCol(["description","issue desc","comment","body"]);
+  // Build options
+  function mkOpts2(hdrs,sel){var h="<option value=''>-- skip --</option>";for(var i=0;i<hdrs.length;i++)h+="<option value='"+i+"'"+(i===sel?" selected":"")+">"+esc(hdrs[i]||"Col "+i)+"</option>";return h;}
+  function mkOptsReq(hdrs,sel){var h="";for(var i=0;i<hdrs.length;i++)h+="<option value='"+i+"'"+(i===sel?" selected":"")+">"+esc(hdrs[i]||"Col "+i)+"</option>";return h;}
+  var subs=G("trn-c-sub"),typs=G("trn-c-typ"),envs=G("trn-c-env"),cats=G("trn-c-cat"),scats=G("trn-c-scat"),descs=G("trn-c-desc");
+  if(subs)subs.innerHTML=mkOptsReq(hdrs,subIdx>=0?subIdx:0);
+  if(typs)typs.innerHTML=mkOpts2(hdrs,typIdx);
+  if(envs)envs.innerHTML=mkOptsReq(hdrs,envIdx>=0?envIdx:0);
+  if(cats)cats.innerHTML=mkOptsReq(hdrs,catIdx>=0?catIdx:0);
+  if(scats)scats.innerHTML=mkOptsReq(hdrs,scatIdx>=0?scatIdx:0);
+  if(descs)descs.innerHTML=mkOpts2(hdrs,descIdx);
+  mapper.style.display="block";
+  var msg=G("trn-import-msg");if(msg){msg.className="al ai";msg.textContent=_trnData.rows.length+" rows detected in "+_trnData.file+". Confirm column mapping below.";msg.style.display="block";}
+}
+
+function importTrainingData(){
+  if(!_trnData){toast("No file loaded","err");return;}
+  var gv2=function(id){var e=G(id);return e&&e.value!==""?+e.value:-1;};
+  var subI=gv2("trn-c-sub"),typI=gv2("trn-c-typ"),envI=gv2("trn-c-env"),catI=gv2("trn-c-cat"),scatI=gv2("trn-c-scat");
+  if(subI<0||envI<0||catI<0||scatI<0){toast("Subject, Environment, Category and Sub Category columns are required","err");return;}
+  var existing=getTraining();
+  var newExamples=[],skipped=0;
+  for(var i=0;i<_trnData.rows.length;i++){
+    var row=_trnData.rows[i];
+    var subject=String(row[subI]||"").trim();
+    var environment=String(row[envI]||"").trim();
+    var category=String(row[catI]||"").trim();
+    var sub_category=String(row[scatI]||"").trim();
+    if(!subject||!environment||!category||!sub_category){skipped++;continue;}
+    // Skip rows where env/cat look like headers or are empty/placeholder
+    if(environment.toLowerCase()==="environment"||category.toLowerCase()==="category"){skipped++;continue;}
+    var ticket_type=typI>=0?String(row[typI]||"").trim():"";
+    newExamples.push({subject:subject,ticket_type:ticket_type,environment:environment,category:category,sub_category:sub_category,source:"upload:"+_trnData.file,ts:Date.now()});
+  }
+  if(!newExamples.length){toast("No valid rows found (missing required fields or all skipped)","err");return;}
+  var combined=existing.concat(newExamples);
+  // Deduplicate by subject+environment+category
+  var seen2={},deduped=[];
+  for(var i=0;i<combined.length;i++){var t=combined[i];var k=String(t.subject||"").substring(0,40)+t.environment+t.category;if(!seen2[k]){seen2[k]=1;deduped.push(t);}}
+  saveTrainingData(deduped);
+  // Save to Firestore if connected
+  if(FB.enabled){
+    var u=uid();
+    for(var i=0;i<newExamples.length;i++){
+      (function(ex){fsAdd("users/"+u+"/training",Object.assign({savedAt:fsTs()},ex)).catch(function(e){console.warn("Firestore training save error:",e);});})(newExamples[i]);
+    }
+  }
+  // Reset UI
+  var mapper=G("trn-col-mapper");if(mapper)mapper.style.display="none";
+  var dz=G("dz-trn");if(dz)dz.classList.remove("ov");
+  var fi=G("fi-trn");if(fi)fi.value="";
+  _trnData=null;
+  var msg=G("trn-import-msg");if(msg){msg.className="al ao";msg.innerHTML="<svg width='14' height='14' fill='none' stroke='currentColor' stroke-width='2.5' viewBox='0 0 24 24'><polyline points='20 6 9 17 4 12'/></svg>&nbsp;<strong>"+newExamples.length+" training examples added!</strong> "+(skipped?" ("+skipped+" rows skipped due to missing fields)":"")+"<br>AI will now use these in future classifications.";msg.style.display="block";}
+  renderTrainingPage();
+  toast(newExamples.length+" training examples added! ("+skipped+" skipped)","ok");
+}
+
+function exportTraining(){
+  var arr=getTraining();
+  dlBlob(new Blob([Papa.unparse(arr)],{type:"text/csv;charset=utf-8;"}),"dt-training-"+stamp()+".csv");
+  toast("Training data exported","ok");
+}
+
+async function clearTraining(){
+  if(!confirm("Clear all "+getTraining().length+" training examples?"))return;
+  saveTrainingData([]);
+  if(FB.enabled){
+    try{var snap=await FB.db.collection("users").doc(uid()).collection("training").get();var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();}catch(e){}
+  }
+  renderTrainingPage();toast("Training data cleared","ok");
+}
+
+// Load training from Firestore
+async function loadTrainingFromFirestore(){
+  if(!FB.enabled)return;
+  try{
+    var snap=await FB.db.collection("users").doc(uid()).collection("training").limit(2000).get();
+    if(snap.size>0){
+      var arr=snap.docs.map(function(d){return d.data();});
+      saveTrainingData(arr);
+    }
+  }catch(e){console.warn("Could not load training from Firestore:",e);}
+}
+
 function upBadges(){
   var rb=G("bd-res");if(rb){rb.textContent=ST.results.length;rb.style.display=ST.results.length?"inline":"none";}
   var sb=G("bd-smb");if(sb)sb.style.display=Object.keys(ST.smbData).length?"inline":"none";
   var corr=lsG(SK.CO,[])||[];var lc=corr.length;var lb=G("bd-lrn");if(lb){lb.textContent=lc;lb.style.display=lc?"inline":"none";}
   var fbb=G("fb-status-badge");if(fbb){fbb.textContent=FB.enabled?"Connected":"Not configured";fbb.className="bdg "+(FB.enabled?"bok2":"bgr");fbb.style.fontSize="10px";}
+  var trnBdg=G("bd-trn");if(trnBdg){var tn=getTraining().length;trnBdg.textContent=tn;trnBdg.style.display=tn?"inline":"none";}
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────────
@@ -948,14 +1167,44 @@ function findReply(co,rid){var pub=[];for(var i=0;i<co.length;i++){if(co[i].publ
 
 // ─── GEMINI ──────────────────────────────────────────────────
 function buildLrnEx(){
-  var corr=lsG(SK.CO,[])||[];if(!corr.length)return"";
-  var seen={},recent=[];
-  for(var i=corr.length-1;i>=0&&recent.length<40;i--){var c=corr[i];var k=c.field+":"+c.corrected+":"+String(c.subject||"").substring(0,15);if(!seen[k]){seen[k]=1;recent.unshift(c);}}
-  if(!recent.length)return"";
-  var lines="\nLEARNED CORRECTIONS:\n";
-  for(var i=0;i<recent.length;i++){var c=recent[i];lines+="- Subject:\""+String(c.subject||"")+"\""+(c.ticket_type?" Type:"+c.ticket_type:"")+" -> "+c.field+": \""+c.corrected+"\"\n";}
+  var training=lsG("tep_training",[])||[];
+  var corrections=lsG(SK.CO,[])||[];
+  var lines="";
+  if(training.length){
+    var seenT={},trainingEx=[];
+    // Pick diverse examples - shuffle by using different positions
+    var step=Math.max(1,Math.floor(training.length/40));
+    for(var i=0;i<training.length&&trainingEx.length<40;i+=step){
+      var t=training[i];var k=String(t.subject||"").substring(0,20)+t.environment+t.category;
+      if(!seenT[k]){seenT[k]=1;trainingEx.push(t);}
+    }
+    if(trainingEx.length){
+      lines+="\nTRAINING DATA FROM REVIEWED TICKETS (treat as ground truth for similar tickets):\n";
+      for(var i=0;i<trainingEx.length;i++){
+        var t=trainingEx[i];
+        lines+="- Subject:\""+String(t.subject||"").substring(0,60)+"\"";
+        if(t.ticket_type)lines+=" | Type:"+t.ticket_type;
+        lines+=" -> Environment:\""+t.environment+"\", Category:\""+t.category+"\", Sub Category:\""+t.sub_category+"\"\n";
+      }
+    }
+  }
+  if(corrections.length){
+    var seen={},recent=[];
+    for(var i=corrections.length-1;i>=0&&recent.length<20;i--){
+      var c=corrections[i];var k=c.field+c.corrected+String(c.subject||"").substring(0,15);
+      if(!seen[k]){seen[k]=1;recent.unshift(c);}
+    }
+    if(recent.length){
+      lines+="\nRECENT MANUAL CORRECTIONS (apply these patterns):\n";
+      for(var i=0;i<recent.length;i++){var c=recent[i];lines+="- Subject:\""+String(c.subject||"")+"\""+( c.ticket_type?" Type:"+c.ticket_type:"")+" -> "+c.field+": \""+c.corrected+"\"\n";}
+    }
+  }
   return lines;
 }
+// ─── TRAINING DATA ────────────────────────────────────────────
+var SK_TRN="tep_training";
+function getTraining(){return lsG(SK_TRN,[])||[];}
+function saveTrainingData(arr){lsS(SK_TRN,arr);upBadges();}
 async function gemCls(subject,description,ticketType,tags,existCat){
   var envs=getEnvs(),cats=getCats(),subs=getSubs(),ex=buildLrnEx(),mod=cfg("GEM_MOD"),key=cfg("GEM_KEY");
   var prompt="Classify this DispatchTrack support ticket.\n\nSubject: "+subject+"\nDescription: "+String(description||"").substring(0,1800)+"\nType: "+ticketType+"\nTags: "+(tags||[]).join(", ")+"\nExisting Category: "+(existCat||"not set")+"\n"+ex+"\nEnvironments: "+envs.join(", ")+"\nCategories: "+cats.join(", ")+"\nSub Categories: "+subs.join(", ")+"\n\nReturn ONLY JSON. Use exact text from lists. For junk: environment=\"Junk\", category=\"End Customer / Junk\"\n\n{\"environment\":\"...\",\"category\":\"...\",\"sub_category\":\"...\"}";
@@ -1209,6 +1458,22 @@ async function createUserFromAdmin(){
   }
 }
 
+// ─── FIREBASE CONFIG PARSER ─────────────────────────────────────
+// Accepts both JSON format and JavaScript object literal format
+function parseFirebaseConfig(raw){
+  // 1. Try pure JSON first
+  try{return JSON.parse(raw);}catch(e){}
+  // 2. Strip JS wrapper (const firebaseConfig = {...};)
+  var cleaned=raw
+    .replace(/^\s*(?:const|var|let)\s+\w+\s*=\s*/,"")  // remove var/const declaration
+    .replace(/;\s*$/,"")                                   // remove trailing semicolon
+    .trim();
+  // 3. Quote unquoted keys (JS object -> JSON)
+  cleaned=cleaned.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*:)/g,'$1"$2"$3');
+  try{return JSON.parse(cleaned);}catch(e2){}
+  throw new Error("Cannot parse Firebase config. Try copying the JSON from Firebase Console directly (Project Settings > Your apps > Config).");
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────
 function loadSettings(){
   var s=lsG(SK.A,{})||{};
@@ -1229,7 +1494,7 @@ async function saveFirebaseSettings(){
   var raw=(gv("s-fb")||"").trim();
   if(!raw){toast("Please enter Firebase config JSON","err");return;}
   try{
-    var config=JSON.parse(raw);
+    var config=parseFirebaseConfig(raw);
     if(!config.apiKey||!config.projectId)throw new Error("Config must include apiKey and projectId");
     var ok=initFirebase(config);
     if(ok){
@@ -1379,6 +1644,21 @@ document.addEventListener("DOMContentLoaded",function(){
 
   // Learning
   var lff=G("lf-field"),lexp=G("lrn-exp"),lclr=G("lrn-clr");if(lff)lff.onchange=function(){renderLrnPage();};if(lexp)lexp.onclick=exportLrn;if(lclr)lclr.onclick=clearLrn;
+
+  // Training module
+  var dzTrn=G("dz-trn"),fiTrn=G("fi-trn"),trnOk=G("trn-map-ok"),trnCancel=G("trn-map-cancel"),trnExp=G("trn-exp-btn"),trnClr=G("trn-clr-btn"),trnFilt=G("trn-filter-field");
+  if(dzTrn){
+    dzTrn.onclick=function(){if(fiTrn)fiTrn.click();};
+    dzTrn.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});
+    dzTrn.addEventListener("dragleave",function(){this.classList.remove("ov");});
+    dzTrn.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])parseTrnFile(e.dataTransfer.files[0]);});
+  }
+  if(fiTrn)fiTrn.onchange=function(){if(this.files[0])parseTrnFile(this.files[0]);};
+  if(trnOk)trnOk.onclick=importTrainingData;
+  if(trnCancel)trnCancel.onclick=function(){var m=G("trn-col-mapper");if(m)m.style.display="none";var fi=G("fi-trn");if(fi)fi.value="";_trnData=null;};
+  if(trnExp)trnExp.onclick=exportTraining;
+  if(trnClr)trnClr.onclick=clearTraining;
+  if(trnFilt)trnFilt.onchange=function(){renderTrnTable();};
 
   // Users
   var addu=G("add-usr");if(addu)addu.onclick=function(){openUserModal("");};
