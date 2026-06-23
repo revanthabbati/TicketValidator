@@ -767,6 +767,7 @@ async function doLogin(){
       var msg=e.message||"Login failed";
       if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0)msg="Invalid email or password.";
       else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please try again later.";
+      else if(msg.indexOf("configuration-not-found")>=0)msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Email/Password → Enable.";
       er.textContent=msg;er.style.display="block";
     }
   }finally{
@@ -792,7 +793,10 @@ async function doSignUp(){
     bootApp();
     toast("Account created! Welcome, "+name,"ok");
   }catch(e){
-    if(er){var msg=e.message||"Sign up failed";if(msg.indexOf("email-already-in-use")>=0)msg="Email already registered. Try signing in.";er.textContent=msg;er.style.display="block";}
+    if(er){var msg=e.message||"Sign up failed";
+      if(msg.indexOf("email-already-in-use")>=0)msg="Email already registered. Try signing in.";
+      else if(msg.indexOf("configuration-not-found")>=0)msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Email/Password → Enable.";
+      er.textContent=msg;er.style.display="block";}
   }
 }
 
@@ -1452,7 +1456,17 @@ async function createUserFromAdmin(){
       await secondaryAuth.signOut();await secondaryApp.delete();
       await fsSet("users/"+newUid+"/profile/data",{email:em,name:name,role:role,createdAt:fsTs()});
       closeModal();renderUsers();toast("User created: "+em,"ok");
-    }catch(e){toast(e.message||"Error creating user","err");}
+    }catch(e){
+      var msg=e.message||"Error creating user";
+      if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0){
+        msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Get started → Sign-in method → Email/Password → Enable → Save.";
+      }else if(msg.indexOf("email-already-in-use")>=0){
+        msg="Email already registered in Firebase.";
+      }else if(msg.indexOf("weak-password")>=0){
+        msg="Password must be at least 6 characters.";
+      }
+      toast(msg,"err");
+    }
   }else{
     var us=lsG(SK.U,[])||[];us.push({id:"u_"+Date.now(),name:name,email:em,password:pw,role:role,created:Date.now()});lsS(SK.U,us);closeModal();renderUsers();toast("User created","ok");
   }
