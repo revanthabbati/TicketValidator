@@ -761,11 +761,23 @@ async function doLogin(){
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
   var lb=G("lbtn");if(lb){lb.textContent="Signing in...";lb.disabled=true;}
   try{
-    // ── Master login ALWAYS works (bypass Firebase Auth for master account) ──
+    // ── Master login ALWAYS works (checks master credentials first) ──
     if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){
       setSess(MASTER);
-      // Optionally try Firebase Auth for master (so Firestore works) — ignore failure
-      if(FB.enabled){try{var mr=await FB.auth.signInWithEmailAndPassword(em,pw);FB.user=mr.user;}catch(me){FB.user=null;}}
+      if(FB.enabled){
+        try{
+          var mr=await FB.auth.signInWithEmailAndPassword(em,pw);
+          FB.user=mr.user;
+          // Ensure master has a Firestore profile document
+          await FB.db.collection("users").doc(mr.user.uid).set(
+            {email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},
+            {merge:true}
+          );
+        }catch(me){
+          FB.user=null;
+          console.warn("Master Firebase Auth failed (OK if not registered):",me.message);
+        }
+      }
       bootApp();return;
     }
     if(FB.enabled){
@@ -773,13 +785,17 @@ async function doLogin(){
       var result=await FB.auth.signInWithEmailAndPassword(em,pw);
       FB.user=result.user;
       // Load user profile from Firestore
-      var profile=await FB.db.collection("users").doc(result.user.uid).get().then(function(s){return s.exists?s.data():null;}).catch(function(){return null;});
+      var snap2=await FB.db.collection("users").doc(result.user.uid).get().catch(function(){return{exists:false};});
+      var profile=snap2.exists?snap2.data():null;
       var role="user",name=em.split("@")[0];
       if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
       else if(profile){role=profile.role||"user";name=profile.name||name;}
       if(!profile){
-        // First login - create profile
-        await FB.db.collection("users").doc(result.user.uid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
+        // First login — write profile; user is authenticated so rules allow it
+        await FB.db.collection("users").doc(result.user.uid).set(
+          {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
+          {merge:true}
+        );
       }
       setSess({id:result.user.uid,email:em,name:name,role:role});
       await loadDataFromFirestore();
@@ -819,7 +835,11 @@ async function doSignUp(){
     // Check if first user (make admin) - query users collection
     var role="user";
     try{var snap=await FB.db.collection("users").limit(2).get();if(snap.size===0)role="admin";}catch(e){}
-    await FB.db.collection("users").doc(result.user.uid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
+    // Write profile from the signed-in user's auth context (request.auth.uid == result.user.uid)
+    await FB.db.collection("users").doc(result.user.uid).set(
+      {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
+      {merge:true}
+    );
     setSess({id:result.user.uid,email:em,name:name,role:role});
     bootApp();
     toast("Account created! Welcome, "+name,"ok");
@@ -1448,8 +1468,18 @@ async function renderUsers(){
   tb.innerHTML='<tr><td colspan="5" class="te">Loading users…</td></tr>';
   var users=[];
   if(FB.enabled){
+    // If FB.user is null, Firebase Auth session not active — show guidance
+    if(!FB.user){
+      tb.innerHTML='<tr><td colspan="5" class="te" style="padding:20px">'+
+        '<div style="max-width:460px;margin:0 auto;line-height:1.7">'+
+        '<strong>Firebase Auth session not active.</strong><br>'+
+        'Log out and log back in so Firebase Authentication can load users from Firestore.<br>'+
+        '<button class="btn bpri bsm" onclick="doLogout()" style="margin-top:10px">Log out now</button>'+
+        '</div></td></tr>';
+      return;
+    }
     try{
-      // Query users collection - profiles now stored directly at users/{uid}
+      // Query users collection - profiles stored directly at users/{uid}
       var snap=await FB.db.collection("users").get();
       snap.docs.forEach(function(d){
         var data=d.data();
@@ -1507,36 +1537,51 @@ async function createUserFromAdmin(){
   var em=(gv("mu-e")||"").trim(),pw=gv("mu-p"),name=(gv("mu-n")||"").trim()||em.split("@")[0],role=gv("mu-r");
   if(!em||!pw){toast("Email and password required","err");return;}
   if(pw.length<6){toast("Password must be at least 6 characters","err");return;}
+  var btn=G("ums");if(btn){btn.textContent="Creating...";btn.disabled=true;}
   if(FB.enabled){
-    // Create in Firebase (Note: this changes the current user in the browser)
-    // Best practice: use a secondary Firebase app for admin user creation
+    var secApp=null;
     try{
-      var secondaryApp=firebase.initializeApp(FB.app.options,"secondaryForUserCreation-"+Date.now());
-      var secondaryAuth=secondaryApp.auth();
-      var result=await secondaryAuth.createUserWithEmailAndPassword(em,pw);
+      // Secondary Firebase app — prevents logging out the current admin
+      secApp=firebase.initializeApp(FB.app.options,"sec_"+Date.now());
+      var secAuth=secApp.auth();
+      var secDb=secApp.firestore();
+      // Step 1: Create Firebase Auth user
+      var result=await secAuth.createUserWithEmailAndPassword(em,pw);
       var newUid=result.user.uid;
-      await secondaryAuth.signOut();await secondaryApp.delete();
-      await FB.db.collection("users").doc(newUid).set({email:em,name:name,role:role,createdAt:fsTs()},{merge:true});
-      closeModal();toast("User created: "+em,"ok");
-      // Small delay then refresh so Firestore write is visible
-      setTimeout(function(){renderUsers();},800);
+      // Step 2: Write Firestore profile WHILE authenticated as that new user
+      // This ensures request.auth.uid === newUid — bypasses any permission issue
+      await secDb.collection("users").doc(newUid).set({
+        email:em,name:name,role:role,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Step 3: Sign out secondary app and clean up
+      await secAuth.signOut();
+      await secApp.delete();
+      secApp=null;
+      if(btn){btn.textContent="Create User";btn.disabled=false;}
+      closeModal();
+      toast("\u2713 User created: "+em+" ("+role+")","ok");
+      setTimeout(function(){renderUsers();},1200);
     }catch(e){
+      if(secApp)try{secApp.delete();}catch(de){}
+      if(btn){btn.textContent="Create User";btn.disabled=false;}
       var msg=e.message||"Error creating user";
-      if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0){
-        msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Sign-in method → Email/Password → Enable.";
-      }else if(msg.indexOf("email-already-in-use")>=0){
-        msg="This email is already registered in Firebase Auth. The user exists but may not have a profile yet.";
-      }else if(msg.indexOf("weak-password")>=0){
-        msg="Password must be at least 6 characters.";
-      }else if(msg.indexOf("invalid-email")>=0){
-        msg="Invalid email address format.";
-      }
+      if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
+        msg="Email/Password auth not enabled. Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
+      else if(msg.indexOf("email-already-in-use")>=0)
+        msg="Email already exists in Firebase Auth. This user is already registered.";
+      else if(msg.indexOf("weak-password")>=0)msg="Password must be at least 6 characters.";
+      else if(msg.indexOf("invalid-email")>=0)msg="Invalid email address format.";
+      else if(msg.indexOf("permission")>=0||msg.indexOf("insufficient")>=0)
+        msg="Firestore permission denied. Apply the simplified rules from API Settings > Firebase Integration.";
       toast(msg,"err");
     }
   }else{
+    if(btn){btn.textContent="Create User";btn.disabled=false;}
     var us=lsG(SK.U,[])||[];us.push({id:"u_"+Date.now(),name:name,email:em,password:pw,role:role,created:Date.now()});lsS(SK.U,us);closeModal();renderUsers();toast("User created","ok");
   }
 }
+
 
 // ─── FIREBASE CONFIG PARSER ─────────────────────────────────────
 // Accepts both JSON format and JavaScript object literal format
@@ -1783,19 +1828,37 @@ document.addEventListener("DOMContentLoaded",function(){
   if(cr2)cr2.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
   if(cl2)cl2.onclick=clearLrn;if(cs2)cs2.onclick=clearSMBData;
 
-  // Firebase Auth state listener
+  // Firebase Auth state listener — runs whenever auth state changes
   setTimeout(function(){
     if(FB.enabled && FB.auth){
       FB.auth.onAuthStateChanged(function(user){
-        if(user && !getSess()){
+        if(user){
+          // Always update FB.user — even if there is already a session
+          // This fixes the case where master is logged in via sessionStorage but FB.user was null
           FB.user=user;
-          FB.db.collection("users").doc(user.uid).get().then(function(snap){var profile=snap.exists?snap.data():null;
-            if(profile){var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":(profile.role||"user");setSess({id:user.uid,email:user.email,name:profile.name||user.email.split("@")[0],role:role});if(!G("app")||G("app").style.display==="none")bootApp();}
-          });
+          var sess=getSess();
+          if(!sess){
+            // No session — load profile and boot app
+            FB.db.collection("users").doc(user.uid).get().then(function(snap){
+              var profile=snap.exists?snap.data():null;
+              if(profile){
+                var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":(profile.role||"user");
+                setSess({id:user.uid,email:user.email,name:profile.name||user.email.split("@")[0],role:role});
+                if(!G("app")||G("app").style.display==="none")bootApp();
+              }
+            }).catch(function(e){console.warn("Profile load error:",e);});
+          } else {
+            // Session already exists — just ensure FB.user is set (for Firestore access)
+            // Refresh user management if it is currently visible
+            var usrPage=G("pg-users");
+            if(usrPage&&usrPage.classList.contains("active"))renderUsers();
+          }
+        } else {
+          FB.user=null;
         }
       });
     }
-  }, 500);
+  }, 300);
 
   // Login UI
   updateLoginUI();
