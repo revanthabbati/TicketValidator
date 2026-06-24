@@ -1736,8 +1736,27 @@ function bootApp(){
   ST.results=lsG(SK.RE,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   ST.tech=getTech();renderDash();
-  // Add Sign Up link to login page if Firebase enabled
   updateLoginUI();
+  // Show Firebase auth banner if Firebase is configured but auth not active
+  showFirebaseAuthBanner();
+}
+
+function showFirebaseAuthBanner(){
+  // Remove any existing banner
+  var existing=G("fb-auth-banner");if(existing)existing.parentNode.removeChild(existing);
+  if(!FB.enabled)return; // Firebase not configured — no banner needed
+  if(FB.user)return; // Firebase Auth is active — no banner needed
+  // Firebase is configured but no auth token — show gentle reminder
+  var topbar=G("topbar");if(!topbar)return;
+  var banner=document.createElement("div");
+  banner.id="fb-auth-banner";
+  banner.style.cssText="background:#FFFBEB;border-bottom:1px solid #FDE68A;padding:8px 24px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:#78350F;flex-shrink:0";
+  banner.innerHTML="<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>"+
+    "<span><strong>Firebase sync inactive.</strong> Log out and sign back in to activate Firebase Authentication and enable cloud sync.</span>"+
+    "<button onclick=\"doLogout()\" style=\"background:none;border:1px solid #D97706;color:#78350F;border-radius:5px;padding:3px 10px;font-size:11.5px;cursor:pointer;font-weight:600;margin-left:auto;white-space:nowrap\">Log out &rarr; Sign in again</button>"+
+    "<button onclick=\"this.parentNode.style.display=\'none\'\" style=\"background:none;border:none;color:#B45309;cursor:pointer;font-size:16px;padding:0;line-height:1\">&times;</button>";
+  // Insert after topbar
+  topbar.parentNode.insertBefore(banner, topbar.nextSibling);
 }
 function updateLoginUI(){
   var lft=document.querySelector(".lft");
@@ -1848,7 +1867,9 @@ document.addEventListener("DOMContentLoaded",function(){
               }
             }).catch(function(e){console.warn("Profile load error:",e);});
           } else {
-            // Session already exists — just ensure FB.user is set (for Firestore access)
+            // Session already exists — FB.user is now set; remove auth warning banner
+            var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
+            upBadges();
             // Refresh user management if it is currently visible
             var usrPage=G("pg-users");
             if(usrPage&&usrPage.classList.contains("active"))renderUsers();
