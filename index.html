@@ -519,14 +519,15 @@ select.fin{cursor:pointer}
           <div class="card"><div class="chd"><span class="ct">Google Gemini AI</span><button class="btn bout bsm" id="gem-test">&#9654; Test Connection</button></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
             <div><label class="flb">Gemini API Key</label><input id="s-gk" class="fin" type="password" placeholder="AIza&#8230;"><div class="fhi">Get free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4F6EF7">aistudio.google.com</a></div></div>
             <div><label class="flb">Model</label><select id="s-gm" class="fin" onchange="togCustomModel(this.value)">
-              <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview (Fastest &middot; Latest)</option>
-              <option value="gemini-2.5-flash">gemini-2.5-flash (Fast &middot; Recommended)</option>
-              <option value="gemini-2.5-pro">gemini-2.5-pro (Most accurate)</option>
+              <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite &#10003; (Latest &#183; Fastest &#183; Recommended)</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Accurate &#183; Stable)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro (Most accurate &#183; Slower)</option>
               <option value="gemini-2.0-flash">gemini-2.0-flash (Stable)</option>
-              <option value="gemini-1.5-flash">gemini-1.5-flash (Classic)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash (Classic &#183; Free tier)</option>
               <option value="custom">Custom model name&hellip;</option>
             </select>
-            <input id="s-gm-custom" class="fin" placeholder="e.g. gemini-2.5-flash-lite-preview-06-17" style="display:none;margin-top:6px"></div>
+            <input id="s-gm-custom" class="fin" placeholder="e.g. gemini-2.0-flash" style="display:none;margin-top:6px">
+            <div class="fhi" style="color:var(--warn);margin-top:4px">&#9432; gemini-3.1-flash-lite is the latest &amp; fastest. Custom model names must match exactly what Google provides at <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" style="color:#4F6EF7">ai.google.dev/gemini-api/docs/models</a></div></div>
             <div id="gem-res"></div>
             <button class="btn bpri" id="gem-save">Save Gemini Settings</button>
           </div></div>
@@ -576,7 +577,7 @@ service cloud.firestore {
 "use strict";
 // ─── MASTER CONFIG (hardcoded, always works) ──────────────────
 var MASTER = {email:"revanth.abbati@dispatchtrack.com",pass:"Test@12322",role:"master",name:"Revanth Abbati",id:"__master__"};
-var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-2.5-flash-lite-preview-06-17",ZD_PROXY:""};
+var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-3.1-flash-lite",ZD_PROXY:""};
 
 // ─── DEFAULT LABELS ──────────────────────────────────────────
 var DE = ["API", "Accounting", "Admin", "Home", "Integration", "Login Page", "Mobile", "Notifications", "Orders", "Reports", "Reservations", "Routing", "Service Units", "Settlements", "Survey", "Telematics", "Trials", "Web", "Junk", "Pre-Sale", "Data Migration", "Enhancement", "Training", "Plans", "Metrics", "New Instance"];
@@ -716,7 +717,7 @@ function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsD(k){try{localStorage.removeItem(k);}catch(e){}}
 function cfg(k){
   var s=lsG(SK.A,{})||{};
-  return({ZD_SUB:s.zs||HC.ZD_SUB,ZD_EM:s.ze||HC.ZD_EM,ZD_TOK:s.zt||HC.ZD_TOK,GEM_KEY:s.gk||HC.GEM_KEY,GEM_MOD:s.gm||HC.GEM_MOD,ZD_PROXY:s.px||HC.ZD_PROXY})[k];
+  return({ZD_SUB:s.zs||HC.ZD_SUB,ZD_EM:s.ze||HC.ZD_EM,ZD_TOK:s.zt||HC.ZD_TOK,GEM_KEY:s.gk||HC.GEM_KEY,GEM_MOD:(s.gm||HC.GEM_MOD).trim(),ZD_PROXY:s.px||HC.ZD_PROXY})[k];
 }
 function togCustomModel(v){var c=G("s-gm-custom");if(!c)return;c.style.display=v==="custom"?"block":"none";}
 function getActiveModel(){var m=gv("s-gm");return m==="custom"?(gv("s-gm-custom")||"").trim():m;}
@@ -1308,50 +1309,115 @@ function getTraining(){return lsG(SK_TRN,[])||[];}
 function saveTrainingData(arr){lsS(SK_TRN,arr);upBadges();}
 async function gemCls(subject,description,ticketType,tags,existCat,jiraLinked,jiraUrl,ticketStatus){
   var envs=getEnvs(),cats=getCats(),subs=getSubs(),ex=buildLrnEx(),mod=cfg("GEM_MOD"),key=cfg("GEM_KEY");
+
+  // ── Concise, reliable prompt ─────────────────────────────────
   var prompt=
-    "You are a DispatchTrack QA ticket classifier. Read CAREFULLY and classify accurately.\n\n"+
-    "=== TICKET INFO ===\n"+
+    "You are a DispatchTrack support QA analyst. Classify this ticket.\n"+
+    "Return ONLY a JSON object — no explanation, no markdown.\n\n"+
+    "TICKET:\n"+
     "Subject: "+subject+"\n"+
-    "Description: "+String(description||"").substring(0,2000)+"\n"+
-    "Ticket Type: "+(ticketType||"")+"\n"+
-    "Tags: "+(tags||[]).join(", ")+"\n"+
+    "Type: "+(ticketType||"")+"\n"+
     "Status: "+(ticketStatus||"")+"\n"+
-    "Jira Linked in sheet: "+(jiraLinked||"")+"\n"+
-    (jiraUrl?"Jira URL in ticket: "+jiraUrl+"\n":"")+
-    "Existing Category: "+(existCat||"not set")+"\n\n"+
+    "Jira: "+(jiraLinked||"")+(jiraUrl?" ("+jiraUrl+")":"")+"\n"+
+    "Description:\n"+String(description||"").substring(0,1500)+"\n\n"+
     (ex?ex+"\n":"")+
-    "=== MANDATORY RULES ===\n"+
-    "RULE 1 — ONLY use exact values from the lists below. ANY other value is WRONG.\n"+
-    "RULE 2 — WAE (Working As Expected): Use when:\n"+
-    "  • Agent says: 'working as expected', 'by design', 'expected behavior', 'intentional', 'new enhancement', 'this is expected', 'as designed'\n"+
-    "  • Customer stopped responding and issue is unclear/unconfirmed\n"+
-    "  • Behavior is an intentional product change, NOT a defect\n"+
-    "  • Agent explains the feature works as intended\n"+
-    "RULE 3 — Bug: Only when REAL reproducible defect, NOT intentional changes\n"+
-    "RULE 4 — Product Issue: Performance/slowness/outage/system-wide problems\n"+
-    "RULE 5 — Regression: Set Environment='Regression' when issue caused by a recent product update\n"+
-    "RULE 6 — End Customer / Junk: Ticket from end-user or irrelevant/spam\n"+
-    "RULE 7 — Sub Category 'User Transfer': Agent transfers to partner org team (Ferguson, SiteOne, etc.) and closes\n"+
-    "RULE 8 — Jira linked means likely Bug or Product Issue (but check if agent says it's expected — then WAE)\n"+
-    "\n=== VALID ENVIRONMENTS (EXACTLY ONE) ===\n"+envs.join(", ")+"\n"+
-    "\n=== VALID CATEGORIES (EXACTLY ONE — no other values allowed) ===\n"+cats.join(", ")+"\n"+
-    "\n=== VALID SUB CATEGORIES (EXACTLY ONE — no other values allowed) ===\n"+subs.join(", ")+"\n"+
-    "\n=== VALID SUB CATEGORIES (EXACTLY ONE) ===\n"+subs.join(", ")+"\n";
-  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:400}})});
-  if(!resp.ok){var e=await resp.json().catch(function(){return{};});throw new Error("Gemini "+resp.status+": "+(e.error?e.error.message:"API error"));}
+    "RULES (read each line carefully):\n"+
+    "1. WAE — use when agent says 'working as expected','by design','expected','intentional','new enhancement'; OR customer stopped responding and issue is unclear\n"+
+    "2. Bug — real reproducible defect, NOT an intentional change\n"+
+    "3. Product Issue — slowness, outage, performance degradation, system-wide problem\n"+
+    "4. Regression — issue caused by recent product update (also set environment='Regression')\n"+
+    "5. End Customer / Junk — from end user, spam, or unrelated\n"+
+    "6. User Transfer — agent routes to another team/org (Ferguson,SiteOne,etc.) and closes\n"+
+    "7. If Jira is linked: likely Bug or Product Issue unless agent says behavior is expected\n"+
+    "8. ONLY use values from the lists below. Any other value is INVALID.\n\n"+
+    "ENVIRONMENTS: "+envs.join(" | ")+"\n"+
+    "CATEGORIES: "+cats.join(" | ")+"\n"+
+    "SUB CATEGORIES: "+subs.join(" | ")+"\n\n"+
+    '{"environment":"<pick one>","category":"<pick one>","sub_category":"<pick one>"}';
+
+  var resp=await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,
+    {method:"POST",headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       contents:[{parts:[{text:prompt}]}],
+       generationConfig:{temperature:0,maxOutputTokens:500,responseMimeType:"application/json"}
+     })}
+  );
+  if(!resp.ok){
+    var e=await resp.json().catch(function(){return{};});
+    var emsg=e.error?e.error.message:"API error";
+    // If responseMimeType not supported, retry without it
+    if(emsg.indexOf("responseMimeType")>=0||resp.status===400){
+      var resp2=await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,
+        {method:"POST",headers:{"Content-Type":"application/json"},
+         body:JSON.stringify({
+           contents:[{parts:[{text:prompt}]}],
+           generationConfig:{temperature:0,maxOutputTokens:500}
+         })}
+      );
+      if(!resp2.ok){var e2=await resp2.json().catch(function(){return{};});throw new Error("Gemini "+resp2.status+": "+(e2.error?e2.error.message:"API error"));}
+      resp=resp2;
+    }else{
+      if(resp.status===404||emsg.indexOf("not found")>=0||emsg.indexOf("does not exist")>=0){
+      throw new Error("Gemini model not found: '"+mod+"'. Go to API Settings and select a valid model (e.g. gemini-1.5-flash).");
+    }
+    throw new Error("Gemini "+resp.status+": "+emsg);
+    }
+  }
   var d=await resp.json();
-  var txt="";try{txt=d.candidates[0].content.parts[0].text||"";}catch(pe){throw new Error("Gemini response format error");}
+  var txt="";
+  try{txt=d.candidates[0].content.parts[0].text||"";}
+  catch(pe){
+    if(d.candidates&&d.candidates[0]&&d.candidates[0].finishReason==="SAFETY"){
+      throw new Error("Gemini blocked by safety filter");
+    }
+    throw new Error("Gemini response format error");
+  }
   txt=txt.trim().replace(/```json|```/gi,"").trim();
-  // Validate output has only allowed values
-  try{
-    var cls=JSON.parse(txt);
-    var envs2=getEnvs(),cats2=getCats(),subs2=getSubs();
-    if(!envs2.includes(cls.environment))cls.environment=envs2[0]||"";
-    if(!cats2.includes(cls.category))cls.category="";
-    if(!subs2.includes(cls.sub_category))cls.sub_category="";
-    return cls;
-  }catch(je){throw new Error("Gemini parse error: "+txt.substring(0,80));}
+
+  // ── Robust parser: handles JSON and key-value format ─────────
+  return parseGeminiOutput(txt,envs,cats,subs);
 }
+
+function parseGeminiOutput(txt,envs,cats,subs){
+  var result={environment:"",category:"",sub_category:""};
+  // Try JSON first
+  try{
+    var parsed=JSON.parse(txt);
+    result.environment=String(parsed.environment||"").trim();
+    result.category=String(parsed.category||"").trim();
+    result.sub_category=String(parsed.sub_category||"").trim();
+  }catch(je){
+    // Fallback: extract from key-value or plain text format
+    // e.g. Environment: "Admin" Category: "Bug" Sub Category: "Login Issue"
+    var envM=txt.match(/[Ee]nvironment[":\s]+([A-Za-z][^\n",}]{1,40})/);
+    var catM=txt.match(/[Cc]ategory[":\s]+([A-Za-z][^\n",}]{1,40})/);
+    var subM=txt.match(/[Ss]ub\s*[Cc]ategory[":\s]+([A-Za-z][^\n",}]{1,60})/);
+    if(envM)result.environment=envM[1].replace(/[",]/g,"").trim();
+    if(catM)result.category=catM[1].replace(/[",]/g,"").trim();
+    if(subM)result.sub_category=subM[1].replace(/[",]/g,"").trim();
+  }
+  // ── Validate: find closest match from valid lists ─────────────
+  result.environment=findClosest(result.environment,envs);
+  result.category=findClosest(result.category,cats);
+  result.sub_category=findClosest(result.sub_category,subs);
+  return result;
+}
+
+function findClosest(val,list){
+  if(!val||!list||!list.length)return"";
+  var v=val.trim().toLowerCase();
+  // Exact match first
+  for(var i=0;i<list.length;i++){if(list[i].toLowerCase()===v)return list[i];}
+  // Contains match
+  for(var i=0;i<list.length;i++){if(list[i].toLowerCase().indexOf(v)>=0||v.indexOf(list[i].toLowerCase())>=0)return list[i];}
+  // Partial word match (first word)
+  var first=v.split(/\s+/)[0];
+  for(var i=0;i<list.length;i++){if(list[i].toLowerCase().indexOf(first)>=0)return list[i];}
+  return""; // No match — leave blank
+}
+
 // ─── EVAL PIPELINE ───────────────────────────────────────────
 var _pRes=null;
 function togPause(){ST.paused=!ST.paused;var b=G("btn-pause");if(b)b.textContent=ST.paused?"\u25BA Resume":"\u23F8 Pause";if(!ST.paused&&_pRes){_pRes();_pRes=null;}}
@@ -1447,7 +1513,13 @@ async function startEval(){
       res.ab_comment=abNotes.join("; ");
       res._ok=true;ok++;
       res._ok=true;ok++;
-    }catch(e){res.error=e.message;ec++;log("  ERROR: "+e.message,"err");}
+    }catch(e){
+      res.error=e.message;ec++;
+      log("  ERROR: "+e.message,"err");
+      // Even on error: keep whatever partial data was collected (SMB, FRR)
+      // User can correct via Review & Correct
+      res._ok=false;
+    }
     ST.results.push(res);
     ST.curEval.push(res); // current eval only (for export)
     // Save to Firestore (non-blocking)
@@ -1475,9 +1547,12 @@ function buildRevTable(){
   var envs=getEnvs(),cats=getCats(),subs=getSubs().slice().sort(),h="";
   for(var i=0;i<ST.results.length;i++){
     var r=ST.results[i],eo="",co="",so="";
-    for(var j=0;j<envs.length;j++)eo+="<option"+(envs[j]===r.environment?" selected":"")+">"+esc(envs[j])+"</option>";
-    for(var j=0;j<cats.length;j++)co+="<option"+(cats[j]===r.category?" selected":"")+">"+esc(cats[j])+"</option>";
-    for(var j=0;j<subs.length;j++)so+="<option"+(subs[j]===r.sub_category?" selected":"")+">"+esc(subs[j])+"</option>";
+    eo+="<option value='' "+((!r.environment||r.environment==='')?'selected':'')+" style='color:var(--tx3)'>-- not set --</option>";
+    for(var j=0;j<envs.length;j++)eo+="<option value='"+esc(envs[j])+"'"+(envs[j]===r.environment?" selected":"")+">"+esc(envs[j])+"</option>";
+    co+="<option value='' "+((!r.category||r.category==='')?'selected':'')+" style='color:var(--tx3)'>-- not set --</option>";
+    for(var j=0;j<cats.length;j++)co+="<option value='"+esc(cats[j])+"'"+(cats[j]===r.category?" selected":"")+">"+esc(cats[j])+"</option>";
+    so+="<option value='' "+((!r.sub_category||r.sub_category==='')?'selected':'')+" style='color:var(--tx3)'>-- not set --</option>";
+    for(var j=0;j<subs.length;j++)so+="<option value='"+esc(subs[j])+"'"+(subs[j]===r.sub_category?" selected":"")+">"+esc(subs[j])+"</option>";
     var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option><option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option><option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option><option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
     h+="<tr id=\"rr-"+i+"\"><td style=\"font-family:'JetBrains Mono',monospace\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:#4F6EF7\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx2)\">"+esc(r.ticket_type||"--")+"</td><td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td><td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td></tr>";
   }
@@ -1567,9 +1642,9 @@ function openEditResultModal(r){
   if(!r)return;
   var envs=getEnvs(),cats=getCats(),subs=getSubs().slice().sort();
   var eo="",co="",so="";
-  for(var i=0;i<envs.length;i++)eo+="<option"+(envs[i]===r.environment?" selected":"")+">"+esc(envs[i])+"</option>";
-  for(var i=0;i<cats.length;i++)co+="<option"+(cats[i]===r.category?" selected":"")+">"+esc(cats[i])+"</option>";
-  for(var i=0;i<subs.length;i++)so+="<option"+(subs[i]===r.sub_category?" selected":"")+">"+esc(subs[i])+"</option>";
+  eo+="<option value=''"+((!r.environment)?" selected":"")+">-- not set --</option>";for(var i=0;i<envs.length;i++)eo+="<option"+(envs[i]===r.environment?" selected":"")+">"+esc(envs[i])+"</option>";
+  co+="<option value=''"+((!r.category)?" selected":"")+">-- not set --</option>";for(var i=0;i<cats.length;i++)co+="<option"+(cats[i]===r.category?" selected":"")+">"+esc(cats[i])+"</option>";
+  so+="<option value=''"+((!r.sub_category)?" selected":"")+">-- not set --</option>";for(var i=0;i<subs.length;i++)so+="<option"+(subs[i]===r.sub_category?" selected":"")+">"+esc(subs[i])+"</option>";
   var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option><option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option><option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option><option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
   openModal("Edit Result: #"+esc(r.id),
     "<div style=\"display:flex;flex-direction:column;gap:12px\">"+
@@ -1812,7 +1887,7 @@ function loadSettings(){
   var s=lsG(SK.A,{})||{};
   var map={zs:"s-sub",ze:"s-em",zt:"s-tok",px:"s-prx",gk:"s-gk"};
   for(var k in map){var e=G(map[k]);if(e)e.value=s[k]||"";}
-  var gm=G("s-gm");if(gm){var savedMod=s.gm||HC.GEM_MOD;var found=false;for(var i=0;i<gm.options.length;i++){if(gm.options[i].value===savedMod){gm.value=savedMod;found=true;break;}}if(!found){gm.value="custom";var cust=G("s-gm-custom");if(cust){cust.style.display="block";cust.value=savedMod;}}}
+  var gm=G("s-gm");if(gm){var savedMod=(s.gm||HC.GEM_MOD).trim();var found=false;for(var i=0;i<gm.options.length;i++){if(gm.options[i].value===savedMod){gm.value=savedMod;found=true;break;}}if(!found&&savedMod){gm.value="custom";var cust=G("s-gm-custom");if(cust){cust.style.display="block";cust.value=savedMod;}}}
   var ds=G("dt-stats");if(ds)ds.textContent=ST.results.length+" results / "+(lsG(SK.CO,[])||[]).length+" corrections / "+(FB.enabled?"Firebase: "+FB.app.options.projectId:"localStorage only");
   // Load Firebase config
   var fbc=G("s-fb");if(fbc){var saved=lsG(SK.FB,null);if(saved){try{fbc.value=typeof saved==="string"?saved:JSON.stringify(typeof saved==="object"?saved:JSON.parse(saved),null,2);}catch(e){}}}
