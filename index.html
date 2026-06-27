@@ -391,10 +391,17 @@ select.fin{cursor:pointer}
         <div class="card">
           <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace" id="res-lbl">0 records</span><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
           <div class="fb">
-            <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select><button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
+            <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
+            <div style="display:flex;align-items:center;gap:4px">
+              <label style="font-size:11.5px;color:var(--tx2);white-space:nowrap">From</label>
+              <input type="date" class="fsel" id="f-date-from" style="padding:5px 8px">
+              <label style="font-size:11.5px;color:var(--tx2);white-space:nowrap">To</label>
+              <input type="date" class="fsel" id="f-date-to" style="padding:5px 8px">
+            </div>
+            <button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
             <span style="margin-left:auto;font-size:11.5px;color:var(--tx3)" id="f-cnt"></span>
           </div>
-          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:#4F6EF7"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th>Edit</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:#4F6EF7"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="evaluatedAt">Date</th><th>Edit</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bdr)">
             <button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button>
             <div style="display:flex;align-items:center;gap:10px"><button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button></div>
@@ -1246,7 +1253,12 @@ function parseInflow(file){
       var hdrs=data[0].map(function(c){return String(c||"").trim();});
       var rows=data.slice(1).filter(function(r){return r.some(function(c){return String(c||"").trim();});});
       var ci={};
-      for(var field in CM){var als=CM[field],idx=-1;for(var i=0;i<hdrs.length&&idx<0;i++){for(var j=0;j<als.length&&idx<0;j++){if(hdrs[i].toLowerCase()===als[j].toLowerCase()||hdrs[i].toLowerCase().indexOf(als[j].toLowerCase())>=0)idx=i;}}if(idx>=0)ci[field]=idx;}
+      // Two-pass detection: exact match first, then substring match
+      // This prevents "Ticket Category" from colliding with "category" alias
+      var exactMatched={};
+      for(var field in CM){var als=CM[field],idx=-1;for(var i=0;i<hdrs.length&&idx<0;i++){for(var j=0;j<als.length&&idx<0;j++){if(hdrs[i].toLowerCase()===als[j].toLowerCase()){idx=i;exactMatched[i]=field;}}}if(idx>=0)ci[field]=idx;}
+      // Substring match only for columns not already exact-matched to a different field
+      for(var field in CM){if(ci[field]!==undefined)continue;var als=CM[field],idx=-1;for(var i=0;i<hdrs.length&&idx<0;i++){if(exactMatched[i])continue;for(var j=0;j<als.length&&idx<0;j++){if(hdrs[i].toLowerCase().indexOf(als[j].toLowerCase())>=0)idx=i;}}if(idx>=0)ci[field]=idx;}
       if(ci.ticket_id===undefined){toast("No Ticket ID column found","err");return;}
       ST.rows=rows;ST.headers=hdrs;ST.colIdx=ci;
       var nin=G("in-name"),nir=G("in-rows"),nif=G("in-info"),nic=G("in-cols"),nicl=G("in-cols-list"),bn1=G("btn-n1"),pcl=G("pc-lbl");
@@ -1273,8 +1285,41 @@ async function zdGet(url){var r=await fetch(url,{headers:{"Authorization":zdAuth
 function proxyifyUrl(url){var px=(cfg("ZD_PROXY")||"").trim().replace(/\/+$/,"");if(!px||!url)return url;if(url.indexOf(".zendesk.com")>=0){var m=url.match(/\/api\/v2\/(.*)/);if(m)return px+"/"+m[1];}return url;}
 async function zdGetComments(id){var all=[],url=zdBase()+"/tickets/"+id+"/comments.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.comments||[]);url=proxyifyUrl(d.next_page||null);}return all;}
 async function zdGetAudits(id){var all=[],url=zdBase()+"/tickets/"+id+"/audits.json?per_page=100";while(url){var d=await zdGet(url);all=all.concat(d.audits||[]);url=proxyifyUrl(d.next_page||null);}return all;}
-function findAssign(au){for(var i=0;i<au.length;i++){var ev=au[i].events||[];for(var j=0;j<ev.length;j++){if(ev[j].type==="Change"&&ev[j].field_name==="assignee_id"&&ev[j].value)return new Date(au[i].created_at);}}return null;}
-function findReply(co,rid){var pub=[];for(var i=0;i<co.length;i++){if(co[i].public&&String(co[i].author_id)!==String(rid))pub.push(co[i]);}if(!pub.length)return null;pub.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});return new Date(pub[0].created_at);}
+function findAssign(au){
+  // Pass 1: Look for assignee CHANGE events (manually re-assigned)
+  for(var i=0;i<au.length;i++){
+    var ev=au[i].events||[];
+    for(var j=0;j<ev.length;j++){
+      if(ev[j].type==="Change"&&ev[j].field_name==="assignee_id"&&ev[j].value)
+        return new Date(au[i].created_at);
+    }
+  }
+  // Pass 2: Look for assignee in CREATE event (ticket created with assignee already set)
+  for(var i=0;i<au.length;i++){
+    var ev=au[i].events||[];
+    for(var j=0;j<ev.length;j++){
+      // Some Zendesk instances log initial assignee as a Create event
+      if(ev[j].field_name==="assignee_id"&&ev[j].value&&ev[j].value!==null)
+        return new Date(au[i].created_at);
+    }
+  }
+  return null;
+}
+function findReply(co,rid){
+  // Find earliest public reply from someone who is NOT the requester
+  var pub=[];
+  for(var i=0;i<co.length;i++){
+    var c=co[i];
+    if(!c.public)continue;
+    if(String(c.author_id)===String(rid))continue; // skip requester's own comments
+    // Skip automated/system replies (via.channel = 'rule' or 'trigger')
+    if(c.via&&(c.via.channel==="rule"||c.via.channel==="trigger"||c.via.channel==="automation"))continue;
+    pub.push(c);
+  }
+  if(!pub.length)return null;
+  pub.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});
+  return new Date(pub[0].created_at);
+}
 
 // ─── GEMINI ──────────────────────────────────────────────────
 function buildLrnEx(){
@@ -1662,6 +1707,7 @@ async function startEval(){
       // User can correct via Review & Correct
       res._ok=false;
     }
+    res.evaluatedAt=Date.now();
     ST.results.push(res);
     ST.curEval.push(res); // current eval only (for export)
     // Save to Firestore (non-blocking)
@@ -1830,8 +1876,29 @@ function fillFilters(){
   var rl=G("res-lbl");if(rl)rl.textContent=ST.results.length+" records";
 }
 function getFiltered(){return ST.filtered.length?ST.filtered:ST.results;}
-function applyF(){var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");ST.filtered=ST.results.filter(function(r){if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;if(env&&r.environment!==env)return false;if(cat&&r.category!==cat)return false;if(sub&&r.sub_category!==sub)return false;if(smb&&r.smb_type!==smb)return false;if(st&&r.status!==st)return false;return true;});ST.pg=0;var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";renderResTable();}
-function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
+function applyF(){
+  var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");
+  var dateFrom=gv("f-date-from"),dateTo=gv("f-date-to");
+  var fromTs=dateFrom?new Date(dateFrom).getTime():0;
+  var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
+  ST.filtered=ST.results.filter(function(r){
+    if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
+    if(env&&r.environment!==env)return false;
+    if(cat&&r.category!==cat)return false;
+    if(sub&&r.sub_category!==sub)return false;
+    if(smb&&r.smb_type!==smb)return false;
+    if(st&&r.status!==st)return false;
+    if(fromTs||toTs<Infinity){
+      var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
+      if(ts&&(ts<fromTs||ts>toTs))return false;
+    }
+    return true;
+  });
+  ST.pg=0;
+  var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";
+  renderResTable();
+}
+function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
 function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
 function renderResTable(){
@@ -1853,6 +1920,8 @@ function renderResTable(){
     var confColor=r.confidence>=80?"var(--ok)":r.confidence>=60?"var(--warn)":"var(--tx3)";
     h+="<td style=\"font-size:11.5px;font-family:JetBrains Mono,monospace;color:"+confColor+"\">"+( r.confidence?r.confidence+"%":"--")+"</td>";
     h+="<td style=\"font-size:12px;color:var(--tx2)\">"+esc(r.assignee||r.requester||"--")+"</td>";
+    var evDate=r.evaluatedAt?new Date(r.evaluatedAt).toLocaleDateString():"--";
+    h+="<td style=\"font-size:11px;color:var(--tx3)\">"+evDate+"</td>";
     h+="<td><button class=\"btn bgst bsm\" data-edit-gi=\""+gi+"\" style=\"font-size:11px;padding:4px 8px\">&#9998;</button>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--err);cursor:help\">&#x26A0;</span>":"")+"</td>";
     h+="</tr>";
   }
@@ -1876,32 +1945,46 @@ function renderResTable(){
 function exportR(rows,fmt){
   if(!rows||!rows.length){toast("No data to export","err");return;}
   var out=rows.map(function(r){
-    var rd=(r._rd||[]).slice(),hdrs=r._hd||ST.headers,ci=r._ci||ST.colIdx;
-    // Update raw row data with AI-filled values
-    if(ci.frr!=null)rd[ci.frr]=r.frr>0?r.frr:(r.frr_txt||"");
-    if(ci.smb!=null)rd[ci.smb]=r.smb_type||"";
-    if(ci.environment!=null)rd[ci.environment]=r.environment||"";
-    if(ci.category!=null)rd[ci.category]=r.category||"";
-    if(ci.sub_category!=null)rd[ci.sub_category]=r.sub_category||"";
-    if(ci.comments!=null)rd[ci.comments]=r.ab_comment||"";
-    // Build output object from original headers (preserves all input columns)
+    var rd=(r._rd||[]).slice(),hdrs=r._hd||[],ci=r._ci||{};
+    // Build object from ALL original input columns first
     var obj={};
-    for(var i=0;i<hdrs.length;i++)obj[hdrs[i]||("Col"+i)]=rd[i]!=null?rd[i]:"";
-    // Add AI fields if not already in the sheet
-    if(!(ci.frr>=0)&&!("FRR"in obj))obj["FRR"]=r.frr>0?r.frr:(r.frr_txt||"");
-    if(!(ci.smb>=0)&&!("SMB"in obj))obj["SMB"]=r.smb_type||"";
-    if(!(ci.environment>=0)&&!("Environment"in obj))obj["Environment"]=r.environment||"";
-    if(!(ci.category>=0)&&!("Category"in obj))obj["Category"]=r.category||"";
-    if(!(ci.sub_category>=0)&&!("Sub Category"in obj))obj["Sub Category"]=r.sub_category||"";
-    // Column AB: comments (always add)
-    if(!("Comments(AB)"in obj)&&!("Comments"in obj)&&!("AB"in obj))obj["Comments(AB)"]=r.ab_comment||"";
-    if(!("AI Confidence"in obj))obj["AI Confidence"]=r.confidence?r.confidence+"%":"";
+    if(hdrs.length){
+      for(var i=0;i<hdrs.length;i++){
+        var hdr=(hdrs[i]||("Col"+i));
+        // Write AI value if this column is mapped to an AI field, else original value
+        if(i===(ci.frr))obj[hdr]=r.frr>0?String(r.frr):(r.frr_txt||"");
+        else if(i===(ci.smb))obj[hdr]=r.smb_type||"";
+        else obj[hdr]=rd[i]!=null?String(rd[i]):"";
+      }
+    }else{
+      // Old result without raw data — build minimal output from stored fields
+      obj["Ticket ID"]=r.id||"";
+      obj["Subject"]=r.subject||"";
+      obj["Ticket Type"]=r.ticket_type||"";
+      obj["Status"]=r.status||"";
+      obj["Assignee"]=r.assignee||"";
+      obj["Requester"]=r.requester||"";
+      obj["Activation Code"]=r.activation_code||"";
+    }
+    // ── ALWAYS ADD AI OUTPUT COLUMNS (overwrite or add) ──
+    // These are the primary outputs of the evaluation tool
+    // Using fixed column names so they always appear regardless of input sheet structure
+    obj["FRR"]=r.frr>0?String(r.frr):(r.frr_txt||"");
+    obj["SMB"]=r.smb_type||"";
+    obj["Environment"]=r.environment||"";
+    obj["Category"]=r.category||"";
+    obj["Sub Category"]=r.sub_category||"";
+    obj["Comments(AB)"]=r.ab_comment||"";
+    obj["AI Confidence"]=r.confidence?r.confidence+"%":"";
+    obj["Evaluated At"]=r.evaluatedAt?new Date(r.evaluatedAt).toLocaleString():"";
+    obj["Ticket URL"]=r.zd_url||"";
     return obj;
   });
   var fn="dt-eval-"+stamp();
   if(fmt==="csv"){dlBlob(new Blob([Papa.unparse(out)],{type:"text/csv;charset=utf-8;"}),fn+".csv");toast("CSV exported ("+out.length+" rows)","ok");}
   else{var ws=XLSX.utils.json_to_sheet(out);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Evaluation");XLSX.writeFile(wb,fn+".xlsx");toast("Excel exported ("+out.length+" rows)","ok");}
 }
+
 
 // ─── USERS ───────────────────────────────────────────────────
 async function renderUsers(){
@@ -2259,7 +2342,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var rclr=G("res-clr");if(rclr)rclr.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);renderResTable();upBadges();fillFilters();toast("Cleared","ok");};
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
-  ["f-env","f-cat","f-sub","f-smb","f-st"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
+  ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
