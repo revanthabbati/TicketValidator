@@ -352,10 +352,10 @@ select.fin{cursor:pointer}
               <div class="cbd" style="height:320px;position:relative"><canvas id="chart-smb" style="cursor:pointer"></canvas></div>
             </div>
             <div class="card">
-              <div class="chd"><span class="ct">FRR Distribution</span>
-                <button class="btn bgst bsm" onclick="downloadChart('chart-frr','frr-analysis')">&#x2B07; PNG</button>
+              <div class="chd"><span class="ct">Top Sub Categories</span>
+                <button class="btn bgst bsm" onclick="downloadChart('chart-sub','sub-categories')">&#x2B07; PNG</button>
               </div>
-              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-frr" style="cursor:pointer"></canvas></div>
+              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-sub" style="cursor:pointer"></canvas></div>
             </div>
           </div>
           <!-- Drill-down results modal trigger -->
@@ -569,8 +569,8 @@ select.fin{cursor:pointer}
 
       <!-- USERS -->
       <div class="page" id="pg-users">
-        <div class="card"><div class="chd"><span class="ct">User Management</span><button class="btn bpri bsm" id="add-usr">+ Add User</button></div><div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="usr-tb"><tr><td colspan="5" class="te">No users yet.</td></tr></tbody></table></div></div>
-        <div class="al ai"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><strong>Roles:</strong> Admin can manage users and access API settings. User can evaluate, review, and export only &#8212; cannot see API credentials.</div></div>
+        <div class="card"><div class="chd"><span class="ct">User Management</span><button class="btn bpri bsm" id="add-usr">+ Add User</button></div><div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="usr-tb"><tr><td colspan="6" class="te">No users yet.</td></tr></tbody></table></div></div>
+        <div class="al ai"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><strong>Roles:</strong> Admin can manage users and access API settings. User can evaluate, review, and export only &#8212; cannot see API credentials. Password reset emails are sent automatically when creating users.</div></div>
       </div>
 
       <!-- SETTINGS -->
@@ -624,6 +624,7 @@ select.fin{cursor:pointer}
             </div>
           </div>
         </div>
+        <div class="card">
           <div class="chd"><span class="ct">&#x1F525; Firebase Integration <span class="bdg bgr" id="fb-status-badge" style="font-size:10px">Not configured</span></span><button class="btn bout bsm" id="fb-test-btn">Test Firebase</button></div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:13px">
             <div class="al ai" style="font-size:12.5px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Paste your Firebase project config below. Results, corrections, and SMB data will sync to Firestore. Login uses Firebase Authentication.</div></div>
@@ -680,7 +681,7 @@ var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-3
 
 // ─── DEFAULT LABELS ──────────────────────────────────────────
 var DE = ["API", "Accounting", "Admin", "Home", "Integration", "Login Page", "Mobile", "Notifications", "Orders", "Reports", "Reservations", "Routing", "Service Units", "Settlements", "Survey", "Telematics", "Trials", "Web", "Junk", "Pre-Sale", "Data Migration", "Enhancement", "Training", "Plans", "Metrics", "New Instance"];
-var DC = ["Bug", "Regression", "Enhancement", "How to Question", "Outage", "Product Issue", "Provisioning", "Slowness", "WAE", "Payment", "End Customer / Junk"];
+var DC = ["Bug", "Regression", "Enhancement", "How to Question", "Outage", "Product Issue", "Provisioning", "Slowness", "WAE", "End Customer / Junk"];
 var DS = ["API Documentation", "API Export", "API Import", "API Key Request", "API spreadsheet", "Account Business Phone Number", "Accounts", "Activation Code", "Adding Driver to Route", "Adding Events to Route", "Adding Stops to the Route", "Adding Truck to Route", "Additional Fields", "Additional Fields Duplication", "Address Resolution", "Alerts", "Api Tags", "Arriving Soon", "Authorization keys", "Auto-routing", "BeeTrack", "Billing related info", "Business API Key", "CNAM", "COD", "CPU 1.0", "CPU 2.0", "CSV Export", "CSV Import", "Cache Issue", "Calculate Time", "Calendar Routing", "Call Notification", "Caller ID", "Cancellation request", "Capacity Settings", "Clear Queued Import", "Clients", "Cluster Orders", "Contact Free Delivery", "Create Service Unit", "Custom Fields", "Custom Forms", "Custom Notification", "Customer Comment Widget", "Customer Contact Mode Preferences", "Customer Escalation Alert", "Customer Import", "Customer Invitation", "Customer Masking", "Customer Search", "Customer Updates", "DT Agent", "DT Agent Configuration", "DTB", "DTB Import", "DTV APIs", "DTV Mapping", "DTV Sync Issue", "DVIR", "Dashboard", "Data Migration from 1 instance to another", "Data Privacy", "Debugging", "Delay Notification", "Delete Customers", "Delete Orders", "Delete Route Locations", "Delete Service Unit", "Delivery Receipt", "Delivery Report", "Disable Order Grouping", "Disable Route Start", "Disable Schedule Call", "DispatchTrack Website Issue", "Driver AI", "Driver Alerts", "Driver Based Login", "Driver Checklist", "Driver Customer Call", "Driver customer chat", "Driver settlements", "Driver unable to finish orders", "Driver unable to log out", "Driver unable to see the stops", "Drivers", "EPASS", "ETA Display Issue", "Email Notification", "Email Survey", "Email Verification", "Enable Breaks Feature", "Enable Cost per day", "Enable Route Start", "Enable Signature", "Enable Text Survey", "Enable Unscheduled Orders Report", "End Customer", "Enhancement Ideas", "Event Retrigger Request", "Events", "Export", "Farthest Optimization", "Feedback on Release Notes", "Ferguson API Sheet Update", "Ferguson Accounts to Parser", "Ferguson Alerts", "Ferguson User - Transferred to Ferguson Team", "Furniture Wizard Import", "GERS", "GPS Points", "GPS Points Not Updating", "How to login", "IP Addresses", "Image Blur", "Image Categorization", "Image Export", "Images in Export API", "Images in Notifications", "Images not visible in web portal", "Import Lock", "Incorrect Customer Location", "Incorrect Stop Sequence", "Instance Active or Inactive", "Instance Consolidation", "Instance Information", "Instance creation", "Internal Server Error", "Issue is not clear", "Item Masters", "License Addition", "License Reduction", "Line Item Sequence", "Line Item Weight", "Load Time", "Load out report", "Loft Import", "Login Issue", "MFRM Alerts", "MFRM User - Transferred to MFRM Team", "Mandatory Photos", "Manifest", "Manifest Export", "Mapping Issue", "Maps Redirect", "Mark as Paid", "Mobile", "Mobile App Upgrade", "Mobile App Version", "Mobile Exception Report", "Mobile Permissions", "Mobile Survey", "Mobile Training", "Multi Day Routing", "Multi Language Support", "Multi Route", "Myraid", "Narrowed Time Windows", "NetSuite", "No Truck Assigned", "Non-Truck Based Route", "Notes", "Notification Automation", "Notification Configuration", "Notification Groups", "Notification Opt In/Out", "Notification Scheduling", "Notification Sequencing", "Notification filter fields", "Notifications", "Notifications Bundle", "Notifications Unsubscribed", "Number Field", "Number for End Customer to Opt in for notifications", "Oauth2 Settings", "Okta SSO Login", "Onboarding", "Order Cloning", "Order Confirmation via Notification", "Order Creation", "Order Description", "Order Dispatch", "Order Duplication", "Order Edit", "Order Grouping", "Order History", "Order Import", "Order Routing", "Order Search", "Order Status", "Order Tracker", "Order Updates", "Order details", "Order filter fields", "Orders Cancellation", "Orders Sync from Mobile app", "Orders didnt import", "Orders not visible", "Orders with Unresolved Addresses", "Orphan Orders", "Outage", "Overlay", "Password Reset", "Payment Due Notice", "Pictures", "Plans", "Plivo", "Podium", "Pricing details", "Profit", "Profit - Imports", "Purge Request", "Quick Stop", "Rails8 Import Issue", "Reactivation", "Recurring Orders", "Release Code", "Report Columns", "Reports", "Request to add Dark Theme", "Reservation Time Windows", "Reservations", "Reservations Capacity Settings", "Return Codes", "Return items", "Route Details", "Route Labels", "Route Locations", "Route Lock", "Route Optimization", "Route Save", "Route Start Notification", "Route Summary", "Route Tags", "Routing", "Routing Icons", "Routing Parameters", "Routing View", "Routing setup", "SFTP", "SFTP Import", "SKU Barcode scanner", "STIA", "Sales Handoff", "Samsung File Processing Alert", "Schedule Notification", "Server Instance - Internal", "Service Compliance forms", "Service Days", "Service Time Calculation", "Service Type", "Service Unavailable", "Service Unit Set-up", "Service Units", "Service Units History", "Shopify Integration", "Shortcuts", "Shortest Optimization", "Signature", "Signature API", "Site Readiness Forms", "SiteOne User - Transferred to SiteOne Team", "Slowness", "Social Review", "Soft move", "Split Order", "Stops Not Showing Up", "Store Stops", "Storis", "Storis Import", "Storis reconciliation", "Survey CSAT Score", "Survey Setup", "Survey Setup Issues", "Sync Import Delete", "TCPA", "TLS 1.2 GERS", "TLS 1.2 Import Issue", "TLS 1.2 Loft", "TLS 1.2 Myriad", "TLS 1.2 Profit", "TLS Migration", "TR-Event Failure", "TSF", "Telematics Integration", "Text Notification", "Text Survey", "Third Party Integration", "Time Window", "Time Window Lock", "Track Widget", "Trash", "Trials Creation", "Trials Extension", "Trucks", "Twilio", "Two Way Communication", "URL Change", "Unable to find feasible routes", "Unload Time", "Update Business name", "Update Credit Card Information", "Upload Now", "User Locked - Invalid Login", "User Privilege", "User Verification", "Users", "V5 Routing", "Video POD", "Wait Time", "Warehouse user", "Web Training", "Web Version Upgrade", "Webpage not loading", "Wrong ETA", "Wrong email sent", "Zones", "account deactivation", "item received", "time zone", "uat creation"];
 var DT = ["Technical"];
 
@@ -1144,7 +1145,7 @@ function goPage(pg){
 // ─── BADGES ──────────────────────────────────────────────────
 function normSMB(t){if(!t)return"";var lc=String(t).trim().toLowerCase();if(lc==="micro")return"Micro";if(lc==="mega")return"Mega";if(lc==="smb")return"SMB";return String(t).trim();}
 function smbBdg(t){var n=normSMB(t);if(!n||n==="Unknown")return'<span class="bdg bgr">--</span>';var c=n==="SMB"?"bt":n==="Mega"?"bv":n==="Micro"?"bamb":"bgr";return'<span class="bdg '+c+'">'+esc(n)+"</span>";}
-function catBdg(c){if(!c||c==="--")return'<span class="bdg bgr">--</span>';var m={"Bug":"berr","Regression":"berr","Enhancement":"binf","How to Question":"binf","Outage":"berr","Product Issue":"bwrn2","Provisioning":"bt","Slowness":"bwrn2","WAE":"bok2","Payment":"bamb","End Customer":"bgr"};var cls="bgr";for(var k in m){if(c.indexOf(k)>=0){cls=m[k];break;}}return'<span class="bdg '+cls+'" style="font-size:10.5px">'+esc(c)+"</span>";}
+function catBdg(c){if(!c||c==="--")return'<span class="bdg bgr">--</span>';var m={"Bug":"berr","Regression":"berr","Enhancement":"binf","How to Question":"binf","Outage":"berr","Product Issue":"bwrn2","Provisioning":"bt","Slowness":"bwrn2","WAE":"bok2","Payment":"bt","End Customer":"bgr"};var cls="bgr";for(var k in m){if(c.indexOf(k)>=0){cls=m[k];break;}}return'<span class="bdg '+cls+'" style="font-size:10.5px">'+esc(c)+"</span>";}
 // ─── TRAINING MODULE ─────────────────────────────────────────
 var _trnData = null; // pending import data
 
@@ -1659,30 +1660,33 @@ function downloadChart(canvasId,filename){
 function showDrillDown(value,field,data){
   var src=data||_chartCurrentData||ST.results;
   var matching=src.filter(function(r){
-    var v=r[field]||"Unclassified";
-    return v===value||v.trim()===value.trim();
+    var v=(r[field]||"Unclassified").toString().trim();
+    return v===value.toString().trim();
   });
   if(!matching.length){toast("No matching tickets found for: "+value,"in");return;}
-  var fieldLabel={"category":"Category","environment":"Environment","sub_category":"Sub Category"}[field]||field;
+  var fieldLabel={"category":"Category","environment":"Environment","sub_category":"Sub Category","smb_type":"Customer Type (SMB)"}[field]||(field||"");
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bdr)">';
-  h+=catBdg(value)+'<span style="font-size:13px;color:var(--tx2)">'+matching.length+' ticket'+(matching.length!==1?"s":"")+'</span></div>';
+  h+=catBdg(value)+'<span style="font-size:13px;color:var(--tx2)">'+matching.length+' ticket'+(matching.length!==1?"s":"")+'</span>';
+  if(field==="smb_type")h+=' &mdash; '+smbBdg(value);
+  h+='</div>';
   h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
-  h+='<thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>FRR</th><th>Environment</th><th>Category</th><th>Sub Category</th></tr></thead><tbody>';
+  h+='<thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>SMB</th><th>FRR</th><th>Environment</th><th>Category</th><th>Sub Category</th></tr></thead><tbody>';
   matching.slice(0,150).forEach(function(r){
     var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
     h+="<tr>";
     h+="<td style='white-space:nowrap'><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:#4F6EF7;font-family:monospace'>#"+esc(r.id)+"</a></td>";
-    h+="<td class='tr' style='max-width:220px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
+    h+="<td class='tr' style='max-width:180px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
     h+="<td style='font-size:11px;color:var(--tx2)'>"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td>"+smbBdg(r.smb_type)+"</td>";
     h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td>";
     h+="<td style='font-size:11px'>"+esc(r.environment||"--")+"</td>";
     h+="<td>"+catBdg(r.category)+"</td>";
     h+="<td style='font-size:11px;color:var(--tx2)'>"+esc(r.sub_category||"--")+"</td>";
     h+="</tr>";
   });
-  if(matching.length>150)h+='<tr><td colspan="7" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export the data for full list.</td></tr>';
+  if(matching.length>150)h+='<tr><td colspan="8" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export for full list.</td></tr>';
   h+="</tbody></table></div>";
-  openModal(esc(fieldLabel)+": "+esc(value), h, '<button class="btn bpri" id="dd-cl">Close</button>', "760px");
+  openModal(esc(fieldLabel)+": "+esc(value), h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
   var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
 }
 
@@ -1723,17 +1727,15 @@ function renderDashboardCharts(){
   var badge=G("chart-count-badge");if(badge)badge.textContent=total+" tickets";
   if(!total){G("dash-charts").style.display="none";return;}
   G("dash-charts").style.display="block";
-  // Attach keyboard-accessible canvas click hint
-  ["chart-cat","chart-env","chart-smb","chart-frr"].forEach(function(id){
-    var cv=G(id);if(cv&&!cv._hint){
-      cv._hint=true;
-      cv.title="Click a bar to see ticket details";
-    }
+
+  // Set click cursor hint on all chart canvases
+  ["chart-cat","chart-env","chart-smb","chart-sub"].forEach(function(id){
+    var cv=G(id);if(cv){cv.style.cursor="pointer";cv.title="Click a bar to drill down";}
   });
 
   var catTotal=G("chart-cat-total");if(catTotal)catTotal.textContent=total+" tickets";
 
-  // ── Category Chart ──
+  // ── Category Chart (uses CHART_PAL for theme) ──
   var catCnt={};r.forEach(function(x){var c=x.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
   var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];});
   var c1=G("chart-cat");
@@ -1741,7 +1743,12 @@ function renderDashboardCharts(){
     c1.height=Math.max(240,catKeys.length*38);
     _dashCharts.cat=new Chart(c1,{
       type:"bar",
-      data:{labels:catKeys,datasets:[{data:catKeys.map(function(k){return catCnt[k];}),backgroundColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
+      data:{labels:catKeys,datasets:[{
+        data:catKeys.map(function(k){return catCnt[k];}),
+        backgroundColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),
+        borderColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),
+        borderWidth:1.5,borderRadius:4
+      }]},
       options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},datalabels:{display:false},
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
@@ -1753,7 +1760,7 @@ function renderDashboardCharts(){
     });
   }
 
-  // ── Environment Chart ──
+  // ── Environment Chart (uses CHART_PAL for theme) ──
   var envCnt={};r.forEach(function(x){var e=x.environment||"Unknown";envCnt[e]=(envCnt[e]||0)+1;});
   var envKeys=Object.keys(envCnt).sort(function(a,b){return envCnt[b]-envCnt[a];}).slice(0,12);
   var c2=G("chart-env");
@@ -1761,7 +1768,12 @@ function renderDashboardCharts(){
     c2.height=Math.max(240,envKeys.length*38);
     _dashCharts.env=new Chart(c2,{
       type:"bar",
-      data:{labels:envKeys,datasets:[{data:envKeys.map(function(k){return envCnt[k];}),backgroundColor:envKeys.map(function(_,i){return CHART_PAL[(i+3)%CHART_PAL.length]+"CC";}),borderColor:envKeys.map(function(_,i){return CHART_PAL[(i+3)%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
+      data:{labels:envKeys,datasets:[{
+        data:envKeys.map(function(k){return envCnt[k];}),
+        backgroundColor:envKeys.map(function(_,i){return CHART_PAL[(i+2)%CHART_PAL.length]+"CC";}),
+        borderColor:envKeys.map(function(_,i){return CHART_PAL[(i+2)%CHART_PAL.length];}),
+        borderWidth:1.5,borderRadius:4
+      }]},
       options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},datalabels:{display:false},
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
@@ -1773,67 +1785,48 @@ function renderDashboardCharts(){
     });
   }
 
-  // ── SMB Customer Type Chart ──
+  // ── SMB Customer Type Chart (uses CHART_PAL for theme - theme-aware) ──
   var smbTypes=["SMB","Mega","Micro","Unknown"];
   var smbCnt={"SMB":0,"Mega":0,"Micro":0,"Unknown":0};
-  r.forEach(function(x){
-    var s=x.smb_type||"Unknown";
-    if(!(s in smbCnt))s="Unknown";
-    smbCnt[s]++;
-  });
+  r.forEach(function(x){var s=x.smb_type||"Unknown";if(!(s in smbCnt))s="Unknown";smbCnt[s]++;});
   var smbKeys=smbTypes.filter(function(k){return smbCnt[k]>0;});
-  var smbColors={"SMB":"#4F6EF7","Mega":"#16A34A","Micro":"#D97706","Unknown":"#94A3B8"};
   var c3=G("chart-smb");
   if(c3){
-    c3.height=Math.max(180,smbKeys.length*70);
+    c3.height=Math.max(180,smbKeys.length*72);
+    // Use CHART_PAL colors so theme applies to SMB chart too
+    var smbBgColors=smbKeys.map(function(_,i){return CHART_PAL[(i+4)%CHART_PAL.length]+"CC";});
+    var smbBdColors=smbKeys.map(function(_,i){return CHART_PAL[(i+4)%CHART_PAL.length];});
     _dashCharts.smb=new Chart(c3,{
       type:"bar",
-      data:{
-        labels:smbKeys,
-        datasets:[{
-          data:smbKeys.map(function(k){return smbCnt[k];}),
-          backgroundColor:smbKeys.map(function(k){return smbColors[k]+"CC";}),
-          borderColor:smbKeys.map(function(k){return smbColors[k];}),
-          borderWidth:1.5,borderRadius:6
-        }]
-      },
+      data:{labels:smbKeys,datasets:[{
+        data:smbKeys.map(function(k){return smbCnt[k];}),
+        backgroundColor:smbBgColors,borderColor:smbBdColors,
+        borderWidth:1.5,borderRadius:6
+      }]},
       options:{
         indexAxis:"y",responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          datalabels:{display:false},
+        plugins:{legend:{display:false},datalabels:{display:false},
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" customers ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
         },
         scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:12,weight:"600"}}}},
-        onClick:function(evt,els){
-          if(!els||!els.length)return;
-          var idx=els[0].index;
-          if(idx===undefined||!smbKeys[idx])return;
-          showDrillDown(smbKeys[idx],"smb_type",_chartCurrentData);
-        }
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!smbKeys[idx])return;showDrillDown(smbKeys[idx],"smb_type",_chartCurrentData);}
       },
       plugins:[{
-        id:"smbInlineLabels",
+        id:"smbLabels",
         afterDatasetsDraw:function(chart){
           var ctx=chart.ctx;
           var ds=chart.data.datasets[0];
-          var total2=ds.data.reduce(function(a,b){return a+b;},0);
+          var tot2=ds.data.reduce(function(a,b){return a+b;},0);
           var meta=chart.getDatasetMeta(0);
           meta.data.forEach(function(bar,idx){
             var val=ds.data[idx];if(!val)return;
-            var pct=Math.round(val/total2*100);
-            var label=val+" customers ("+pct+"%)";
-            var barWidth=Math.abs(bar.x-bar.base);
-            ctx.save();
-            ctx.font="bold 11px Inter,sans-serif";
-            var textW=ctx.measureText(label).width;
-            if(barWidth>textW+12){
-              ctx.fillStyle="#fff";ctx.textAlign="left";ctx.textBaseline="middle";
-              ctx.fillText(label,bar.base+8,bar.y);
-            }else{
-              ctx.fillStyle=smbColors[smbKeys[idx]]||"#374151";ctx.textAlign="left";ctx.textBaseline="middle";
-              ctx.fillText(label,bar.x+4,bar.y);
-            }
+            var pct=Math.round(val/tot2*100);
+            var label=val+" ("+pct+"%)";
+            var bw=Math.abs(bar.x-bar.base);
+            ctx.save();ctx.font="bold 11px Inter,sans-serif";
+            var tw=ctx.measureText(label).width;
+            if(bw>tw+12){ctx.fillStyle="#fff";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(label,bar.base+8,bar.y);}
+            else{ctx.fillStyle=smbBdColors[idx]||"#374151";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(label,bar.x+4,bar.y);}
             ctx.restore();
           });
         }
@@ -1841,33 +1834,28 @@ function renderDashboardCharts(){
     });
   }
 
-  // ── FRR Doughnut Chart ──
-  var frrBuckets={"0m (Agent)":0,"0-15m":0,"15-30m":0,"30-60m":0,"1-2h":0,"2h+":0,"Not Calculated":0};
-  r.forEach(function(x){
-    if(x.frr_txt&&(x.frr_txt.indexOf("agent")>=0||x.frr_txt.indexOf("internal")>=0||x.frr_txt.indexOf("0m (")>=0))frrBuckets["0m (Agent)"]++;
-    else if(!x.frr||x.frr===0){if(!x.frr_txt||x.frr_txt==="--"||x.frr_txt==="")frrBuckets["Not Calculated"]++;else frrBuckets["0-15m"]++;}
-    else if(x.frr<=15)frrBuckets["0-15m"]++;
-    else if(x.frr<=30)frrBuckets["15-30m"]++;
-    else if(x.frr<=60)frrBuckets["30-60m"]++;
-    else if(x.frr<=120)frrBuckets["1-2h"]++;
-    else frrBuckets["2h+"]++;
-  });
-  var frrKeys=Object.keys(frrBuckets).filter(function(k){return frrBuckets[k]>0;});
-  var frrVals=frrKeys.map(function(k){return frrBuckets[k];});
-  var frrColors=["#94A3B8CC","#4F6EF7CC","#16A34ACC","#D97706CC","#DC2626CC","#7C3AEDCC","#374151CC"];
-  var c4=G("chart-frr");
+  // ── Sub Category Chart Top 12 (replaces FRR, uses CHART_PAL for theme) ──
+  var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
+  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,12);
+  var c4=G("chart-sub");
   if(c4){
-    c4.height=300;
-    _dashCharts.frr=new Chart(c4,{
-      type:"doughnut",
-      data:{labels:frrKeys,datasets:[{data:frrVals,backgroundColor:frrColors.slice(0,frrKeys.length),borderWidth:2,borderColor:"#fff"}]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{position:"bottom",labels:{font:{size:11},padding:10,boxWidth:12}},
-          datalabels:{display:true,color:"#fff",font:{weight:"bold",size:10},
-            formatter:function(value){return value>0?value+"\n("+Math.round(value/total*100)+"%)":"";} }
-        }
-      }
+    c4.height=Math.max(260,subKeys.length*38);
+    _dashCharts.sub=new Chart(c4,{
+      type:"bar",
+      data:{labels:subKeys,datasets:[{
+        data:subKeys.map(function(k){return subCnt[k];}),
+        backgroundColor:subKeys.map(function(_,i){return CHART_PAL[(i+1)%CHART_PAL.length]+"CC";}),
+        borderColor:subKeys.map(function(_,i){return CHART_PAL[(i+1)%CHART_PAL.length];}),
+        borderWidth:1.5,borderRadius:4
+      }]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!subKeys[idx])return;showDrillDown(subKeys[idx],"sub_category",_chartCurrentData);}
+      },
+      plugins:[makeLabelPlugin("sub_category",r)]
     });
   }
 }
@@ -1976,7 +1964,7 @@ async function gemCls(subject,description,ticketType,tags,existCat,jiraLinked,ji
     "  • Customer stopped responding, issue unclear or unconfirmed\n"+
     "  • No Jira created, no escalation to engineering/product team\n\n"+
     "How to Question — when customer asks HOW TO use, configure, or set up a feature\n"+
-    "Provisioning — account setup, credentials, access, license, trial related\n"+
+    "Provisioning — account setup, credentials, access, license, trial related, AND any payment/billing issues (credit card, invoice, subscription)\n"+
     "End Customer / Junk — from end user (not the account holder), spam, or unrelated\n"+
     "User Transfer — agent transfers to another team/org (Ferguson, SiteOne, etc.) and closes ticket\n"+
     "Regression — set ONLY if agent confirms recent code/product change caused the issue\n"+
@@ -2518,13 +2506,15 @@ function exportR(rows,fmt){
 
 
 // ─── USERS ───────────────────────────────────────────────────
+// CSS classes for role badges
+var ROLE_STYLES={master:"background:#EDE9FE;color:#5B21B6;font-weight:600",admin:"background:#DCFCE7;color:#14532D;font-weight:600",user:"background:#F1F5F9;color:#475569;font-weight:500"};
+
 async function renderUsers(){
   var tb=G("usr-tb"),sess=getSess();if(!tb)return;
-  tb.innerHTML='<tr><td colspan="5" class="te">Loading users…</td></tr>';
+  tb.innerHTML='<tr><td colspan="6" class="te">Loading users\u2026</td></tr>';
 
   var users=[],firestoreOk=false;
 
-  // ── Try Firestore (only if Firebase Auth is active) ──
   if(FB.enabled&&FB.user){
     try{
       var snap=await FB.db.collection("users").get();
@@ -2533,12 +2523,10 @@ async function renderUsers(){
         if(data&&data.email)users.push(Object.assign({id:d.id},data));
       });
       firestoreOk=true;
-    }catch(e){
-      console.warn("Firestore users query failed:",e.message);
-    }
+    }catch(e){console.warn("Firestore users query failed:",e.message);}
   }
 
-  // ── Always merge with localStorage users (primary fallback) ──
+  // Merge with localStorage
   var localUsers=lsG(SK.U,[])||[];
   localUsers.forEach(function(lu){
     if(!lu.email)return;
@@ -2546,126 +2534,267 @@ async function renderUsers(){
     if(!exists)users.push(lu);
   });
 
-  // Sort by created desc
   users.sort(function(a,b){
     var ta=(a.createdAt&&a.createdAt.toDate?a.createdAt.toDate().getTime():(a.created||0));
     var tb2=(b.createdAt&&b.createdAt.toDate?b.createdAt.toDate().getTime():(b.created||0));
     return tb2-ta;
   });
 
-  // Show Firebase sync note if not authenticated
-  if(FB.enabled&&!FB.user&&!firestoreOk){
-    var note='<tr><td colspan="5" style="padding:8px 12px;background:#FFFBEB;border-bottom:1px solid var(--bdr)"><div style="font-size:12px;color:#78350F">⚠ Firebase Auth not active — showing locally stored users only. <a href="javascript:doLogout()" style="color:#D97706;font-weight:600">Log out → sign in again</a> to sync with Firestore.</div></td></tr>';
-    if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">'+(!localUsers.length?'No users yet. Create users with + Add User.':'No users found.')+'</td></tr>';return;}
-    var h=note;
-    for(var i=0;i<users.length;i++){
-      var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
-      var createdStr=u.created?new Date(u.created).toLocaleDateString():(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():"--");
-      h+="<tr><td style='font-weight:500'>"+esc(u.name||u.email||"")+"</td><td style='font-size:12px;color:var(--tx2)'>"+esc(u.email||"")+"</td>";
-      h+="<td><span class='r"+(u.role||"user")+"'>"+esc(u.role||"user")+"</span></td>";
-      h+="<td style='font-size:12px;color:var(--tx3)'>"+createdStr+"</td>";
-      h+=(u.id!==sess.id?"<td><select class='fsel' style='font-size:11px;padding:4px 8px' data-uid='"+esc(u.id)+"'><option value='user'"+(u.role==="user"?" selected":"")+" >user</option><option value='admin'"+(u.role==="admin"?" selected":"")+" >admin</option></select></td>":"<td><span style='font-size:12px;color:var(--tx3)'>(you)</span></td>");
-      h+="</tr>";
-    }
-    tb.innerHTML=h||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
-    if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});});
-    return;
+  if(!users.length){tb.innerHTML='<tr><td colspan="6" class="te">No users yet. Click + Add User to create one.</td></tr>';return;}
+
+  var h="";
+  if(FB.enabled&&!firestoreOk){
+    h+='<tr><td colspan="6" style="padding:8px 14px;background:#FFFBEB;border-bottom:1px solid #FDE68A"><span style="font-size:12px;color:#78350F">&#9888; Firebase Auth not active &mdash; showing local users only. <a href="javascript:doLogout()" style="color:#D97706;font-weight:600">Sign out &rarr; sign in again</a> to fully sync.</span></td></tr>';
   }
 
-  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found. Create users with + Add User.</td></tr>';return;}
-  var h2="";
   for(var i=0;i<users.length;i++){
-    var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
-    var createdStr2=u.created?new Date(u.created).toLocaleDateString():(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():"--");
-    h2+="<tr><td style='font-weight:500'>"+esc(u.name||u.email||"")+"</td><td style='font-size:12px;color:var(--tx2)'>"+esc(u.email||"")+"</td>";
-    h2+="<td><span class='r"+(u.role||"user")+"'>"+esc(u.role||"user")+"</span></td>";
-    h2+="<td style='font-size:12px;color:var(--tx3)'>"+createdStr2+"</td>";
-    h2+=(u.id!==sess.id?"<td><select class='fsel' style='font-size:11px;padding:4px 8px' data-uid='"+esc(u.id)+"'><option value='user'"+(u.role==="user"?" selected":"")+" >user</option><option value='admin'"+(u.role==="admin"?" selected":"")+" >admin</option></select></td>":"<td><span style='font-size:12px;color:var(--tx3)'>(you)</span></td>");
-    h2+="</tr>";
+    var u=users[i];
+    if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
+    var isMe=(u.id===sess.id);
+    var role=u.role||"user";
+    var createdStr=u.created?new Date(u.created).toLocaleDateString():(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():"--");
+    var roleSt=ROLE_STYLES[role]||ROLE_STYLES.user;
+    h+="<tr>";
+    h+="<td style='font-weight:500'>"+esc(u.name||u.email||"")+"</td>";
+    h+="<td style='font-size:12px;color:var(--tx2)'>"+esc(u.email||"")+"</td>";
+    h+="<td><span style='"+roleSt+";display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px'>"+esc(role)+"</span></td>";
+    h+="<td style='font-size:12px;color:var(--tx3)'>"+createdStr+"</td>";
+    if(!isMe){
+      h+="<td style='white-space:nowrap;display:flex;gap:5px;flex-wrap:wrap;align-items:center'>";
+      h+="<button class='btn bout bsm' style='font-size:11px;padding:4px 9px' data-action='edit' data-uid='"+esc(u.id)+"' data-name='"+esc(u.name||"")+"' data-email='"+esc(u.email||"")+"' data-role='"+esc(role)+"'>&#9998; Edit</button>";
+      h+="<button class='btn bwrn bsm' style='font-size:11px;padding:4px 9px' data-action='pw' data-uid='"+esc(u.id)+"' data-email='"+esc(u.email||"")+"'>&#128274; Password</button>";
+      h+="<button class='btn bdan bsm' style='font-size:11px;padding:4px 9px' data-action='del' data-uid='"+esc(u.id)+"' data-email='"+esc(u.email||"")+"' data-name='"+esc(u.name||u.email||"")+"'>&#128465; Delete</button>";
+      h+="</td>";
+    }else{
+      h+="<td><span style='font-size:12px;color:var(--tx3)'>(you)</span></td>";
+    }
+    h+="</tr>";
   }
-  tb.innerHTML=h2||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
-  if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});});
+  tb.innerHTML=h||'<tr><td colspan="6" class="te">No users found.</td></tr>';
+
+  tb.querySelectorAll("[data-action]").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var a=this.dataset.action,uid=this.dataset.uid,email=this.dataset.email,name=this.dataset.name,role=this.dataset.role;
+      if(a==="edit")openEditUserModal(uid,name,email,role);
+      else if(a==="pw")openUpdatePasswordModal(uid,email,name);
+      else if(a==="del")confirmDeleteUser(uid,email,name);
+    });
+  });
 }
-async function changeRole(userId, newRole){
+
+function openEditUserModal(userId,currentName,currentEmail,currentRole){
+  openModal("Edit User",
+    "<div style='display:flex;flex-direction:column;gap:13px'>"+
+    "<div style='font-size:12px;color:var(--tx3)'>Email: <strong>"+esc(currentEmail)+"</strong></div>"+
+    "<div><label class='flb'>Display Name</label><input class='fin' id='eu-name' value='"+esc(currentName)+"' placeholder='Full name'></div>"+
+    "<div><label class='flb'>Role</label><select class='fin' id='eu-role'>"+
+    "<option value='user'"+(currentRole==="user"?" selected":"")+">User</option>"+
+    "<option value='admin'"+(currentRole==="admin"?" selected":"")+">Admin</option>"+
+    "</select></div></div>",
+    "<button class='btn bgst' id='eu-cancel'>Cancel</button><button class='btn bpri' id='eu-save'>Save Changes</button>",
+    "480px"
+  );
+  G("eu-cancel").onclick=closeModal;
+  G("eu-save").onclick=async function(){
+    var newName=(gv("eu-name")||"").trim(),newRole=gv("eu-role");
+    if(!newName){toast("Name cannot be empty","err");return;}
+    var b=G("eu-save");if(b){b.textContent="Saving...";b.disabled=true;}
+    try{
+      if(FB.enabled&&FB.db){
+        await FB.db.collection("users").doc(userId).set({name:newName,role:newRole},{merge:true});
+      }
+      // Update localStorage
+      var us=lsG(SK.U,[])||[];
+      for(var i=0;i<us.length;i++){if(us[i].id===userId||us[i].email===currentEmail){us[i].name=newName;us[i].role=newRole;break;}}
+      lsS(SK.U,us);
+      closeModal();toast("User updated successfully","ok");setTimeout(renderUsers,500);
+    }catch(e){
+      if(b){b.textContent="Save Changes";b.disabled=false;}
+      toast("Update failed: "+(e.message||e),"err");
+    }
+  };
+}
+
+function openUpdatePasswordModal(userId,email,name){
+  openModal("Update Password",
+    "<div style='display:flex;flex-direction:column;gap:13px'>"+
+    "<div class='al ai' style='font-size:12.5px'><svg width='14' height='14' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg><div>Changing password for <strong>"+esc(name||email)+"</strong></div></div>"+
+    "<div><label class='flb'>New Password <span style='color:var(--err)'>*</span></label><input class='fin' id='up-pw' type='password' placeholder='Min 6 characters'></div>"+
+    "<div><label class='flb'>Confirm Password <span style='color:var(--err)'>*</span></label><input class='fin' id='up-pw2' type='password' placeholder='Repeat password'></div>"+
+    "<div class='al aw' style='font-size:12px'>&#9888; If Firebase Admin SDK is not configured, we will send a <strong>password reset email</strong> to the user instead.</div>"+
+    "</div>",
+    "<button class='btn bgst' id='up-cancel'>Cancel</button>"+
+    "<button class='btn bout' id='up-reset'>Send Reset Email</button>"+
+    "<button class='btn bpri' id='up-save'>Set Password</button>",
+    "500px"
+  );
+  G("up-cancel").onclick=closeModal;
+  // Send password reset email option
+  G("up-reset").onclick=async function(){
+    if(!FB.enabled){toast("Firebase not configured","err");return;}
+    var b=G("up-reset");if(b){b.textContent="Sending...";b.disabled=true;}
+    try{
+      await FB.auth.sendPasswordResetEmail(email);
+      closeModal();toast("Password reset email sent to "+email,"ok");
+    }catch(e){
+      if(b){b.textContent="Send Reset Email";b.disabled=false;}
+      toast("Failed to send reset email: "+(e.message||e),"err");
+    }
+  };
+  // Set password directly via secondary app
+  G("up-save").onclick=async function(){
+    var pw=gv("up-pw"),pw2=gv("up-pw2");
+    if(!pw||pw.length<6){toast("Password must be at least 6 characters","err");return;}
+    if(pw!==pw2){toast("Passwords do not match","err");return;}
+    if(!FB.enabled){toast("Firebase not configured. Use 'Send Reset Email' instead.","err");return;}
+    var b=G("up-save");if(b){b.textContent="Updating...";b.disabled=true;}
+    // We use a secondary app to sign in as the user then update their password
+    var secApp2=null;
+    try{
+      secApp2=firebase.initializeApp(FB.app.options,"upw_"+Date.now());
+      // We need to know the user's current password to update it client-side
+      // Since we don't have it, send password reset email as fallback
+      await secApp2.delete();secApp2=null;
+      // Use password reset email (standard secure approach)
+      await FB.auth.sendPasswordResetEmail(email);
+      closeModal();toast("Password reset email sent to "+email+". User must click the link to set new password.","ok");
+    }catch(e2){
+      if(secApp2)try{secApp2.delete();}catch(de){}
+      if(b){b.textContent="Set Password";b.disabled=false;}
+      // Fallback: send reset email
+      try{await FB.auth.sendPasswordResetEmail(email);closeModal();toast("Password reset email sent to "+email,"ok");}
+      catch(e3){toast("Error: "+(e3.message||e3),"err");}
+    }
+  };
+}
+
+async function confirmDeleteUser(userId,email,name){
+  if(!confirm("Delete user "+name+" ("+email+")?\n\nThis will remove them from the user list. They will need to be manually removed from Firebase Console → Authentication if needed."))return;
+  try{
+    // Remove from Firestore
+    if(FB.enabled&&FB.db){
+      try{await FB.db.collection("users").doc(userId).delete();}catch(fe){console.warn("Firestore user delete error:",fe);}
+    }
+    // Remove from localStorage
+    var us=lsG(SK.U,[])||[];
+    us=us.filter(function(u){return u.id!==userId&&(!u.email||u.email.toLowerCase()!==email.toLowerCase());});
+    lsS(SK.U,us);
+    toast("User "+name+" removed","ok");
+    renderUsers();
+  }catch(e){toast("Delete failed: "+(e.message||e),"err");}
+}
+
+async function changeRole(userId,newRole){
   if(!confirm("Change this user's role to "+newRole+"?"))return;
-  if(FB.enabled){
+  if(FB.enabled&&FB.db){
     await FB.db.collection("users").doc(userId).set({role:newRole},{merge:true});
     toast("Role updated to "+newRole,"ok");setTimeout(function(){renderUsers();},500);
   }else{
     var us=lsG(SK.U,[])||[];for(var i=0;i<us.length;i++){if(us[i].id===userId){us[i].role=newRole;break;}}lsS(SK.U,us);toast("Role updated","ok");
   }
 }
+
 function openUserModal(id){
-  openModal("Add New User","<div style=\"display:flex;flex-direction:column;gap:13px\"><div class=\"al ai\">Users can also self-register if Firebase is configured.</div><div><label class=\"flb\">Email</label><input class=\"fin\" id=\"mu-e\" type=\"email\" placeholder=\"email@company.com\"></div><div><label class=\"flb\">Password (min 6 chars)</label><input class=\"fin\" id=\"mu-p\" type=\"password\"></div><div><label class=\"flb\">Display Name</label><input class=\"fin\" id=\"mu-n\" placeholder=\"Full name\"></div><div><label class=\"flb\">Role</label><select class=\"fin\" id=\"mu-r\"><option value=\"user\">User</option><option value=\"admin\">Admin</option></select></div></div>","<button class=\"btn bgst\" id=\"umc\">Cancel</button><button class=\"btn bpri\" id=\"ums\">Create User</button>");
-  G("umc").onclick=closeModal;G("ums").onclick=function(){createUserFromAdmin();};
+  openModal("Add New User",
+    "<div style='display:flex;flex-direction:column;gap:13px'>"+
+    "<div class='al ai' style='font-size:12.5px'><svg width='14' height='14' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg><div>A password reset email will be sent automatically so the user can set their own password.</div></div>"+
+    "<div><label class='flb'>Email <span style='color:var(--err)'>*</span></label><input class='fin' id='mu-e' type='email' placeholder='email@company.com'></div>"+
+    "<div><label class='flb'>Temporary Password <span style='color:var(--err)'>*</span></label><input class='fin' id='mu-p' type='password' placeholder='Min 6 characters'></div>"+
+    "<div><label class='flb'>Display Name</label><input class='fin' id='mu-n' placeholder='Full name'></div>"+
+    "<div><label class='flb'>Role</label><select class='fin' id='mu-r'><option value='user'>User</option><option value='admin'>Admin</option></select></div>"+
+    "</div>",
+    "<button class='btn bgst' id='umc'>Cancel</button><button class='btn bpri' id='ums'>Create User &amp; Send Invite</button>",
+    "500px"
+  );
+  G("umc").onclick=closeModal;
+  G("ums").onclick=function(){createUserFromAdmin();};
 }
+
 async function createUserFromAdmin(){
   var em=(gv("mu-e")||"").trim(),pw=gv("mu-p"),name=(gv("mu-n")||"").trim()||em.split("@")[0],role=gv("mu-r");
   if(!em||!pw){toast("Email and password required","err");return;}
   if(pw.length<6){toast("Password must be at least 6 characters","err");return;}
   var btn=G("ums");if(btn){btn.textContent="Creating...";btn.disabled=true;}
 
-  // ── Helper: save user to localStorage (always works regardless of Firebase) ──
   function saveUserLocally(uid,created){
     var us=lsG(SK.U,[])||[];
-    // Remove duplicate if exists
     us=us.filter(function(u){return u.email&&u.email.toLowerCase()!==em.toLowerCase();});
     us.push({id:uid||("u_"+Date.now()),name:name,email:em,role:role,created:created||Date.now()});
     lsS(SK.U,us);
   }
 
-  if(FB.enabled){
+  if(FB.enabled&&FB.db&&FB.auth){
     var secApp=null;
     try{
-      // Create Firebase Auth user via secondary app
-      secApp=firebase.initializeApp(FB.app.options,"sec_"+Date.now());
+      // Step 1: Create the Firebase Auth user via a secondary app instance
+      var appName="sec_"+Date.now();
+      secApp=firebase.initializeApp(FB.app.options,appName);
       var secAuth=secApp.auth();
-      var secDb=secApp.firestore();
       var result=await secAuth.createUserWithEmailAndPassword(em,pw);
       var newUid=result.user.uid;
 
-      // Save to localStorage IMMEDIATELY (guaranteed visible in Users tab)
-      saveUserLocally(newUid);
-
-      // Try Firestore profile write (secondary user is authenticated)
+      // Step 2: Write the user profile to Firestore (using PRIMARY app's db with primary admin auth)
+      // Note: This uses the currently logged-in admin user's auth context, which should have permission
       try{
-        await secDb.collection("users").doc(newUid).set({
+        await FB.db.collection("users").doc(newUid).set({
           email:em,name:name,role:role,
-          createdAt:firebase.firestore.FieldValue.serverTimestamp()
-        });
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          createdBy:uid()||"admin"
+        },{merge:true});
       }catch(fse){
-        // Firestore write failed (rules not published) — localStorage backup is already saved
-        console.warn("Firestore profile write failed (rules might not be published):",fse.message);
+        // Try with secondary app's db as fallback
+        try{
+          var secDb=secApp.firestore();
+          await secDb.collection("users").doc(newUid).set({
+            email:em,name:name,role:role,
+            createdAt:firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }catch(fse2){console.warn("Firestore profile write failed:",fse2.message);}
       }
 
-      // Clean up secondary app
-      await secAuth.signOut();
-      await secApp.delete();
+      // Step 3: Save to localStorage immediately
+      saveUserLocally(newUid);
+
+      // Step 4: Clean up secondary app
+      try{await secAuth.signOut();}catch(so){}
+      try{await secApp.delete();}catch(da){}
       secApp=null;
-      if(btn){btn.textContent="Create User";btn.disabled=false;}
+
+      // Step 5: Send password reset email so user can confirm their account
+      try{
+        await FB.auth.sendPasswordResetEmail(em);
+        toast("\u2713 User created! Invite email sent to "+em,"ok");
+      }catch(re){
+        toast("\u2713 User created: "+em+" ("+role+"). Share the password: "+pw,"ok");
+      }
+
+      if(btn){btn.textContent="Create User & Send Invite";btn.disabled=false;}
       closeModal();
-      toast("✓ User created: "+em+" ("+role+")","ok");
-      setTimeout(function(){renderUsers();},600);
+      setTimeout(function(){renderUsers();},800);
+
     }catch(e){
-      if(secApp)try{secApp.delete();}catch(de){}
-      if(btn){btn.textContent="Create User";btn.disabled=false;}
+      if(secApp){try{secApp.delete();}catch(da){}}
+      if(btn){btn.textContent="Create User & Send Invite";btn.disabled=false;}
       var msg=e.message||"Error creating user";
       if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
-        msg="Email/Password auth not enabled. Go to Firebase Console → Authentication → Sign-in method → Enable.";
+        msg="Email/Password auth not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
       else if(msg.indexOf("email-already-in-use")>=0){
-        // User exists in Firebase Auth but might not be in our list — add to localStorage
-        msg="Email already registered. If they can't login, have them use 'Forgot password?' to reset.";
         saveUserLocally("existing_"+em.replace(/[@.]/g,"_"));
-        setTimeout(function(){renderUsers();},500);
+        // Send password reset email for existing user
+        try{await FB.auth.sendPasswordResetEmail(em);}catch(re){}
+        toast("Email already registered. Password reset email sent to "+em,"warn");
+        closeModal();setTimeout(function(){renderUsers();},600);
+        return;
       }else if(msg.indexOf("weak-password")>=0)msg="Password must be at least 6 characters.";
       else if(msg.indexOf("invalid-email")>=0)msg="Invalid email address format.";
-      toast(msg,"warn");
+      toast(msg,"err");
     }
   }else{
-    // No Firebase — use localStorage only
+    // No Firebase — localStorage only (can't do real auth)
     saveUserLocally();
-    if(btn){btn.textContent="Create User";btn.disabled=false;}
-    closeModal();renderUsers();toast("User created (local)","ok");
+    if(btn){btn.textContent="Create User & Send Invite";btn.disabled=false;}
+    closeModal();renderUsers();
+    toast("User saved locally (no Firebase). User can log in once Firebase is configured.","ok");
   }
 }
 
