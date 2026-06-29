@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --sb:#0B1628;--sb2:#152236;--sba:#1C3050;
+  --sb:#132045;--sb2:#1a2d54;--sba:#1f3460;
   --pri:#4F6EF7;--pris:#EEF1FE;
   --bg:#F0F3FA;--card:#fff;--tx:#0F1B2D;--tx2:#4A5568;--tx3:#94A3B8;
   --bdr:#E2E8F0;--bdr2:#CBD5E1;
@@ -231,6 +231,7 @@ select.fin{cursor:pointer}
 .cors-note code{background:#FEF3C7;padding:1px 6px;border-radius:4px;font-family:"JetBrains Mono",monospace;font-size:11.5px}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:99px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -244,13 +245,19 @@ select.fin{cursor:pointer}
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
-  <div class="lft"><span class="ldot"></span>Connected to GitHub Pages &middot; Firebase ready</div>
+  <div class="lft" style="font-size:11px;opacity:.35;margin-top:18px">DispatchTrack &copy; 2025 &middot; Ticket Evaluation Platform</div>
 </div></div>
 
 <!-- APP -->
 <div id="app" style="display:none">
   <nav id="sb">
-    <div class="sbh"><div class="sblo"><div class="sbic"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div><div class="sbbr">DispatchTrack</div><div class="sbbs">Ticket Eval Pro</div></div></div></div>
+    <div class="sbh"><div class="sblo" style="gap:0">
+  <div class="sbic" id="sb-logo-wrap" style="width:40px;height:40px;overflow:hidden;background:transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <img id="sb-logo-img" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:none" onerror="this.style.display='none'">
+    <svg id="sb-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+  </div>
+  <div style="margin-left:10px"><div class="sbbr" id="sb-brand-name">DispatchTrack</div><div class="sbbs">Ticket Eval Pro</div></div>
+</div></div>
     <div class="sbnav">
       <div class="sbsc">Main</div>
       <div class="sbi active" data-pg="dashboard"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
@@ -288,6 +295,17 @@ select.fin{cursor:pointer}
           <div class="col" style="flex:1;display:flex;flex-direction:column;gap:14px">
             <div class="card cbd"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:14px">Quick Start</div><div style="display:flex;flex-direction:column;gap:10px"><button class="btn bpri blg" data-pg="evaluate" style="justify-content:center">&#9654; Start Evaluation</button><button class="btn bout blg" data-pg="smb" style="justify-content:center">Upload SMB Data</button><button class="btn bout blg" data-pg="results" style="justify-content:center">View All Results</button></div></div>
             <div class="card cbd"><div class="slb" style="margin-bottom:10px">SMB Database</div><div id="dash-smb"><div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div></div></div>
+          </div>
+        </div>
+        <!-- Dashboard Charts -->
+        <div id="dash-charts" style="display:none">
+          <div class="g2">
+            <div class="card"><div class="chd"><span class="ct">Category Distribution</span><span class="bdg bgr" id="chart-cat-total"></span></div><div class="cbd" style="height:260px;position:relative"><canvas id="chart-cat"></canvas></div></div>
+            <div class="card"><div class="chd"><span class="ct">Environment Distribution</span></div><div class="cbd" style="height:260px;position:relative"><canvas id="chart-env"></canvas></div></div>
+          </div>
+          <div class="g2">
+            <div class="card"><div class="chd"><span class="ct">Top Sub Categories</span></div><div class="cbd" style="height:280px;position:relative"><canvas id="chart-sub"></canvas></div></div>
+            <div class="card"><div class="chd"><span class="ct">FRR Analysis</span></div><div class="cbd" style="height:280px;position:relative"><canvas id="chart-frr"></canvas></div></div>
           </div>
         </div>
       </div>
@@ -541,6 +559,33 @@ select.fin{cursor:pointer}
         </div>
 
         <div class="card">
+          <div class="chd"><span class="ct">&#127744; Brand &amp; Appearance</span><button class="btn bpri bsm" id="brand-save-btn">Save</button></div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div><label class="flb">Logo URL <span style="font-weight:400;color:var(--tx3)">(stored persistently in browser)</span></label>
+              <input id="s-logo" class="fin" type="url" placeholder="https://example.com/logo.svg or logo.png">
+              <div class="fhi">Paste any image URL. Saved in your browser — survives page refreshes. Clear the field and Save to remove.</div>
+            </div>
+            <div id="brand-preview" style="display:none;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr)">
+              <div style="font-size:11.5px;color:var(--tx3);margin-bottom:6px">Preview:</div>
+              <img id="brand-preview-img" style="max-height:50px;max-width:220px;object-fit:contain" onerror="this.parentElement.style.display='none'">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+        <div class="card">
+          <div class="chd"><span class="ct">&#127744; Brand &amp; Appearance</span><button class="btn bpri bsm" id="brand-save-btn">Save</button></div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div><label class="flb">Logo URL <span style="font-weight:400;color:var(--tx3)">(stored persistently, survives refresh)</span></label>
+              <input id="s-logo" class="fin" type="url" placeholder="https://example.com/logo.svg">
+              <div class="fhi">Paste any image URL (SVG, PNG, JPEG). Saved in browser storage permanently. Clear to remove.</div>
+            </div>
+            <div id="brand-preview" style="display:none;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr);display:flex;align-items:center;gap:12px">
+              <img id="brand-preview-img" style="max-height:48px;max-width:180px;object-fit:contain" onerror="G('brand-preview').style.display='none'">
+              <span style="font-size:12px;color:var(--tx3)">Logo preview</span>
+            </div>
+          </div>
+        </div>
           <div class="chd"><span class="ct">&#x1F525; Firebase Integration <span class="bdg bgr" id="fb-status-badge" style="font-size:10px">Not configured</span></span><button class="btn bout bsm" id="fb-test-btn">Test Firebase</button></div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:13px">
             <div class="al ai" style="font-size:12.5px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Paste your Firebase project config below. Results, corrections, and SMB data will sync to Firestore. Login uses Firebase Authentication.</div></div>
@@ -788,21 +833,25 @@ async function doLogin(){
     // ── Master login ALWAYS works (checks master credentials first) ──
     if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){
       setSess(MASTER);
+      bootApp(); // Always boot immediately for master
+      // Try Firebase auth non-blocking (for Firestore access) — don't await
       if(FB.enabled){
-        try{
-          var mr=await FB.auth.signInWithEmailAndPassword(em,pw);
-          FB.user=mr.user;
-          // Ensure master has a Firestore profile document
-          await FB.db.collection("users").doc(mr.user.uid).set(
+        FB.auth.signInWithEmailAndPassword(em,pw).then(function(r){
+          FB.user=r.user;
+          return FB.db.collection("users").doc(r.user.uid).set(
             {email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},
             {merge:true}
           );
-        }catch(me){
+        }).then(function(){
+          // Refresh user management if open
+          var pg=G("pg-users");if(pg&&pg.classList.contains("active"))renderUsers();
+          var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
+        }).catch(function(me){
           FB.user=null;
-          console.warn("Master Firebase Auth failed (OK if not registered):",me.message);
-        }
+          console.warn("Master Firebase Auth (optional):",me.code||me.message);
+        });
       }
-      bootApp();return;
+      return;
     }
     if(FB.enabled){
       // Firebase Authentication for regular users
@@ -1148,6 +1197,8 @@ function renderDash(){
     if(ks.length){var t={};ks.forEach(function(k){var v2=ST.smbData[k];t[v2]=(t[v2]||0)+1;});var h2="";for(var k2 in t)h2+="<div style=\"display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px\"><span>"+esc(k2)+"</span><span style=\"font-family:'JetBrains Mono',monospace\">"+t[k2]+"</span></div>";ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;}
     else ds.innerHTML='<div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div>';
   }catch(e){console.error("renderDash:",e);}
+  // Render charts
+  try{renderDashboardCharts();}catch(ce){console.warn("Chart error:",ce);}
 }
 
 // ─── SMB ─────────────────────────────────────────────────────
@@ -1361,6 +1412,99 @@ function buildLrnEx(){
 var SK_TRN="tep_training";
 function getTraining(){return lsG(SK_TRN,[])||[];}
 function saveTrainingData(arr){lsS(SK_TRN,arr);upBadges();}
+
+// ─── LOGO / BRAND ────────────────────────────────────────────
+var SK_LOGO="tep_logo";
+function getLogo(){return lsG(SK_LOGO,null)||"";}
+function saveLogo(url){if(url)lsS(SK_LOGO,url);else lsD(SK_LOGO);}
+function updateSidebarLogo(){
+  var url=getLogo();
+  var img=G("sb-logo-img"),svg=G("sb-logo-svg");
+  if(url&&img&&svg){img.src=url;img.style.display="block";svg.style.display="none";}
+  else if(img&&svg){img.style.display="none";svg.style.display="block";}
+}
+function saveBrandSettings(){
+  var url=(gv("s-logo")||"").trim();
+  saveLogo(url);
+  updateSidebarLogo();
+  // Update preview
+  var prev=G("brand-preview"),pimg=G("brand-preview-img");
+  if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}
+  else if(prev)prev.style.display="none";
+  toast(url?"Logo saved!":"Logo removed","ok");
+}
+function loadBrandSettings(){
+  var url=getLogo();
+  var inp=G("s-logo");if(inp)inp.value=url||"";
+  var prev=G("brand-preview"),pimg=G("brand-preview-img");
+  if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}
+  else if(prev)prev.style.display="none";
+}
+
+// ─── DASHBOARD CHARTS ─────────────────────────────────────────
+var _dashCharts={};
+var CHART_PAL=["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B"];
+function destroyCharts(){Object.keys(_dashCharts).forEach(function(k){if(_dashCharts[k])_dashCharts[k].destroy();});_dashCharts={};}
+
+function renderDashboardCharts(){
+  destroyCharts();
+  var r=ST.results;
+  if(!r||!r.length){G("dash-charts").style.display="none";return;}
+  G("dash-charts").style.display="block";
+
+  // ── Category Chart ──
+  var catCnt={};r.forEach(function(x){var c=x.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
+  var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];});
+  var total=r.length;
+  var ctg=G("chart-cat-total");if(ctg)ctg.textContent=total+" tickets";
+  var c1=G("chart-cat");if(c1){c1.height=Math.max(220,catKeys.length*32);
+    _dashCharts.cat=new Chart(c1,{type:"bar",data:{labels:catKeys.map(function(k){return k+" ("+Math.round(catCnt[k]/total*100)+"%)"}),datasets:[{data:catKeys.map(function(k){return catCnt[k];}),backgroundColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";}}}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});}
+
+  // ── Environment Chart ──
+  var envCnt={};r.forEach(function(x){var e=x.environment||"Unknown";envCnt[e]=(envCnt[e]||0)+1;});
+  var envKeys=Object.keys(envCnt).sort(function(a,b){return envCnt[b]-envCnt[a];}).slice(0,10);
+  var c2=G("chart-env");if(c2){c2.height=Math.max(220,envKeys.length*32);
+    _dashCharts.env=new Chart(c2,{type:"bar",data:{labels:envKeys.map(function(k){return k+" ("+Math.round(envCnt[k]/total*100)+"%)"}),datasets:[{data:envKeys.map(function(k){return envCnt[k];}),backgroundColor:envKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:envKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});}
+
+  // ── Sub Category Chart (top 10) ──
+  var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
+  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,10);
+  var c3=G("chart-sub");if(c3){c3.height=320;
+    _dashCharts.sub=new Chart(c3,{type:"bar",data:{labels:subKeys.map(function(k){return k.length>25?k.substring(0,25)+"...":k;}),datasets:[{label:"Tickets",data:subKeys.map(function(k){return subCnt[k];}),backgroundColor:CHART_PAL.map(function(c){return c+"BB";}),borderColor:CHART_PAL,borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";}}}}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:10}}}}});}
+
+  // ── FRR Distribution Chart ──
+  var frrBuckets={"0-15m":0,"15-30m":0,"30-60m":0,"1-2h":0,"2h+":0,"Agent/Internal":0,"Not Calculated":0};
+  r.forEach(function(x){
+    if(x.frr_txt&&(x.frr_txt.indexOf("agent")>=0||x.frr_txt.indexOf("internal")>=0||x.frr_txt.indexOf("0m (")>=0))frrBuckets["Agent/Internal"]++;
+    else if(!x.frr||x.frr===0){if(x.frr_txt&&x.frr_txt!=="--"&&x.frr_txt!=="")frrBuckets["Not Calculated"]++;else if(x.frr===0)frrBuckets["0-15m"]++;}
+    else if(x.frr<=15)frrBuckets["0-15m"]++;
+    else if(x.frr<=30)frrBuckets["15-30m"]++;
+    else if(x.frr<=60)frrBuckets["30-60m"]++;
+    else if(x.frr<=120)frrBuckets["1-2h"]++;
+    else frrBuckets["2h+"]++;
+  });
+  var frrKeys=Object.keys(frrBuckets).filter(function(k){return frrBuckets[k]>0;});
+  var c4=G("chart-frr");if(c4){c4.height=280;
+    if(c4){c4.height=280;
+    var frrLabels=frrKeys;
+    var frrData=frrKeys.map(function(k){return frrBuckets[k];});
+    _dashCharts.frr=new Chart(c4,{
+      type:"doughnut",
+      data:{
+        labels:frrLabels,
+        datasets:[{data:frrData,backgroundColor:["#4F6EF7CC","#16A34ACC","#D97706CC","#DC2626CC","#7C3AEDCC","#94A3B8CC","#374151CC"],borderWidth:2,borderColor:"#fff"}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:"bottom",labels:{font:{size:11},padding:8}},
+          tooltip:{callbacks:{label:function(ctx){return ctx.label+": "+ctx.parsed+" ("+Math.round(ctx.parsed/total*100)+"%)";} }}
+        }
+      }
+    });
+  }
+}
+}
 
 // ─── ZERO-FRR AGENTS ─────────────────────────────────────────
 var SK_AGENTS="tep_agents";
@@ -1670,11 +1814,27 @@ async function startEval(){
               log("  AB: Support not in CC","warn");
             }
           }else if(!asgn){
-            res.frr_txt="Never assigned";
-            log("  FRR: Never assigned","warn");
+            res.frr_txt="--";
+            var why="FRR not calculated: Agent assignment not found in ticket history (ticket may have been auto-closed, unassigned, or created via trigger)";
+            abNotes.push(why);
+            log("  FRR: Not readable — "+why,"warn");
           }else{
-            res.frr_txt="No public reply sent";
-            log("  FRR: No public reply","warn");
+            res.frr_txt="--";
+            // Build helpful diagnostic
+            var replyCount=0,agentReplyCount=0,automatedCount=0;
+            for(var cr2=0;cr2<comments.length;cr2++){
+              var cm=comments[cr2];
+              if(!cm.public)continue;replyCount++;
+              if(String(cm.author_id)===String(t.requester_id))continue;
+              if(cm.via&&(cm.via.channel==="rule"||cm.via.channel==="trigger"||cm.via.channel==="automation"))automatedCount++;
+              else agentReplyCount++;
+            }
+            var why2="FRR not calculated: Agent assigned at "+(asgn?asgn.toLocaleString():"?");
+            if(automatedCount>0&&agentReplyCount===0)why2+=" but only automated/trigger replies found ("+automatedCount+")";
+            else if(replyCount===0)why2+=" but no public comments found";
+            else why2+=" but no agent reply identified ("+replyCount+" public comments)";
+            abNotes.push(why2);
+            log("  FRR: Not readable — "+why2,"warn");
           }
         }
       }
@@ -2132,6 +2292,7 @@ function loadSettings(){
   var gm=G("s-gm");if(gm){var savedMod=(s.gm||HC.GEM_MOD).trim();var found=false;for(var i=0;i<gm.options.length;i++){if(gm.options[i].value===savedMod){gm.value=savedMod;found=true;break;}}if(!found&&savedMod){gm.value="custom";var cust=G("s-gm-custom");if(cust){cust.style.display="block";cust.value=savedMod;}}}
   var ds=G("dt-stats");if(ds)ds.textContent=ST.results.length+" results / "+(lsG(SK.CO,[])||[]).length+" corrections / "+(FB.enabled?"Firebase: "+FB.app.options.projectId:"localStorage only");
   loadZeroFrrSettings();
+  loadBrandSettings();
   // Load Firebase config
   var fbc=G("s-fb");if(fbc){var saved=lsG(SK.FB,null);if(saved){try{fbc.value=typeof saved==="string"?saved:JSON.stringify(typeof saved==="object"?saved:JSON.parse(saved),null,2);}catch(e){}}}
   upBadges();
@@ -2263,6 +2424,7 @@ function bootApp(){
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   ST.tech=getTech();renderDash();
   updateLoginUI();
+  updateSidebarLogo();
   // Show Firebase auth banner if Firebase is configured but auth not active
   showFirebaseAuthBanner();
 }
@@ -2270,29 +2432,30 @@ function bootApp(){
 function showFirebaseAuthBanner(){
   // Remove any existing banner
   var existing=G("fb-auth-banner");if(existing)existing.parentNode.removeChild(existing);
-  if(!FB.enabled)return; // Firebase not configured — no banner needed
-  if(FB.user)return; // Firebase Auth is active — no banner needed
+  if(!FB.enabled)return;
+  if(FB.user)return;
+  if(!isAdmin())return; // Only show to admins, not regular users
   // Firebase is configured but no auth token — show gentle reminder
   var topbar=G("topbar");if(!topbar)return;
   var banner=document.createElement("div");
   banner.id="fb-auth-banner";
   banner.style.cssText="background:#FFFBEB;border-bottom:1px solid #FDE68A;padding:8px 24px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:#78350F;flex-shrink:0";
-  banner.innerHTML="<svg width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>"+
-    "<span><strong>Firebase sync inactive.</strong> Log out and sign back in to activate Firebase Authentication and enable cloud sync.</span>"+
-    "<button onclick=\"doLogout()\" style=\"background:none;border:1px solid #D97706;color:#78350F;border-radius:5px;padding:3px 10px;font-size:11.5px;cursor:pointer;font-weight:600;margin-left:auto;white-space:nowrap\">Log out &rarr; Sign in again</button>"+
-    "<button onclick=\"this.parentNode.style.display=\'none\'\" style=\"background:none;border:none;color:#B45309;cursor:pointer;font-size:16px;padding:0;line-height:1\">&times;</button>";
+  banner.innerHTML="<svg width=\"13\" height=\"13\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>"+
+    "<span style=\"font-size:12px\"><strong>Firebase sync inactive.</strong> <a href=\"javascript:doLogout()\" style=\"color:#D97706;font-weight:600\">Log out &rarr; sign in again</a> to activate cloud sync.</span>"+
+    "<button onclick=\"this.parentNode.style.display=\'none\'\" style=\"background:none;border:none;color:#B45309;cursor:pointer;font-size:16px;padding:0;line-height:1;margin-left:auto\">&times;</button>";
   // Insert after topbar
   topbar.parentNode.insertBefore(banner, topbar.nextSibling);
 }
 function updateLoginUI(){
-  var lft=document.querySelector(".lft");
-  if(!lft)return;
   if(FB.enabled){
     var existing=G("signup-row");
     if(!existing){
-      var row=document.createElement("div");row.id="signup-row";row.style.cssText="text-align:center;margin-top:14px;font-size:12.5px;color:rgba(255,255,255,.45)";
-      row.innerHTML='Don\'t have an account? <button onclick="doSignUp()" style="background:none;border:none;color:#93C5FD;cursor:pointer;font-size:12.5px;text-decoration:underline">Sign Up</button> | <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px">Forgot password?</button>';
-      var lcard=document.querySelector(".lcard");if(lcard)lcard.appendChild(row);
+      var lcard=document.querySelector(".lcard");if(!lcard)return;
+      var row=document.createElement("div");row.id="signup-row";
+      row.style.cssText="text-align:center;margin-top:12px;font-size:12.5px;color:rgba(255,255,255,.45)";
+      row.innerHTML="Don't have an account? <button onclick='doSignUp()' style='background:none;border:none;color:#93C5FD;cursor:pointer;font-size:12.5px;text-decoration:underline'>Sign Up</button>"+
+        " &nbsp;|&nbsp; <button onclick='doResetPassword()' style='background:none;border:none;color:rgba(255,255,255,.32);cursor:pointer;font-size:11px'>Forgot password?</button>";
+      lcard.insertBefore(row, lcard.querySelector(".lft"));
     }
   }
 }
@@ -2373,6 +2536,9 @@ document.addEventListener("DOMContentLoaded",function(){
   var zdt=G("zd-test"),zds=G("zd-save"),gmt=G("gem-test"),gms=G("gem-save"),fbt=G("fb-test-btn"),fbs=G("fb-save-btn");
   var agSave=G("agents-save-btn"),agAdd=G("agents-add-btn"),agNew=G("s-agent-new");
   if(agSave)agSave.onclick=saveZeroFrrSettings;
+  var bSave=G("brand-save-btn"),sLogo=G("s-logo");
+  if(bSave)bSave.onclick=saveBrandSettings;
+  if(sLogo)sLogo.addEventListener("input",function(){var prev=G("brand-preview"),pimg=G("brand-preview-img");var url=this.value.trim();if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}else if(prev)prev.style.display="none";});
   if(agAdd)agAdd.onclick=function(){addZeroFrrAgent(gv("s-agent-new"));var inp=G("s-agent-new");if(inp)inp.value="";};
   if(agNew)agNew.addEventListener("keydown",function(e){if(e.key==="Enter")addZeroFrrAgent(gv("s-agent-new"));});
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
@@ -2421,6 +2587,7 @@ document.addEventListener("DOMContentLoaded",function(){
   // Boot
   var s=getSess();if(s)bootApp();else{G("lw").style.display="flex";G("app").style.display="none";}
   ST.tech=getTech();showPh(1);
+  updateSidebarLogo(); // Restore logo on page load
 });
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--bdr);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
