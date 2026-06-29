@@ -333,10 +333,10 @@ select.fin{cursor:pointer}
           </div>
           <div class="g2">
             <div class="card">
-              <div class="chd"><span class="ct">Top Sub Categories</span>
-                <button class="btn bgst bsm" onclick="downloadChart('chart-sub','sub-categories')">&#x2B07; PNG</button>
+              <div class="chd"><span class="ct">Customer Type (SMB)</span>
+                <button class="btn bgst bsm" onclick="downloadChart('chart-smb','smb-distribution')">&#x2B07; PNG</button>
               </div>
-              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-sub" style="cursor:pointer"></canvas></div>
+              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-smb" style="cursor:pointer"></canvas></div>
             </div>
             <div class="card">
               <div class="chd"><span class="ct">FRR Distribution</span>
@@ -895,21 +895,36 @@ async function doLogin(){
       // Firebase Authentication for regular users
       var result=await FB.auth.signInWithEmailAndPassword(em,pw);
       FB.user=result.user;
-      // Load user profile from Firestore
-      var snap2=await FB.db.collection("users").doc(result.user.uid).get().catch(function(){return{exists:false};});
-      var profile=snap2.exists?snap2.data():null;
+      // Get profile: try Firestore, fallback to localStorage
+      var profile=null;
+      try{
+        var snap2=await FB.db.collection("users").doc(result.user.uid).get();
+        profile=snap2.exists?snap2.data():null;
+      }catch(fe){console.warn("Profile Firestore read failed:",fe.message);}
+      if(!profile){
+        var lsu=lsG(SK.U,[])||[];
+        for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
+      }
       var role="user",name=em.split("@")[0];
       if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
       else if(profile){role=profile.role||"user";name=profile.name||name;}
-      if(!profile){
-        // First login — write profile; user is authenticated so rules allow it
-        await FB.db.collection("users").doc(result.user.uid).set(
-          {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
-          {merge:true}
-        );
+      // Try to write profile to Firestore (catch permission errors gracefully)
+      try{
+        if(!profile||!profile.createdAt){
+          await FB.db.collection("users").doc(result.user.uid).set(
+            {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
+            {merge:true}
+          );
+        }
+      }catch(we){console.warn("Profile write failed:",we.message);}
+      // Always save to localStorage
+      var lsu2=lsG(SK.U,[])||[];
+      if(!lsu2.some(function(u){return u.id===result.user.uid;})){
+        lsu2.push({id:result.user.uid,email:em,name:name,role:role,created:Date.now()});
+        lsS(SK.U,lsu2);
       }
       setSess({id:result.user.uid,email:em,name:name,role:role});
-      await loadDataFromFirestore();
+      try{await loadDataFromFirestore();}catch(lde){}
       bootApp();
     }else{
       // Fallback: hardcoded master
@@ -1557,15 +1572,13 @@ function showDrillDown(value,field,data){
   });
   if(matching.length>150)h+='<tr><td colspan="7" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export the data for full list.</td></tr>';
   h+="</tbody></table></div>";
-  // Use direct DOM manipulation instead of openModal to avoid timing issues
-  var ov=G("modal-overlay");if(!ov)return;
-  ov.style.display="flex";
-  ov.innerHTML='<div class="modal" style="max-width:760px;width:95vw"><div class="mhd"><div class="mti">'+esc(fieldLabel)+': '+esc(value)+'</div><button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx3);line-height:1">&times;</button></div><div class="mbd">'+h+'</div><div class="mft"><button class="btn bpri" onclick="closeModal()">Close</button></div></div>';
+  openModal(esc(fieldLabel)+": "+esc(value), h, '<button class="btn bpri" id="dd-cl">Close</button>', "760px");
+  var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
 }
 
 function makeLabelPlugin(field,data){
   return{
-    id:"inlineLabels",
+    id:"inlineLabels-"+field,
     afterDatasetsDraw:function(chart){
       var ctx=chart.ctx;
       var total=chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);
@@ -1600,6 +1613,13 @@ function renderDashboardCharts(){
   var badge=G("chart-count-badge");if(badge)badge.textContent=total+" tickets";
   if(!total){G("dash-charts").style.display="none";return;}
   G("dash-charts").style.display="block";
+  // Attach keyboard-accessible canvas click hint
+  ["chart-cat","chart-env","chart-smb","chart-frr"].forEach(function(id){
+    var cv=G(id);if(cv&&!cv._hint){
+      cv._hint=true;
+      cv.title="Click a bar to see ticket details";
+    }
+  });
 
   var catTotal=G("chart-cat-total");if(catTotal)catTotal.textContent=total+" tickets";
 
@@ -1643,23 +1663,71 @@ function renderDashboardCharts(){
     });
   }
 
-  // ── Sub Category Chart (top 12) ──
-  var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
-  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,12);
-  var c3=G("chart-sub");
+  // ── SMB Customer Type Chart ──
+  var smbTypes=["SMB","Mega","Micro","Unknown"];
+  var smbCnt={"SMB":0,"Mega":0,"Micro":0,"Unknown":0};
+  r.forEach(function(x){
+    var s=x.smb_type||"Unknown";
+    if(!(s in smbCnt))s="Unknown";
+    smbCnt[s]++;
+  });
+  var smbKeys=smbTypes.filter(function(k){return smbCnt[k]>0;});
+  var smbColors={"SMB":"#4F6EF7","Mega":"#16A34A","Micro":"#D97706","Unknown":"#94A3B8"};
+  var c3=G("chart-smb");
   if(c3){
-    c3.height=Math.max(280,subKeys.length*36);
-    _dashCharts.sub=new Chart(c3,{
+    c3.height=Math.max(180,smbKeys.length*70);
+    _dashCharts.smb=new Chart(c3,{
       type:"bar",
-      data:{labels:subKeys.map(function(k){return k.length>30?k.substring(0,30)+"...":k;}),datasets:[{label:"Tickets",data:subKeys.map(function(k){return subCnt[k];}),backgroundColor:subKeys.map(function(_,i){return CHART_PAL[(i+6)%CHART_PAL.length]+"CC";}),borderColor:subKeys.map(function(_,i){return CHART_PAL[(i+6)%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
-      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},datalabels:{display:false},
-          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
-        },
-        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:10}}}},
-        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!subKeys[idx])return;showDrillDown(subKeys[idx],"sub_category",_chartCurrentData);}
+      data:{
+        labels:smbKeys,
+        datasets:[{
+          data:smbKeys.map(function(k){return smbCnt[k];}),
+          backgroundColor:smbKeys.map(function(k){return smbColors[k]+"CC";}),
+          borderColor:smbKeys.map(function(k){return smbColors[k];}),
+          borderWidth:1.5,borderRadius:6
+        }]
       },
-      plugins:[makeLabelPlugin("sub_category",r)]
+      options:{
+        indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" customers ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:12,weight:"600"}}}},
+        onClick:function(evt,els){
+          if(!els||!els.length)return;
+          var idx=els[0].index;
+          if(idx===undefined||!smbKeys[idx])return;
+          showDrillDown(smbKeys[idx],"smb_type",_chartCurrentData);
+        }
+      },
+      plugins:[{
+        id:"smbInlineLabels",
+        afterDatasetsDraw:function(chart){
+          var ctx=chart.ctx;
+          var ds=chart.data.datasets[0];
+          var total2=ds.data.reduce(function(a,b){return a+b;},0);
+          var meta=chart.getDatasetMeta(0);
+          meta.data.forEach(function(bar,idx){
+            var val=ds.data[idx];if(!val)return;
+            var pct=Math.round(val/total2*100);
+            var label=val+" customers ("+pct+"%)";
+            var barWidth=Math.abs(bar.x-bar.base);
+            ctx.save();
+            ctx.font="bold 11px Inter,sans-serif";
+            var textW=ctx.measureText(label).width;
+            if(barWidth>textW+12){
+              ctx.fillStyle="#fff";ctx.textAlign="left";ctx.textBaseline="middle";
+              ctx.fillText(label,bar.base+8,bar.y);
+            }else{
+              ctx.fillStyle=smbColors[smbKeys[idx]]||"#374151";ctx.textAlign="left";ctx.textBaseline="middle";
+              ctx.fillText(label,bar.x+4,bar.y);
+            }
+            ctx.restore();
+          });
+        }
+      }]
     });
   }
 
@@ -2400,61 +2468,71 @@ function exportR(rows,fmt){
 // ─── USERS ───────────────────────────────────────────────────
 async function renderUsers(){
   var tb=G("usr-tb"),sess=getSess();if(!tb)return;
-  var authAlert=G("auth-not-enabled-alert");if(authAlert)authAlert.style.display="none";
   tb.innerHTML='<tr><td colspan="5" class="te">Loading users…</td></tr>';
-  var users=[];
-  if(FB.enabled){
-    // If FB.user is null, Firebase Auth session not active — show guidance
-    if(!FB.user){
-      tb.innerHTML='<tr><td colspan="5" class="te" style="padding:20px">'+
-        '<div style="max-width:460px;margin:0 auto;line-height:1.7">'+
-        '<strong>Firebase Auth session not active.</strong><br>'+
-        'Log out and log back in so Firebase Authentication can load users from Firestore.<br>'+
-        '<button class="btn bpri bsm" onclick="doLogout()" style="margin-top:10px">Log out now</button>'+
-        '</div></td></tr>';
-      return;
-    }
+
+  var users=[],firestoreOk=false;
+
+  // ── Try Firestore (only if Firebase Auth is active) ──
+  if(FB.enabled&&FB.user){
     try{
-      // Query users collection - profiles stored directly at users/{uid}
       var snap=await FB.db.collection("users").get();
       snap.docs.forEach(function(d){
         var data=d.data();
         if(data&&data.email)users.push(Object.assign({id:d.id},data));
       });
-      // Sort by createdAt desc in JS (no index required)
-      users.sort(function(a,b){
-        var ta=a.createdAt&&a.createdAt.toDate?a.createdAt.toDate().getTime():(a.created||0);
-        var tb2=b.createdAt&&b.createdAt.toDate?b.createdAt.toDate().getTime():(b.created||0);
-        return tb2-ta;
-      });
+      firestoreOk=true;
     }catch(e){
-      console.error("renderUsers error:",e);
-      users=lsG(SK.U,[])||[];
-      if(authAlert&&e.message&&(e.message.indexOf("permission")>=0||e.message.indexOf("Missing")>=0)){authAlert.style.display="block";}
+      console.warn("Firestore users query failed:",e.message);
     }
-  }else{users=lsG(SK.U,[])||[];}
-  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found yet. Users appear here after first login or after being created.</td></tr>';return;}
-  var h="";
+  }
+
+  // ── Always merge with localStorage users (primary fallback) ──
+  var localUsers=lsG(SK.U,[])||[];
+  localUsers.forEach(function(lu){
+    if(!lu.email)return;
+    var exists=users.some(function(u){return u.email&&u.email.toLowerCase()===lu.email.toLowerCase();});
+    if(!exists)users.push(lu);
+  });
+
+  // Sort by created desc
+  users.sort(function(a,b){
+    var ta=(a.createdAt&&a.createdAt.toDate?a.createdAt.toDate().getTime():(a.created||0));
+    var tb2=(b.createdAt&&b.createdAt.toDate?b.createdAt.toDate().getTime():(b.created||0));
+    return tb2-ta;
+  });
+
+  // Show Firebase sync note if not authenticated
+  if(FB.enabled&&!FB.user&&!firestoreOk){
+    var note='<tr><td colspan="5" style="padding:8px 12px;background:#FFFBEB;border-bottom:1px solid var(--bdr)"><div style="font-size:12px;color:#78350F">⚠ Firebase Auth not active — showing locally stored users only. <a href="javascript:doLogout()" style="color:#D97706;font-weight:600">Log out → sign in again</a> to sync with Firestore.</div></td></tr>';
+    if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">'+(!localUsers.length?'No users yet. Create users with + Add User.':'No users found.')+'</td></tr>';return;}
+    var h=note;
+    for(var i=0;i<users.length;i++){
+      var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
+      var createdStr=u.created?new Date(u.created).toLocaleDateString():(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():"--");
+      h+="<tr><td style='font-weight:500'>"+esc(u.name||u.email||"")+"</td><td style='font-size:12px;color:var(--tx2)'>"+esc(u.email||"")+"</td>";
+      h+="<td><span class='r"+(u.role||"user")+"'>"+esc(u.role||"user")+"</span></td>";
+      h+="<td style='font-size:12px;color:var(--tx3)'>"+createdStr+"</td>";
+      h+=(u.id!==sess.id?"<td><select class='fsel' style='font-size:11px;padding:4px 8px' data-uid='"+esc(u.id)+"'><option value='user'"+(u.role==="user"?" selected":"")+" >user</option><option value='admin'"+(u.role==="admin"?" selected":"")+" >admin</option></select></td>":"<td><span style='font-size:12px;color:var(--tx3)'>(you)</span></td>");
+      h+="</tr>";
+    }
+    tb.innerHTML=h||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
+    if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});});
+    return;
+  }
+
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" class="te">No users found. Create users with + Add User.</td></tr>';return;}
+  var h2="";
   for(var i=0;i<users.length;i++){
     var u=users[i];if(u.email&&u.email.toLowerCase()===MASTER.email.toLowerCase())continue;
-    var createdStr=u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():(u.created?new Date(u.created).toLocaleDateString():"--");
-    h+="<tr>";
-    h+="<td style=\"font-weight:500\">"+esc(u.name||u.email||"")+"</td>";
-    h+="<td style=\"font-size:12px;color:var(--tx2)\">"+esc(u.email||"")+"</td>";
-    h+="<td><span class=\"r"+esc(u.role||"user")+"\">"+esc(u.role||"user")+"</span></td>";
-    h+="<td style=\"font-size:12px;color:var(--tx3)\">"+createdStr+"</td>";
-    if(u.id!==sess.id){
-      h+="<td><select class=\"fsel\" style=\"font-size:11px;padding:4px 8px\" data-uid=\""+esc(u.id)+"\"><option value=\"user\""+(u.role==="user"?" selected":"")+" >user</option><option value=\"admin\""+(u.role==="admin"?" selected":"")+" >admin</option></select></td>";
-    }else{
-      h+="<td><span style=\"font-size:12px;color:var(--tx3)\">(you)</span></td>";
-    }
-    h+="</tr>";
+    var createdStr2=u.created?new Date(u.created).toLocaleDateString():(u.createdAt&&u.createdAt.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():"--");
+    h2+="<tr><td style='font-weight:500'>"+esc(u.name||u.email||"")+"</td><td style='font-size:12px;color:var(--tx2)'>"+esc(u.email||"")+"</td>";
+    h2+="<td><span class='r"+(u.role||"user")+"'>"+esc(u.role||"user")+"</span></td>";
+    h2+="<td style='font-size:12px;color:var(--tx3)'>"+createdStr2+"</td>";
+    h2+=(u.id!==sess.id?"<td><select class='fsel' style='font-size:11px;padding:4px 8px' data-uid='"+esc(u.id)+"'><option value='user'"+(u.role==="user"?" selected":"")+" >user</option><option value='admin'"+(u.role==="admin"?" selected":"")+" >admin</option></select></td>":"<td><span style='font-size:12px;color:var(--tx3)'>(you)</span></td>");
+    h2+="</tr>";
   }
-  tb.innerHTML=h||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
-  // Attach role change handlers via event delegation (avoids inline JS quote issues)
-  if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){
-    sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});
-  });
+  tb.innerHTML=h2||'<tr><td colspan="5" class="te">No other users yet.</td></tr>';
+  if(tb)tb.querySelectorAll("select[data-uid]").forEach(function(sel){sel.addEventListener("change",function(){changeRole(this.dataset.uid,this.value);});});
 }
 async function changeRole(userId, newRole){
   if(!confirm("Change this user's role to "+newRole+"?"))return;
@@ -2474,49 +2552,71 @@ async function createUserFromAdmin(){
   if(!em||!pw){toast("Email and password required","err");return;}
   if(pw.length<6){toast("Password must be at least 6 characters","err");return;}
   var btn=G("ums");if(btn){btn.textContent="Creating...";btn.disabled=true;}
+
+  // ── Helper: save user to localStorage (always works regardless of Firebase) ──
+  function saveUserLocally(uid,created){
+    var us=lsG(SK.U,[])||[];
+    // Remove duplicate if exists
+    us=us.filter(function(u){return u.email&&u.email.toLowerCase()!==em.toLowerCase();});
+    us.push({id:uid||("u_"+Date.now()),name:name,email:em,role:role,created:created||Date.now()});
+    lsS(SK.U,us);
+  }
+
   if(FB.enabled){
     var secApp=null;
     try{
-      // Secondary Firebase app — prevents logging out the current admin
+      // Create Firebase Auth user via secondary app
       secApp=firebase.initializeApp(FB.app.options,"sec_"+Date.now());
       var secAuth=secApp.auth();
       var secDb=secApp.firestore();
-      // Step 1: Create Firebase Auth user
       var result=await secAuth.createUserWithEmailAndPassword(em,pw);
       var newUid=result.user.uid;
-      // Step 2: Write Firestore profile WHILE authenticated as that new user
-      // This ensures request.auth.uid === newUid — bypasses any permission issue
-      await secDb.collection("users").doc(newUid).set({
-        email:em,name:name,role:role,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp()
-      });
-      // Step 3: Sign out secondary app and clean up
+
+      // Save to localStorage IMMEDIATELY (guaranteed visible in Users tab)
+      saveUserLocally(newUid);
+
+      // Try Firestore profile write (secondary user is authenticated)
+      try{
+        await secDb.collection("users").doc(newUid).set({
+          email:em,name:name,role:role,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }catch(fse){
+        // Firestore write failed (rules not published) — localStorage backup is already saved
+        console.warn("Firestore profile write failed (rules might not be published):",fse.message);
+      }
+
+      // Clean up secondary app
       await secAuth.signOut();
       await secApp.delete();
       secApp=null;
       if(btn){btn.textContent="Create User";btn.disabled=false;}
       closeModal();
-      toast("\u2713 User created: "+em+" ("+role+")","ok");
-      setTimeout(function(){renderUsers();},1200);
+      toast("✓ User created: "+em+" ("+role+")","ok");
+      setTimeout(function(){renderUsers();},600);
     }catch(e){
       if(secApp)try{secApp.delete();}catch(de){}
       if(btn){btn.textContent="Create User";btn.disabled=false;}
       var msg=e.message||"Error creating user";
       if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
-        msg="Email/Password auth not enabled. Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
-      else if(msg.indexOf("email-already-in-use")>=0)
-        msg="Email already exists in Firebase Auth. This user is already registered.";
-      else if(msg.indexOf("weak-password")>=0)msg="Password must be at least 6 characters.";
+        msg="Email/Password auth not enabled. Go to Firebase Console → Authentication → Sign-in method → Enable.";
+      else if(msg.indexOf("email-already-in-use")>=0){
+        // User exists in Firebase Auth but might not be in our list — add to localStorage
+        msg="Email already registered. If they can't login, have them use 'Forgot password?' to reset.";
+        saveUserLocally("existing_"+em.replace(/[@.]/g,"_"));
+        setTimeout(function(){renderUsers();},500);
+      }else if(msg.indexOf("weak-password")>=0)msg="Password must be at least 6 characters.";
       else if(msg.indexOf("invalid-email")>=0)msg="Invalid email address format.";
-      else if(msg.indexOf("permission")>=0||msg.indexOf("insufficient")>=0)
-        msg="Firestore permission denied. Apply the simplified rules from API Settings > Firebase Integration.";
-      toast(msg,"err");
+      toast(msg,"warn");
     }
   }else{
+    // No Firebase — use localStorage only
+    saveUserLocally();
     if(btn){btn.textContent="Create User";btn.disabled=false;}
-    var us=lsG(SK.U,[])||[];us.push({id:"u_"+Date.now(),name:name,email:em,password:pw,role:role,created:Date.now()});lsS(SK.U,us);closeModal();renderUsers();toast("User created","ok");
+    closeModal();renderUsers();toast("User created (local)","ok");
   }
 }
+
 
 
 // ─── FIREBASE CONFIG PARSER ─────────────────────────────────────
