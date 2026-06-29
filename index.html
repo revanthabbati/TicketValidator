@@ -232,6 +232,7 @@ select.fin{cursor:pointer}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:99px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -245,7 +246,7 @@ select.fin{cursor:pointer}
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
-  <div class="lft" style="font-size:11px;opacity:.35;margin-top:18px">DispatchTrack &copy; 2025 &middot; Ticket Evaluation Platform</div>
+  <div class="lft" style="font-size:11px;opacity:.35;margin-top:18px">DispatchTrack &copy; 2026 &middot; Ticket Evaluation Platform</div>
 </div></div>
 
 <!-- APP -->
@@ -299,14 +300,49 @@ select.fin{cursor:pointer}
         </div>
         <!-- Dashboard Charts -->
         <div id="dash-charts" style="display:none">
-          <div class="g2">
-            <div class="card"><div class="chd"><span class="ct">Category Distribution</span><span class="bdg bgr" id="chart-cat-total"></span></div><div class="cbd" style="height:260px;position:relative"><canvas id="chart-cat"></canvas></div></div>
-            <div class="card"><div class="chd"><span class="ct">Environment Distribution</span></div><div class="cbd" style="height:260px;position:relative"><canvas id="chart-env"></canvas></div></div>
+          <!-- Date filter for charts -->
+          <div class="card cbd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span style="font-weight:600;font-size:13px;color:var(--tx)">Chart Period:</span>
+            <label style="font-size:12px;color:var(--tx2)">From</label>
+            <input type="date" id="chart-date-from" class="fsel" style="padding:5px 8px">
+            <label style="font-size:12px;color:var(--tx2)">To</label>
+            <input type="date" id="chart-date-to" class="fsel" style="padding:5px 8px">
+            <button class="btn bpri bsm" id="chart-apply-btn">Apply</button>
+            <button class="btn bgst bsm" id="chart-reset-btn">Show All</button>
+            <button class="btn bout bsm" id="chart-eval-btn">Current Eval Only</button>
+            <span class="bdg bok2" id="chart-count-badge" style="font-size:11px"></span>
           </div>
           <div class="g2">
-            <div class="card"><div class="chd"><span class="ct">Top Sub Categories</span></div><div class="cbd" style="height:280px;position:relative"><canvas id="chart-sub"></canvas></div></div>
-            <div class="card"><div class="chd"><span class="ct">FRR Analysis</span></div><div class="cbd" style="height:280px;position:relative"><canvas id="chart-frr"></canvas></div></div>
+            <div class="card">
+              <div class="chd"><span class="ct">Category Distribution</span>
+                <div style="display:flex;gap:6px;align-items:center"><span class="bdg bgr" id="chart-cat-total"></span><button class="btn bgst bsm" onclick="downloadChart('chart-cat','categories')">&#x2B07; PNG</button></div>
+              </div>
+              <div class="cbd" style="height:280px;position:relative"><canvas id="chart-cat" style="cursor:pointer"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="chd"><span class="ct">Environment Distribution</span>
+                <button class="btn bgst bsm" onclick="downloadChart('chart-env','environments')">&#x2B07; PNG</button>
+              </div>
+              <div class="cbd" style="height:280px;position:relative"><canvas id="chart-env" style="cursor:pointer"></canvas></div>
+            </div>
           </div>
+          <div class="g2">
+            <div class="card">
+              <div class="chd"><span class="ct">Top Sub Categories</span>
+                <button class="btn bgst bsm" onclick="downloadChart('chart-sub','sub-categories')">&#x2B07; PNG</button>
+              </div>
+              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-sub" style="cursor:pointer"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="chd"><span class="ct">FRR Distribution</span>
+                <button class="btn bgst bsm" onclick="downloadChart('chart-frr','frr-analysis')">&#x2B07; PNG</button>
+              </div>
+              <div class="cbd" style="height:320px;position:relative"><canvas id="chart-frr" style="cursor:pointer"></canvas></div>
+            </div>
+          </div>
+          <!-- Drill-down results modal trigger -->
+          <div id="drill-results" style="display:none"></div>
         </div>
       </div>
 
@@ -559,20 +595,6 @@ select.fin{cursor:pointer}
         </div>
 
         <div class="card">
-          <div class="chd"><span class="ct">&#127744; Brand &amp; Appearance</span><button class="btn bpri bsm" id="brand-save-btn">Save</button></div>
-          <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
-            <div><label class="flb">Logo URL <span style="font-weight:400;color:var(--tx3)">(stored persistently in browser)</span></label>
-              <input id="s-logo" class="fin" type="url" placeholder="https://example.com/logo.svg or logo.png">
-              <div class="fhi">Paste any image URL. Saved in your browser — survives page refreshes. Clear the field and Save to remove.</div>
-            </div>
-            <div id="brand-preview" style="display:none;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr)">
-              <div style="font-size:11.5px;color:var(--tx3);margin-bottom:6px">Preview:</div>
-              <img id="brand-preview-img" style="max-height:50px;max-width:220px;object-fit:contain" onerror="this.parentElement.style.display='none'">
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
         <div class="card">
           <div class="chd"><span class="ct">&#127744; Brand &amp; Appearance</span><button class="btn bpri bsm" id="brand-save-btn">Save</button></div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
@@ -580,7 +602,7 @@ select.fin{cursor:pointer}
               <input id="s-logo" class="fin" type="url" placeholder="https://example.com/logo.svg">
               <div class="fhi">Paste any image URL (SVG, PNG, JPEG). Saved in browser storage permanently. Clear to remove.</div>
             </div>
-            <div id="brand-preview" style="display:none;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr);display:flex;align-items:center;gap:12px">
+            <div id="brand-preview" style="display:none;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr);align-items:center;gap:12px">
               <img id="brand-preview-img" style="max-height:48px;max-width:180px;object-fit:contain" onerror="G('brand-preview').style.display='none'">
               <span style="font-size:12px;color:var(--tx3)">Logo preview</span>
             </div>
@@ -657,8 +679,16 @@ var FB = {app:null,auth:null,db:null,enabled:false,user:null};
 
 function initFirebase(config) {
   try {
-    if(FB.app){ try{firebase.app().delete();}catch(e){} }
-    FB.app = firebase.initializeApp(config, "dispatchtrack-app");
+    // Reuse existing app if same project (prevents double init)
+    try{
+      var existApp=firebase.app("dispatchtrack-app");
+      if(existApp.options.projectId===config.projectId){
+        FB.app=existApp;FB.auth=FB.app.auth();FB.db=FB.app.firestore();FB.enabled=true;
+        lsS(SK.FB,JSON.stringify(config));console.log("Firebase reused:",config.projectId);return true;
+      }
+    }catch(notExist){}
+    if(FB.app)try{FB.app.delete().catch(function(){});}catch(e){}
+    FB.app=firebase.initializeApp(config,"dispatchtrack-app");
     FB.auth = FB.app.auth();
     FB.db   = FB.app.firestore();
     FB.enabled = true;
@@ -830,27 +860,31 @@ async function doLogin(){
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
   var lb=G("lbtn");if(lb){lb.textContent="Signing in...";lb.disabled=true;}
   try{
-    // ── Master login ALWAYS works (checks master credentials first) ──
-    if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){
-      setSess(MASTER);
-      bootApp(); // Always boot immediately for master
-      // Try Firebase auth non-blocking (for Firestore access) — don't await
-      if(FB.enabled){
-        FB.auth.signInWithEmailAndPassword(em,pw).then(function(r){
-          FB.user=r.user;
-          return FB.db.collection("users").doc(r.user.uid).set(
-            {email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},
-            {merge:true}
-          );
-        }).then(function(){
-          // Refresh user management if open
-          var pg=G("pg-users");if(pg&&pg.classList.contains("active"))renderUsers();
-          var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
-        }).catch(function(me){
-          FB.user=null;
-          console.warn("Master Firebase Auth (optional):",me.code||me.message);
-        });
+    // ── MASTER LOGIN: Detected by email, handled exclusively ──
+    if(em.toLowerCase()===MASTER.email.toLowerCase()){
+      var pwMatch=(pw===MASTER.pass||pw.trim()===MASTER.pass);
+      if(!pwMatch){
+        if(er){er.textContent="Incorrect admin password.";er.style.display="block";}
+        if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
+        return;
       }
+      setSess(MASTER);
+      // Firebase auth optional for master (non-blocking)
+      if(FB.enabled){
+        FB.auth.signInWithEmailAndPassword(em,MASTER.pass)
+          .then(function(r){
+            FB.user=r.user;
+            return FB.db.collection("users").doc(r.user.uid).set(
+              {email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},
+              {merge:true}
+            );
+          }).then(function(){
+            var pg=G("pg-users");if(pg&&pg.classList.contains("active"))renderUsers();
+            var bann=G("fb-auth-banner");if(bann)bann.style.display="none";
+          }).catch(function(me){FB.user=null;}); // Silent: Firebase auth optional for master
+      }
+      if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
+      bootApp();
       return;
     }
     if(FB.enabled){
@@ -1419,30 +1453,213 @@ function getLogo(){return lsG(SK_LOGO,null)||"";}
 function saveLogo(url){if(url)lsS(SK_LOGO,url);else lsD(SK_LOGO);}
 function updateSidebarLogo(){
   var url=getLogo();
-  var img=G("sb-logo-img"),svg=G("sb-logo-svg");
-  if(url&&img&&svg){img.src=url;img.style.display="block";svg.style.display="none";}
-  else if(img&&svg){img.style.display="none";svg.style.display="block";}
+  var img=G("sb-logo-img"),svg=G("sb-logo-svg"),wrap=G("sb-logo-wrap");
+  if(url&&img&&svg){
+    img.onload=function(){img.style.display="block";if(svg)svg.style.display="none";if(wrap)wrap.style.background="transparent";};
+    img.onerror=function(){img.style.display="none";if(svg)svg.style.display="block";if(wrap)wrap.style.background="";};
+    img.src=url;
+  }else if(img&&svg){img.style.display="none";svg.style.display="block";if(wrap)wrap.style.background="";}
 }
 function saveBrandSettings(){
   var url=(gv("s-logo")||"").trim();
   saveLogo(url);
   updateSidebarLogo();
-  // Update preview
   var prev=G("brand-preview"),pimg=G("brand-preview-img");
-  if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}
-  else if(prev)prev.style.display="none";
-  toast(url?"Logo saved!":"Logo removed","ok");
+  if(url&&prev&&pimg){
+    pimg.onload=function(){prev.style.display="flex";};
+    pimg.onerror=function(){prev.style.display="none";toast("Logo URL could not be loaded. Check the URL is a direct image link.","warn");};
+    pimg.src=url;
+  }else if(prev){prev.style.display="none";}
+  toast(url?"Logo URL saved! It will appear in the sidebar.":"Logo removed","ok");
 }
 function loadBrandSettings(){
   var url=getLogo();
   var inp=G("s-logo");if(inp)inp.value=url||"";
   var prev=G("brand-preview"),pimg=G("brand-preview-img");
-  if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}
-  else if(prev)prev.style.display="none";
+  if(url&&prev&&pimg){
+    pimg.onload=function(){prev.style.display="flex";};
+    pimg.onerror=function(){prev.style.display="none";};
+    pimg.src=url;
+  }else if(prev){prev.style.display="none";}
 }
 
 // ─── DASHBOARD CHARTS ─────────────────────────────────────────
 var _dashCharts={};
+var CHART_PAL=["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B","#EF4444","#8B5CF6","#06B6D4"];
+var _chartCurrentData=[];
+
+// Register global datalabels plugin if available
+if(typeof ChartDataLabels!=="undefined")Chart.register(ChartDataLabels);
+
+function destroyCharts(){Object.keys(_dashCharts).forEach(function(k){if(_dashCharts[k])try{_dashCharts[k].destroy();}catch(e){}});_dashCharts={};}
+
+function getChartData(){
+  var dateFrom=gv("chart-date-from"),dateTo=gv("chart-date-to");
+  var fromTs=dateFrom?new Date(dateFrom).getTime():0;
+  var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
+  if(!fromTs&&toTs===Infinity){
+    return ST.curEval.length?ST.curEval:ST.results;
+  }
+  return ST.results.filter(function(r){
+    var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
+    return !ts||( ts>=fromTs&&ts<=toTs);
+  });
+}
+
+function downloadChart(canvasId,filename){
+  var c=G(canvasId);if(!c)return;
+  var tmp=document.createElement("canvas");tmp.width=c.width;tmp.height=c.height;
+  var ctx2=tmp.getContext("2d");ctx2.fillStyle="#ffffff";ctx2.fillRect(0,0,tmp.width,tmp.height);ctx2.drawImage(c,0,0);
+  var a=document.createElement("a");a.download="DT-"+filename+"-"+stamp()+".png";a.href=tmp.toDataURL("image/png");a.click();
+  toast("Chart downloaded as PNG","ok");
+}
+
+function showDrillDown(value,field,data){
+  var matching=(data||_chartCurrentData).filter(function(r){return(r[field]||"Unclassified")===value;});
+  if(!matching.length){toast("No tickets found for: "+value,"in");return;}
+  var h='<div style="margin-bottom:10px;font-size:13px;color:var(--tx2)"><strong>'+esc(value)+'</strong> — '+matching.length+' tickets</div>';
+  h+='<div style="max-height:400px;overflow-y:auto"><table class="tbl" style="font-size:12px"><thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>FRR</th><th>Environment</th><th>Category</th></tr></thead><tbody>';
+  matching.slice(0,100).forEach(function(r){
+    var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
+    h+="<tr><td><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:#4F6EF7'>#"+esc(r.id)+"</a></td><td class='tr' style='max-width:200px'>"+esc(r.subject||"--")+"</td><td style='font-size:11px'>"+esc(r.ticket_type||"--")+"</td><td style='font-family:monospace;color:"+fc+"'>"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td><td>"+esc(r.environment||"--")+"</td><td>"+catBdg(r.category)+"</td></tr>";
+  });
+  if(matching.length>100)h+='<tr><td colspan="6" class="te">+ '+(matching.length-100)+' more</td></tr>';
+  h+="</tbody></table></div>";
+  openModal(field.charAt(0).toUpperCase()+field.slice(1)+": "+esc(value),h,'<button class="btn bpri" id="dd-close">Close</button>','700px');
+  G("dd-close").onclick=closeModal;
+}
+
+function makeLabelPlugin(field,data){
+  return{
+    id:"inlineLabels",
+    afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx;
+      var total=chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        meta.data.forEach(function(bar,idx){
+          var val=ds.data[idx];if(!val)return;
+          var pct=Math.round(val/total*100);
+          var label=val+" ("+pct+"%)";
+          var barWidth=Math.abs(bar.x-bar.base);
+          ctx.save();
+          ctx.font="bold 10px Inter,sans-serif";
+          var textW=ctx.measureText(label).width;
+          if(barWidth>textW+8){
+            ctx.fillStyle="#fff";ctx.textAlign="left";ctx.textBaseline="middle";
+            ctx.fillText(label,bar.base+6,bar.y);
+          }else{
+            ctx.fillStyle=CHART_PAL[idx%CHART_PAL.length];ctx.textAlign="left";ctx.textBaseline="middle";
+            ctx.fillText(label,bar.x+4,bar.y);
+          }
+          ctx.restore();
+        });
+      });
+    }
+  };
+}
+
+function renderDashboardCharts(){
+  destroyCharts();
+  var r=getChartData();_chartCurrentData=r;
+  var total=r.length;
+  var badge=G("chart-count-badge");if(badge)badge.textContent=total+" tickets";
+  if(!total){G("dash-charts").style.display="none";return;}
+  G("dash-charts").style.display="block";
+
+  var catTotal=G("chart-cat-total");if(catTotal)catTotal.textContent=total+" tickets";
+
+  // ── Category Chart ──
+  var catCnt={};r.forEach(function(x){var c=x.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
+  var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];});
+  var c1=G("chart-cat");
+  if(c1){
+    c1.height=Math.max(240,catKeys.length*38);
+    _dashCharts.cat=new Chart(c1,{
+      type:"bar",
+      data:{labels:catKeys,datasets:[{data:catKeys.map(function(k){return catCnt[k];}),backgroundColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:function(evt,els){if(els.length){var label=catKeys[els[0].index];showDrillDown(label,"category",r);}}
+      },
+      plugins:[makeLabelPlugin("category",r)]
+    });
+  }
+
+  // ── Environment Chart ──
+  var envCnt={};r.forEach(function(x){var e=x.environment||"Unknown";envCnt[e]=(envCnt[e]||0)+1;});
+  var envKeys=Object.keys(envCnt).sort(function(a,b){return envCnt[b]-envCnt[a];}).slice(0,12);
+  var c2=G("chart-env");
+  if(c2){
+    c2.height=Math.max(240,envKeys.length*38);
+    _dashCharts.env=new Chart(c2,{
+      type:"bar",
+      data:{labels:envKeys,datasets:[{data:envKeys.map(function(k){return envCnt[k];}),backgroundColor:envKeys.map(function(_,i){return CHART_PAL[(i+3)%CHART_PAL.length]+"CC";}),borderColor:envKeys.map(function(_,i){return CHART_PAL[(i+3)%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:function(evt,els){if(els.length){var label=envKeys[els[0].index];showDrillDown(label,"environment",r);}}
+      },
+      plugins:[makeLabelPlugin("environment",r)]
+    });
+  }
+
+  // ── Sub Category Chart (top 12) ──
+  var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
+  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,12);
+  var c3=G("chart-sub");
+  if(c3){
+    c3.height=Math.max(280,subKeys.length*36);
+    _dashCharts.sub=new Chart(c3,{
+      type:"bar",
+      data:{labels:subKeys.map(function(k){return k.length>30?k.substring(0,30)+"...":k;}),datasets:[{label:"Tickets",data:subKeys.map(function(k){return subCnt[k];}),backgroundColor:subKeys.map(function(_,i){return CHART_PAL[(i+6)%CHART_PAL.length]+"CC";}),borderColor:subKeys.map(function(_,i){return CHART_PAL[(i+6)%CHART_PAL.length];}),borderWidth:1.5,borderRadius:4}]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+        onClick:function(evt,els){if(els.length){var label=subKeys[els[0].index];showDrillDown(label,"sub_category",r);}}
+      },
+      plugins:[makeLabelPlugin("sub_category",r)]
+    });
+  }
+
+  // ── FRR Doughnut Chart ──
+  var frrBuckets={"0m (Agent)":0,"0-15m":0,"15-30m":0,"30-60m":0,"1-2h":0,"2h+":0,"Not Calculated":0};
+  r.forEach(function(x){
+    if(x.frr_txt&&(x.frr_txt.indexOf("agent")>=0||x.frr_txt.indexOf("internal")>=0||x.frr_txt.indexOf("0m (")>=0))frrBuckets["0m (Agent)"]++;
+    else if(!x.frr||x.frr===0){if(!x.frr_txt||x.frr_txt==="--"||x.frr_txt==="")frrBuckets["Not Calculated"]++;else frrBuckets["0-15m"]++;}
+    else if(x.frr<=15)frrBuckets["0-15m"]++;
+    else if(x.frr<=30)frrBuckets["15-30m"]++;
+    else if(x.frr<=60)frrBuckets["30-60m"]++;
+    else if(x.frr<=120)frrBuckets["1-2h"]++;
+    else frrBuckets["2h+"]++;
+  });
+  var frrKeys=Object.keys(frrBuckets).filter(function(k){return frrBuckets[k]>0;});
+  var frrVals=frrKeys.map(function(k){return frrBuckets[k];});
+  var frrColors=["#94A3B8CC","#4F6EF7CC","#16A34ACC","#D97706CC","#DC2626CC","#7C3AEDCC","#374151CC"];
+  var c4=G("chart-frr");
+  if(c4){
+    c4.height=300;
+    _dashCharts.frr=new Chart(c4,{
+      type:"doughnut",
+      data:{labels:frrKeys,datasets:[{data:frrVals,backgroundColor:frrColors.slice(0,frrKeys.length),borderWidth:2,borderColor:"#fff"}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:"bottom",labels:{font:{size:11},padding:10,boxWidth:12}},
+          datalabels:{display:true,color:"#fff",font:{weight:"bold",size:10},
+            formatter:function(value){return value>0?value+"\n("+Math.round(value/total*100)+"%)":"";} }
+        }
+      }
+    });
+  }
+}
+
 var CHART_PAL=["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B"];
 function destroyCharts(){Object.keys(_dashCharts).forEach(function(k){if(_dashCharts[k])_dashCharts[k].destroy();});_dashCharts={};}
 
@@ -2538,7 +2755,28 @@ document.addEventListener("DOMContentLoaded",function(){
   if(agSave)agSave.onclick=saveZeroFrrSettings;
   var bSave=G("brand-save-btn"),sLogo=G("s-logo");
   if(bSave)bSave.onclick=saveBrandSettings;
-  if(sLogo)sLogo.addEventListener("input",function(){var prev=G("brand-preview"),pimg=G("brand-preview-img");var url=this.value.trim();if(url&&prev&&pimg){pimg.src=url;prev.style.display="flex";}else if(prev)prev.style.display="none";});
+  if(sLogo)sLogo.addEventListener("input",function(){
+    var url=this.value.trim(),pimg=G("brand-preview-img"),prev=G("brand-preview");
+    if(url&&pimg&&prev){
+      pimg.onload=function(){prev.style.display="flex";};
+      pimg.onerror=function(){prev.style.display="none";};
+      pimg.src=url;
+    }else if(prev)prev.style.display="none";
+  });
+  // Chart filter buttons
+  var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn");
+  if(capply)capply.onclick=function(){renderDashboardCharts();};
+  if(creset)creset.onclick=function(){
+    var f=G("chart-date-from"),t=G("chart-date-to");if(f)f.value="";if(t)t.value="";
+    renderDashboardCharts();
+  };
+  if(ceval)ceval.onclick=function(){
+    var f=G("chart-date-from"),t=G("chart-date-to");if(f)f.value="";if(t)t.value="";
+    if(!ST.curEval.length){toast("No current evaluation in progress. Run an evaluation first.","in");return;}
+    _chartCurrentData=ST.curEval;
+    var b=G("chart-count-badge");if(b)b.textContent=ST.curEval.length+" tickets (current eval)";
+    renderDashboardCharts();
+  };
   if(agAdd)agAdd.onclick=function(){addZeroFrrAgent(gv("s-agent-new"));var inp=G("s-agent-new");if(inp)inp.value="";};
   if(agNew)agNew.addEventListener("keydown",function(e){if(e.key==="Enter")addZeroFrrAgent(gv("s-agent-new"));});
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
