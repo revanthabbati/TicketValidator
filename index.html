@@ -249,6 +249,13 @@ select.fin{cursor:pointer}
   <div style="text-align:center;margin-top:14px">
     <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:12px;text-decoration:underline;padding:0">Forgot password?</button>
   </div>
+  <!-- First-time device setup — shown only when Firebase is not yet configured on this device -->
+  <div id="fb-first-setup" style="display:none;margin-top:18px;border-top:1px solid rgba(255,255,255,.1);padding-top:16px">
+    <div style="font-size:11.5px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:10px">&#9888; First time on this device? Paste the team Firebase config below.</div>
+    <textarea id="fb-setup-json" rows="4" style="width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;font-size:11px;color:#fff;font-family:'JetBrains Mono',monospace;outline:none;resize:none;line-height:1.5" placeholder='Paste Firebase config JSON here&#10;{"apiKey":"...","authDomain":"...","projectId":"..."}'></textarea>
+    <button onclick="initFirebaseFromSetup()" style="width:100%;margin-top:8px;background:rgba(79,110,247,.7);border:none;color:#fff;padding:10px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">&#x1F525; Connect Firebase &amp; Login</button>
+    <div id="fb-setup-err" style="font-size:11.5px;color:#FCA5A5;margin-top:6px;display:none"></div>
+  </div>
   <div class="lft" style="font-size:11px;opacity:.35;margin-top:14px">DispatchTrack &copy; 2026 &middot; Ticket Evaluation Platform</div>
 </div></div>
 
@@ -656,8 +663,14 @@ service cloud.firestore {
               </div>
             </details>
             <button class="btn bpri" id="fb-save-btn">Save &amp; Initialize Firebase</button>
-            <button class="btn bout bsm" onclick="downloadPreConfiguredApp()" style="align-self:flex-start">&#11015; Download Pre-configured App</button>
-            <div class="fhi" style="margin-top:0;line-height:1.6;color:var(--tx2)"><strong>How to share with your team:</strong> Save Firebase config above, then click <em>Download Pre-configured App</em>. Deploy that HTML file to your hosting (GitHub Pages, Netlify, etc.) — all users will be able to log in on any machine without any setup.</div>
+            <div id="fb-setup-link-row" style="display:none;margin-top:6px;padding:12px;background:#EFF6FF;border-radius:8px;border:1.5px solid #BFDBFE">
+              <div style="font-size:12.5px;color:#1E40AF;font-weight:600;margin-bottom:6px">&#127279; Team Setup Link (share once with each team member)</div>
+              <div style="font-size:12px;color:#1E40AF;margin-bottom:8px;line-height:1.5">Each team member opens this link <strong>once</strong> on their device. Firebase is configured automatically. After that, they just login with email + password.</div>
+              <div style="display:flex;gap:6px">
+                <input id="fb-setup-link-val" class="fin" readonly style="font-size:11px;font-family:monospace;flex:1;background:#fff" value="">
+                <button class="btn bpri bsm" onclick="copySetupLink()">&#x2398; Copy Link</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -696,12 +709,6 @@ var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","as
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
 var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb"};
 
-// ─── FIREBASE PRE-SET CONFIG ─────────────────────────────────
-// ⚡ ADMIN: After configuring Firebase in Settings, click "Download Pre-configured App"
-// to get a version of this file with your Firebase config baked in here.
-// Once deployed, ALL users on ANY machine will be able to login automatically.
-var HC_FIREBASE = null; // ← your Firebase config object goes here (auto-filled by Download App)
-
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
 
@@ -731,22 +738,35 @@ function initFirebase(config) {
 }
 
 function tryAutoInitFirebase() {
-  // Priority 1: HC_FIREBASE hardcoded in this file (shared across all users)
-  if(HC_FIREBASE && HC_FIREBASE.apiKey && HC_FIREBASE.projectId){
-    if(initFirebase(HC_FIREBASE)){
-      console.log("Firebase initialized from embedded config");
-      return;
+  // ── Priority 1: Team Setup Link in URL hash (#fbcfg=BASE64) ──
+  // When admin shares a setup link, users click it once → config auto-saved forever
+  try{
+    var hash=window.location.hash;
+    if(hash&&hash.indexOf("fbcfg=")>=0){
+      var encoded=hash.split("fbcfg=")[1].split("&")[0];
+      var cfg=JSON.parse(atob(encoded));
+      if(cfg&&cfg.apiKey&&cfg.projectId){
+        if(initFirebase(cfg)){
+          // Clear hash from URL so it's not visible or bookmarkable
+          history.replaceState(null,"",window.location.pathname+window.location.search);
+          console.log("Firebase configured from team setup link");
+          // Show a friendly toast after a short delay (once app loads)
+          setTimeout(function(){toast("Firebase connected via setup link. You can now log in.","ok");},500);
+          return;
+        }
+      }
     }
-  }
-  // Priority 2: Saved in localStorage (from Settings page)
+  }catch(he){console.warn("Setup link parse:",he);}
+
+  // ── Priority 2: Previously saved in localStorage on this device ──
   var saved = lsG(SK.FB, null);
   if(!saved) return;
   try {
-    var cfg = typeof saved === "string" ? JSON.parse(saved) : saved;
-    if(cfg && cfg.apiKey && cfg.projectId) {
-      if(initFirebase(cfg)) console.log("Firebase initialized from localStorage");
+    var cfg2 = typeof saved === "string" ? JSON.parse(saved) : saved;
+    if(cfg2 && cfg2.apiKey && cfg2.projectId) {
+      initFirebase(cfg2);
     }
-  } catch(e) {console.warn("Firebase auto-init error:",e);}
+  } catch(e) {console.warn("Firebase auto-init:",e);}
 }
 
 // Firestore helpers
@@ -922,9 +942,27 @@ var ST={
 };
 
 // ─── AUTH ────────────────────────────────────────────────────
+// ─── First-time device Firebase setup (login page) ──────────
+function showFbSetupPanel(){var p=G("fb-first-setup");if(p)p.style.display="block";}
+function hideFbSetupPanel(){var p=G("fb-first-setup");if(p)p.style.display="none";}
+async function initFirebaseFromSetup(){
+  var raw=(G("fb-setup-json")&&G("fb-setup-json").value||"").trim();
+  var errEl=G("fb-setup-err");if(errEl)errEl.style.display="none";
+  if(!raw){if(errEl){errEl.textContent="Paste the Firebase config JSON first.";errEl.style.display="block";}return;}
+  try{
+    var cfg=parseFirebaseConfig(raw);
+    if(!cfg.apiKey||!cfg.projectId)throw new Error("Invalid config: missing apiKey or projectId.");
+    if(initFirebase(cfg)){
+      hideFbSetupPanel();
+      toast("Firebase connected! Signing you in\u2026","ok");
+      await doLogin();
+    }else{throw new Error("Firebase initialization failed. Check your config.");}
+  }catch(e){if(errEl){errEl.textContent=e.message||"Invalid config";errEl.style.display="block";}}
+}
+
 async function doLogin(){
   var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
-  if(er)er.style.display="none";
+  if(er){er.style.display="none";er.style.background="";er.style.borderColor="";er.style.color="";}
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
   var lb=G("lbtn");if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
 
@@ -948,103 +986,71 @@ async function doLogin(){
       restoreBtn();bootApp();return;
     }
 
-    // ── REGULAR USER LOGIN ────────────────────────────────────
-    // If Firebase not initialized yet, try to initialize from any saved config
-    if(!FB.enabled){
-      tryAutoInitFirebase();
+    // ── REGULAR USER: ensure Firebase initialized ────────────
+    if(!FB.enabled) tryAutoInitFirebase();
+    if(!FB.enabled||!FB.auth){
+      showErr("Firebase is not configured on this device.");
+      showFbSetupPanel();
+      return;
     }
-
-    if(FB.enabled&&FB.auth){
-      // Use Firebase Authentication
-      try{
-        var result=await FB.auth.signInWithEmailAndPassword(em,pw);
-        FB.user=result.user;
-      }catch(authErr){
-        var msg=authErr.message||"Login failed";
-        if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0||msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0)
-          msg="Invalid email or password. If you just reset your password, please try the new password.";
-        else if(msg.indexOf("too-many-requests")>=0)
-          msg="Too many failed attempts. Please try again in a few minutes.";
-        else if(msg.indexOf("user-disabled")>=0)
-          msg="This account has been disabled. Contact your administrator.";
-        else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
-          msg="Firebase Authentication is not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
-        showErr(msg);return;
-      }
-
-      // Fetch user profile from Firestore
-      var profile=null;
-      try{
-        var snap2=await FB.db.collection("users").doc(FB.user.uid).get();
-        profile=snap2.exists?snap2.data():null;
-      }catch(fe){console.warn("Profile fetch failed:",fe.message);}
-
-      // Fallback to localStorage profile
-      if(!profile){
-        var lsu=lsG(SK.U,[])||[];
-        for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
-      }
-
-      var role="user",name=em.split("@")[0];
-      if(profile){role=profile.role||"user";name=profile.name||name;}
-
-      // Ensure/update Firestore profile
-      try{
-        await FB.db.collection("users").doc(FB.user.uid).set(
-          {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
-          {merge:true}
-        );
-      }catch(we){console.warn("Profile update failed:",we.message);}
-
-      // Save to localStorage for fallback
-      var lsu2=lsG(SK.U,[])||[];
-      var existIdx=-1;
-      for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===FB.user.uid||(lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){existIdx=li2;break;}}
-      var profileEntry={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
-      if(existIdx>=0)lsu2[existIdx]=Object.assign({},lsu2[existIdx],profileEntry);
-      else lsu2.push(profileEntry);
-      lsS(SK.U,lsu2);
-
-      setSess({id:FB.user.uid,email:em,name:name,role:role});
-      try{await loadDataFromFirestore();}catch(lde){console.warn("Data load:",lde);}
-      restoreBtn();bootApp();
-
-    }else{
-      // Firebase not available at all — only master can login
-      showErr("Firebase is not configured on this device. Ask your administrator to share the pre-configured app, or configure Firebase in Settings \u2192 Firebase Integration.");
+    // ── FIREBASE SIGN-IN ─────────────────────────────────────
+    var result;
+    try{
+      result=await FB.auth.signInWithEmailAndPassword(em,pw);
+    }catch(authErr){
+      var msg=authErr.message||"Login failed";
+      if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||
+         msg.indexOf("invalid-credential")>=0||msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0)
+        msg="Invalid email or password.";
+      else if(msg.indexOf("too-many-requests")>=0)
+        msg="Too many failed attempts. Please wait a few minutes.";
+      else if(msg.indexOf("user-disabled")>=0)
+        msg="This account has been disabled. Contact your administrator.";
+      else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
+        msg="Email/Password sign-in not enabled. Go to Firebase Console → Authentication → Sign-in method.";
+      showErr(msg);return;
     }
-  }catch(e){
-    var msg=e.message||"Login failed";
-    showErr(msg);
-  }
+    FB.user=result.user;
+    hideFbSetupPanel();
+    // Load profile
+    var profile=null;
+    try{var snap2=await FB.db.collection("users").doc(FB.user.uid).get();profile=snap2.exists?snap2.data():null;}
+    catch(fe){console.warn("Profile read:",fe.message);}
+    if(!profile){
+      var lsu=lsG(SK.U,[])||[];
+      for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
+    }
+    var role="user",name=em.split("@")[0];
+    if(profile){role=profile.role||"user";name=profile.name||name;}
+    // Update Firestore profile
+    try{
+      await FB.db.collection("users").doc(FB.user.uid).set(
+        {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}
+      );
+    }catch(we){console.warn("Profile update:",we.message);}
+    // Cache on this device
+    var lsu2=lsG(SK.U,[])||[];var existIdx=-1;
+    for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===FB.user.uid||(lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){existIdx=li2;break;}}
+    var pe={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
+    if(existIdx>=0)lsu2[existIdx]=Object.assign({},lsu2[existIdx],pe);else lsu2.push(pe);
+    lsS(SK.U,lsu2);
+    setSess({id:FB.user.uid,email:em,name:name,role:role});
+    try{await loadDataFromFirestore();}catch(lde){console.warn("Data load:",lde);}
+    restoreBtn();bootApp();
+  }catch(e){showErr(e.message||"Login failed. Please try again.");}
 }
 
 async function doResetPassword(){
-  var em=(gv("lem")||"").trim();
-  if(!em){
-    var er=G("lerr");if(er){er.textContent="Enter your email address above first.";er.style.display="block";}
-    return;
-  }
-  // Try to init Firebase if not already done
+  var em=(gv("lem")||"").trim(),er=G("lerr");
+  if(!em){if(er){er.textContent="Enter your email address above first.";er.style.display="block";}return;}
   if(!FB.enabled) tryAutoInitFirebase();
-  if(!FB.enabled||!FB.auth){
-    var er=G("lerr");if(er){er.textContent="Firebase not configured. Contact your administrator.";er.style.display="block";}
-    return;
-  }
+  if(!FB.enabled||!FB.auth){showFbSetupPanel();return;}
   try{
     await FB.auth.sendPasswordResetEmail(em);
-    var er=G("lerr");
-    if(er){
-      er.style.background="rgba(22,163,74,.15)";
-      er.style.borderColor="rgba(22,163,74,.3)";
-      er.style.color="#86EFAC";
-      er.textContent="\u2713 Password reset email sent to "+em+". Check your inbox (and spam folder).";
-      er.style.display="block";
-    }
+    if(er){er.style.background="rgba(22,163,74,.15)";er.style.borderColor="rgba(22,163,74,.3)";er.style.color="#86EFAC";
+      er.textContent="✓ Password reset email sent to "+em+". Check your inbox.";er.style.display="block";}
   }catch(e){
-    var er=G("lerr");
-    var msg=e.message||"Failed to send reset email";
-    if(msg.indexOf("user-not-found")>=0)msg="No account found with that email address.";
+    var msg=e.message||"Failed";if(msg.indexOf("user-not-found")>=0)msg="No account found with that email.";
     if(er){er.style.background="";er.style.borderColor="";er.style.color="";er.textContent=msg;er.style.display="block";}
   }
 }
@@ -2909,8 +2915,10 @@ function loadSettings(){
   var ds=G("dt-stats");if(ds)ds.textContent=ST.results.length+" results / "+(lsG(SK.CO,[])||[]).length+" corrections / "+(FB.enabled?"Firebase: "+FB.app.options.projectId:"localStorage only");
   loadZeroFrrSettings();
   loadBrandSettings();
-  // Load Firebase config
+  // Load Firebase config textarea
   var fbc=G("s-fb");if(fbc){var saved=lsG(SK.FB,null);if(saved){try{fbc.value=typeof saved==="string"?saved:JSON.stringify(typeof saved==="object"?saved:JSON.parse(saved),null,2);}catch(e){}}}
+  // Show team setup link if Firebase is already connected
+  if(FB.enabled){var savedCfg=lsG(SK.FB,null);if(savedCfg){try{generateSetupLink(typeof savedCfg==="string"?JSON.parse(savedCfg):savedCfg);}catch(e){}}}
   upBadges();
 }
 function saveAPISettings(){
@@ -2926,16 +2934,16 @@ async function saveFirebaseSettings(){
     if(!config.apiKey||!config.projectId)throw new Error("Config must include apiKey and projectId");
     var ok=initFirebase(config);
     if(ok){
-      // Update HC_FIREBASE in memory so it persists for this session
-      HC_FIREBASE=config;
-      lsS(SK.FB,JSON.stringify(config));
       setBox("fb-res",
         "<b>Firebase connected!</b> Project: "+esc(config.projectId)+"<br>"+
         "&#10003; Auth and Firestore are ready.<br><br>"+
-        "<strong>&#11088; Share with your team:</strong> Click <em>Download Pre-configured App</em> below to get a version of this file with Firebase baked in. Deploy that file so all users can log in without any setup.<br><br>"+
-        "<button class='btn bpri bsm' onclick='downloadPreConfiguredApp()'>&#11015; Download Pre-configured App</button>",
+        "<b>Share with your team:</b> Copy the Team Setup Link below (shown in the button panel). "+
+        "Each team member opens it once — Firebase configures automatically on their device. "+
+        "After that they just login with email+password.",
         "ok");
       upBadges();toast("Firebase initialized: "+config.projectId,"ok");
+      // Show the setup link panel
+      generateSetupLink(config);
       if(getSess())await loadDataFromFirestore();
     }else{
       setBox("fb-res","Firebase initialization failed. Check browser console for details.","err");
@@ -2943,27 +2951,29 @@ async function saveFirebaseSettings(){
   }catch(e){setBox("fb-res","Invalid config: "+esc(e.message),"err");}
 }
 
-// ─── DOWNLOAD PRE-CONFIGURED APP ─────────────────────────────
-function downloadPreConfiguredApp(){
-  var cfg=HC_FIREBASE||lsG(SK.FB,null);
-  if(!cfg){toast("No Firebase config to embed. Save Firebase settings first.","err");return;}
-  if(typeof cfg==="string")try{cfg=JSON.parse(cfg);}catch(e){toast("Invalid config","err");return;}
-  // Read the current page's HTML source
-  var html=document.documentElement.outerHTML;
-  // Replace the HC_FIREBASE null placeholder with the actual config
-  var cfgStr=JSON.stringify(cfg,null,2);
-  // Replace the line: var HC_FIREBASE = null;
-  html=html.replace(
-    /var HC_FIREBASE\s*=\s*null;[^\n]*/,
-    "var HC_FIREBASE = "+cfgStr.replace(/\n/g,"\n")+";"
-  );
-  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement("a");a.href=url;a.download="dispatchtrack-eval-app.html";
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  toast("Pre-configured app downloaded! Deploy this file to your hosting. All users will be able to login.","ok");
+function generateSetupLink(config){
+  try{
+    var encoded=btoa(JSON.stringify(config));
+    var baseUrl=window.location.href.split("#")[0].split("?")[0];
+    var link=baseUrl+"#fbcfg="+encoded;
+    var row=G("fb-setup-link-row");
+    if(row){row.style.display="block";}
+    var inp=G("fb-setup-link-val");
+    if(inp)inp.value=link;
+  }catch(e){console.warn("Setup link generation:",e);}
 }
+
+function copySetupLink(){
+  var inp=G("fb-setup-link-val");
+  if(!inp||!inp.value){toast("No setup link available. Save Firebase settings first.","err");return;}
+  navigator.clipboard.writeText(inp.value).then(function(){
+    toast("Team setup link copied! Share it with your team. They open it once, then login normally.","ok");
+  }).catch(function(){
+    inp.select();document.execCommand("copy");
+    toast("Team setup link copied!","ok");
+  });
+}
+
 async function testFirebase(){
   if(!FB.enabled){setBox("fb-res","Firebase not configured. Enter your config JSON and click Save.","err");return;}
   setBox("fb-res","Testing Firebase connection...","info");
