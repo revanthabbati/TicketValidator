@@ -246,7 +246,10 @@ select.fin{cursor:pointer}
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
-  <div class="lft" style="font-size:11px;opacity:.35;margin-top:18px">DispatchTrack &copy; 2026 &middot; Ticket Evaluation Platform</div>
+  <div style="text-align:center;margin-top:14px">
+    <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:12px;text-decoration:underline;padding:0">Forgot password?</button>
+  </div>
+  <div class="lft" style="font-size:11px;opacity:.35;margin-top:14px">DispatchTrack &copy; 2026 &middot; Ticket Evaluation Platform</div>
 </div></div>
 
 <!-- APP -->
@@ -296,7 +299,7 @@ select.fin{cursor:pointer}
           <div class="stat"><div class="sic" style="background:#FEF3C7"><svg width="18" height="18" fill="none" stroke="#78350F" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div class="slb">AI Corrections</div><div class="sv" id="s-lrn">0</div><div class="ss">Improving accuracy</div></div>
         </div>
         <div class="row">
-          <div class="col" style="flex:3"><div class="card"><div class="chd"><span class="ct">Recent Evaluations</span><button class="btn bout bsm" data-pg="evaluate" id="dash-new-btn">+ New Evaluation</button></div><div id="dash-rec"><div class="te">No evaluations yet. Start by uploading a sheet.</div></div></div></div>
+          <div class="col" style="flex:3"><div class="card"><div class="chd"><span class="ct">Recent Evaluations</span><div style="display:flex;gap:6px"><button class="btn bgst bsm" id="dash-refresh-btn" title="Reload all data from Firestore and refresh charts">&#x21BB; Refresh</button><button class="btn bout bsm" data-pg="evaluate" id="dash-new-btn">+ New Evaluation</button></div></div><div id="dash-rec"><div class="te">No evaluations yet. Start by uploading a sheet.</div></div></div></div>
           <div class="col" style="flex:1;display:flex;flex-direction:column;gap:14px">
             <div class="card cbd"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:14px">Quick Start</div><div style="display:flex;flex-direction:column;gap:10px"><button class="btn bpri blg" data-pg="evaluate" style="justify-content:center">&#9654; Start Evaluation</button><button class="btn bout blg" data-pg="smb" style="justify-content:center">Upload SMB Data</button><button class="btn bout blg" data-pg="results" style="justify-content:center">View All Results</button></div></div>
             <div class="card cbd"><div class="slb" style="margin-bottom:10px">SMB Database</div><div id="dash-smb"><div style="font-size:12.5px;color:var(--tx3)">No SMB data loaded.</div></div></div>
@@ -653,6 +656,8 @@ service cloud.firestore {
               </div>
             </details>
             <button class="btn bpri" id="fb-save-btn">Save &amp; Initialize Firebase</button>
+            <button class="btn bout bsm" onclick="downloadPreConfiguredApp()" style="align-self:flex-start">&#11015; Download Pre-configured App</button>
+            <div class="fhi" style="margin-top:0;line-height:1.6;color:var(--tx2)"><strong>How to share with your team:</strong> Save Firebase config above, then click <em>Download Pre-configured App</em>. Deploy that HTML file to your hosting (GitHub Pages, Netlify, etc.) — all users will be able to log in on any machine without any setup.</div>
           </div>
         </div>
         <div class="card">
@@ -691,6 +696,12 @@ var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","as
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
 var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb"};
 
+// ─── FIREBASE PRE-SET CONFIG ─────────────────────────────────
+// ⚡ ADMIN: After configuring Firebase in Settings, click "Download Pre-configured App"
+// to get a version of this file with your Firebase config baked in here.
+// Once deployed, ALL users on ANY machine will be able to login automatically.
+var HC_FIREBASE = null; // ← your Firebase config object goes here (auto-filled by Download App)
+
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
 
@@ -720,14 +731,22 @@ function initFirebase(config) {
 }
 
 function tryAutoInitFirebase() {
+  // Priority 1: HC_FIREBASE hardcoded in this file (shared across all users)
+  if(HC_FIREBASE && HC_FIREBASE.apiKey && HC_FIREBASE.projectId){
+    if(initFirebase(HC_FIREBASE)){
+      console.log("Firebase initialized from embedded config");
+      return;
+    }
+  }
+  // Priority 2: Saved in localStorage (from Settings page)
   var saved = lsG(SK.FB, null);
-  if(!saved)return;
+  if(!saved) return;
   try {
     var cfg = typeof saved === "string" ? JSON.parse(saved) : saved;
     if(cfg && cfg.apiKey && cfg.projectId) {
-      initFirebase(cfg);
+      if(initFirebase(cfg)) console.log("Firebase initialized from localStorage");
     }
-  } catch(e) {}
+  } catch(e) {console.warn("Firebase auto-init error:",e);}
 }
 
 // Firestore helpers
@@ -907,126 +926,127 @@ async function doLogin(){
   var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
   if(er)er.style.display="none";
   if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
-  var lb=G("lbtn");if(lb){lb.textContent="Signing in...";lb.disabled=true;}
+  var lb=G("lbtn");if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
+
+  // Helper to restore button
+  function restoreBtn(){if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}}
+  function showErr(msg){if(er){er.textContent=msg;er.style.display="block";}restoreBtn();}
+
   try{
-    // ── MASTER LOGIN: Detected by email, handled exclusively ──
+    // ── MASTER LOGIN ──────────────────────────────────────────
     if(em.toLowerCase()===MASTER.email.toLowerCase()){
-      var pwMatch=(pw===MASTER.pass||pw.trim()===MASTER.pass);
-      if(!pwMatch){
-        if(er){er.textContent="Incorrect admin password.";er.style.display="block";}
-        if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
-        return;
-      }
+      if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect admin password.");return;}
       setSess(MASTER);
-      // Firebase auth optional for master (non-blocking)
-      if(FB.enabled){
-        FB.auth.signInWithEmailAndPassword(em,MASTER.pass)
-          .then(function(r){
-            FB.user=r.user;
-            return FB.db.collection("users").doc(r.user.uid).set(
-              {email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},
-              {merge:true}
-            );
-          }).then(function(){
-            var pg=G("pg-users");if(pg&&pg.classList.contains("active"))renderUsers();
-            var bann=G("fb-auth-banner");if(bann)bann.style.display="none";
-          }).catch(function(me){FB.user=null;}); // Silent: Firebase auth optional for master
+      // Try Firebase auth for master (non-blocking — master can always login)
+      if(FB.enabled&&FB.auth){
+        FB.auth.signInWithEmailAndPassword(em,MASTER.pass).then(function(r){
+          FB.user=r.user;
+          FB.db.collection("users").doc(r.user.uid).set({email:em,name:MASTER.name,role:"master",createdAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(function(){});
+          var bann=G("fb-auth-banner");if(bann)bann.style.display="none";
+        }).catch(function(me){console.warn("Master Firebase auth (non-critical):",me.message||me);});
       }
-      if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
-      bootApp();
-      return;
+      restoreBtn();bootApp();return;
     }
-    if(FB.enabled){
-      // Firebase Authentication for regular users
-      var result=await FB.auth.signInWithEmailAndPassword(em,pw);
-      FB.user=result.user;
-      // Get profile: try Firestore, fallback to localStorage
+
+    // ── REGULAR USER LOGIN ────────────────────────────────────
+    // If Firebase not initialized yet, try to initialize from any saved config
+    if(!FB.enabled){
+      tryAutoInitFirebase();
+    }
+
+    if(FB.enabled&&FB.auth){
+      // Use Firebase Authentication
+      try{
+        var result=await FB.auth.signInWithEmailAndPassword(em,pw);
+        FB.user=result.user;
+      }catch(authErr){
+        var msg=authErr.message||"Login failed";
+        if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0||msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0)
+          msg="Invalid email or password. If you just reset your password, please try the new password.";
+        else if(msg.indexOf("too-many-requests")>=0)
+          msg="Too many failed attempts. Please try again in a few minutes.";
+        else if(msg.indexOf("user-disabled")>=0)
+          msg="This account has been disabled. Contact your administrator.";
+        else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
+          msg="Firebase Authentication is not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
+        showErr(msg);return;
+      }
+
+      // Fetch user profile from Firestore
       var profile=null;
       try{
-        var snap2=await FB.db.collection("users").doc(result.user.uid).get();
+        var snap2=await FB.db.collection("users").doc(FB.user.uid).get();
         profile=snap2.exists?snap2.data():null;
-      }catch(fe){console.warn("Profile Firestore read failed:",fe.message);}
+      }catch(fe){console.warn("Profile fetch failed:",fe.message);}
+
+      // Fallback to localStorage profile
       if(!profile){
         var lsu=lsG(SK.U,[])||[];
         for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
       }
+
       var role="user",name=em.split("@")[0];
-      if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
-      else if(profile){role=profile.role||"user";name=profile.name||name;}
-      // Ensure profile exists in Firestore for future logins by this user
+      if(profile){role=profile.role||"user";name=profile.name||name;}
+
+      // Ensure/update Firestore profile
       try{
-        await FB.db.collection("users").doc(result.user.uid).set(
+        await FB.db.collection("users").doc(FB.user.uid).set(
           {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
           {merge:true}
         );
-      }catch(we){console.warn("Profile write failed:",we.message);}
-      // Always save to localStorage as fallback
+      }catch(we){console.warn("Profile update failed:",we.message);}
+
+      // Save to localStorage for fallback
       var lsu2=lsG(SK.U,[])||[];
       var existIdx=-1;
-      for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===result.user.uid||( lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){existIdx=li2;break;}}
-      if(existIdx>=0){lsu2[existIdx]=Object.assign({},lsu2[existIdx],{id:result.user.uid,email:em,name:name,role:role});}
-      else{lsu2.push({id:result.user.uid,email:em,name:name,role:role,created:Date.now()});}
+      for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===FB.user.uid||(lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){existIdx=li2;break;}}
+      var profileEntry={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
+      if(existIdx>=0)lsu2[existIdx]=Object.assign({},lsu2[existIdx],profileEntry);
+      else lsu2.push(profileEntry);
       lsS(SK.U,lsu2);
-      setSess({id:result.user.uid,email:em,name:name,role:role});
-      try{await loadDataFromFirestore();}catch(lde){console.warn("Data load error:",lde);}
-      bootApp();
-    }else{
-      // Fallback: hardcoded master
-      if(em.toLowerCase()===MASTER.email.toLowerCase()&&pw===MASTER.pass){setSess(MASTER);bootApp();return;}
-      // Fallback: localStorage users
-      var us=lsG(SK.U,[])||[],u=null;
-      for(var i=0;i<us.length;i++){if(us[i].email.toLowerCase()===em.toLowerCase()&&us[i].password===pw){u=us[i];break;}}
-      if(u){setSess(u);bootApp();return;}
-      if(er){er.textContent="Invalid email or password.";er.style.display="block";}
-    }
-  }catch(e){
-    if(er){
-      var msg=e.message||"Login failed";
-      if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0)msg="Invalid email or password.";
-      else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please try again later.";
-      else if(msg.indexOf("configuration-not-found")>=0)msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Email/Password → Enable.";
-      er.textContent=msg;er.style.display="block";
-    }
-  }finally{
-    if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}
-  }
-}
 
-async function doSignUp(){
-  if(!FB.enabled){toast("Firebase not configured. Set up Firebase first.","err");return;}
-  var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
-  if(er)er.style.display="none";
-  if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
-  if(pw.length<6){if(er){er.textContent="Password must be at least 6 characters.";er.style.display="block";}return;}
-  try{
-    var result=await FB.auth.createUserWithEmailAndPassword(em,pw);
-    FB.user=result.user;
-    var name=em.split("@")[0];
-    // Check if first user (make admin) - query users collection
-    var role="user";
-    try{var snap=await FB.db.collection("users").limit(2).get();if(snap.size===0)role="admin";}catch(e){}
-    // Write profile from the signed-in user's auth context (request.auth.uid == result.user.uid)
-    await FB.db.collection("users").doc(result.user.uid).set(
-      {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
-      {merge:true}
-    );
-    setSess({id:result.user.uid,email:em,name:name,role:role});
-    bootApp();
-    toast("Account created! Welcome, "+name,"ok");
+      setSess({id:FB.user.uid,email:em,name:name,role:role});
+      try{await loadDataFromFirestore();}catch(lde){console.warn("Data load:",lde);}
+      restoreBtn();bootApp();
+
+    }else{
+      // Firebase not available at all — only master can login
+      showErr("Firebase is not configured on this device. Ask your administrator to share the pre-configured app, or configure Firebase in Settings \u2192 Firebase Integration.");
+    }
   }catch(e){
-    if(er){var msg=e.message||"Sign up failed";
-      if(msg.indexOf("email-already-in-use")>=0)msg="Email already registered. Try signing in.";
-      else if(msg.indexOf("configuration-not-found")>=0)msg="Firebase Authentication not enabled. Go to Firebase Console → Authentication → Email/Password → Enable.";
-      er.textContent=msg;er.style.display="block";}
+    var msg=e.message||"Login failed";
+    showErr(msg);
   }
 }
 
 async function doResetPassword(){
   var em=(gv("lem")||"").trim();
-  if(!em){toast("Enter your email address first","warn");return;}
-  if(!FB.enabled){toast("Firebase not configured","err");return;}
-  try{await FB.auth.sendPasswordResetEmail(em);toast("Password reset email sent to "+em,"ok");}
-  catch(e){toast(e.message||"Failed to send reset email","err");}
+  if(!em){
+    var er=G("lerr");if(er){er.textContent="Enter your email address above first.";er.style.display="block";}
+    return;
+  }
+  // Try to init Firebase if not already done
+  if(!FB.enabled) tryAutoInitFirebase();
+  if(!FB.enabled||!FB.auth){
+    var er=G("lerr");if(er){er.textContent="Firebase not configured. Contact your administrator.";er.style.display="block";}
+    return;
+  }
+  try{
+    await FB.auth.sendPasswordResetEmail(em);
+    var er=G("lerr");
+    if(er){
+      er.style.background="rgba(22,163,74,.15)";
+      er.style.borderColor="rgba(22,163,74,.3)";
+      er.style.color="#86EFAC";
+      er.textContent="\u2713 Password reset email sent to "+em+". Check your inbox (and spam folder).";
+      er.style.display="block";
+    }
+  }catch(e){
+    var er=G("lerr");
+    var msg=e.message||"Failed to send reset email";
+    if(msg.indexOf("user-not-found")>=0)msg="No account found with that email address.";
+    if(er){er.style.background="";er.style.borderColor="";er.style.color="";er.textContent=msg;er.style.display="block";}
+  }
 }
 
 function setSess(u){var s={id:u.id,email:u.email,name:u.name,role:u.role};try{sessionStorage.setItem("tep_s",JSON.stringify(s));}catch(e){}ST.sess=s;}
@@ -1035,7 +1055,11 @@ function doLogout(){
   if(FB.enabled&&FB.auth)FB.auth.signOut();
   try{sessionStorage.removeItem("tep_s");}catch(e){}
   ST.sess=null;ST.results=[];ST.filtered=[];ST.smbData={};ST.smbRaw=[];
-  G("app").style.display="none";G("lw").style.display="flex";G("lem").value="";G("lpw").value="";var er=G("lerr");if(er)er.style.display="none";
+  G("app").style.display="none";G("lw").style.display="flex";G("lem").value="";G("lpw").value="";
+  var er=G("lerr");
+  if(er){er.style.display="none";er.style.background="";er.style.borderColor="";er.style.color="";}
+  // Restore logo on login page and clear error styles
+  setTimeout(function(){updateSidebarLogo();},30);
 }
 function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master");}
 
@@ -1381,6 +1405,8 @@ async function applySMB(ci,ti){
   toast("SMB saved: "+Object.keys(data).length+" records","ok");upBadges();
   var ep=G("smb-ph1-st");if(ep)ep.innerHTML='<div class="al ao"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+Object.keys(data).length+" SMB records loaded</div>";
   var tg=G("smb-tg");if(tg)tg.innerHTML='<span class="bdg bok2">'+Object.keys(data).length+" records</span>";
+  // Auto-refresh dashboard charts with new SMB data
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
 function lookupSMB(code){return code?ST.smbData[String(code).trim().toLowerCase()]||"Unknown":"Unknown";}
 async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
@@ -1565,38 +1591,66 @@ function saveTrainingData(arr){lsS(SK_TRN,arr);upBadges();}
 var SK_LOGO="tep_logo";
 function getLogo(){return lsG(SK_LOGO,null)||"";}
 function saveLogo(url){if(url)lsS(SK_LOGO,url);else lsD(SK_LOGO);}
+
 function updateSidebarLogo(){
-  var url=getLogo();
-  // ── Sidebar: logo replaces "DispatchTrack" text ──
+  var url=(getLogo()||"").trim();
+
+  // ── Sidebar logo (replaces brand name text) ──
   var simg=G("sb-logo-img"),stxt=G("sb-brand-name");
-  if(url&&simg&&stxt){
-    simg.onload=function(){simg.style.display="block";stxt.style.display="none";};
-    simg.onerror=function(){simg.style.display="none";stxt.style.display="block";};
-    simg.src=url;
-  }else if(simg&&stxt){simg.style.display="none";stxt.style.display="block";}
-  // ── Login page: logo replaces "DispatchTrack" text ──
+  if(simg&&stxt){
+    if(url){
+      simg.onload=function(){simg.style.display="block";stxt.style.display="none";};
+      simg.onerror=function(){simg.style.display="none";stxt.style.display="block";};
+      if(simg.src!==url){simg.src="";}  // force reload
+      simg.src=url;
+      // Handle already-cached image (onload won't fire again for same src)
+      if(simg.complete&&simg.naturalWidth>0){simg.style.display="block";stxt.style.display="none";}
+    }else{
+      simg.style.display="none";stxt.style.display="block";
+    }
+  }
+
+  // ── Login page logo (replaces "DispatchTrack" text) ──
   var limg=G("login-logo-img"),ltxt=G("login-brand-name"),lic=G("login-logo-ic");
-  if(url&&limg&&ltxt){
-    limg.onload=function(){
-      limg.style.display="block";ltxt.style.display="none";
-      // Shrink icon when logo shows
-      if(lic)lic.style.display="none";
-    };
-    limg.onerror=function(){limg.style.display="none";ltxt.style.display="block";if(lic)lic.style.display="";};
-    limg.src=url;
-  }else if(limg&&ltxt){limg.style.display="none";ltxt.style.display="block";if(lic)lic.style.display="";}
+  if(limg&&ltxt){
+    if(url){
+      // Always reset src to force onload to fire
+      limg.onload=function(){
+        limg.style.display="block";
+        ltxt.style.display="none";
+        if(lic)lic.style.display="none";
+      };
+      limg.onerror=function(){
+        limg.style.display="none";
+        ltxt.style.display="block";
+        if(lic)lic.style.display="";
+      };
+      limg.src=""; // clear first to force load
+      limg.src=url;
+      // Handle cached images immediately
+      if(limg.complete&&limg.naturalWidth>0){
+        limg.style.display="block";
+        ltxt.style.display="none";
+        if(lic)lic.style.display="none";
+      }
+    }else{
+      limg.style.display="none";
+      ltxt.style.display="block";
+      if(lic)lic.style.display="";
+    }
+  }
 }
 function saveBrandSettings(){
   var url=(gv("s-logo")||"").trim();
   saveLogo(url);
-  updateSidebarLogo();
   var prev=G("brand-preview"),pimg=G("brand-preview-img");
   if(url&&prev&&pimg){
     pimg.onload=function(){prev.style.display="flex";};
     pimg.onerror=function(){prev.style.display="none";toast("Logo URL could not be loaded. Check the URL is a direct image link.","warn");};
     pimg.src=url;
+    if(pimg.complete&&pimg.naturalWidth>0)prev.style.display="flex";
   }else if(prev){prev.style.display="none";}
-  updateSidebarLogo(); // Updates both sidebar and login page
+  updateSidebarLogo();
   toast(url?"Logo saved! Updated in sidebar and login page.":"Logo removed","ok");
 }
 function loadBrandSettings(){
@@ -1607,7 +1661,10 @@ function loadBrandSettings(){
     pimg.onload=function(){prev.style.display="flex";};
     pimg.onerror=function(){prev.style.display="none";};
     pimg.src=url;
+    if(pimg.complete&&pimg.naturalWidth>0)prev.style.display="flex";
   }else if(prev){prev.style.display="none";}
+  // Keep login/sidebar logo in sync
+  updateSidebarLogo();
 }
 
 // ─── CHART THEMES ─────────────────────────────────────────────
@@ -1862,7 +1919,28 @@ function renderDashboardCharts(){
 
 // (Duplicate renderDashboardCharts, CHART_PAL, and destroyCharts removed — the correct implementations appear above)
 
-// ─── ZERO-FRR AGENTS ─────────────────────────────────────────
+// ─── DASHBOARD REFRESH ──────────────────────────────────────────
+async function refreshDashboard(){
+  var btn=G("dash-refresh-btn");
+  if(btn){btn.textContent="\u23F3 Loading...";btn.disabled=true;}
+  try{
+    // Reload all shared data from Firestore
+    if(FB.enabled&&FB.db){
+      await loadDataFromFirestore();
+    }
+    // Refresh dashboard display
+    renderDash();
+    // Refresh results table if visible
+    var rpg=G("pg-results");
+    if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
+    // Refresh SMB page if visible
+    var spg=G("pg-smb");
+    if(spg&&spg.classList.contains("active"))renderSMBPage();
+    toast("Dashboard refreshed","ok");
+  }catch(e){console.warn("refreshDashboard:",e);}finally{
+    if(btn){btn.textContent="\u21BB Refresh";btn.disabled=false;}
+  }
+}
 var SK_AGENTS="tep_agents";
 var DEFAULT_ZERO_FRR=[
   "Revanth Reddy Abbati","Narsimha Suri","Komal Mallakula","Rakesh Tangedu","Harsha Uppala",
@@ -2283,6 +2361,8 @@ async function saveCorr(){
   ST.revChg={};var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
   Q("#rev-tb td").forEach(function(td){td.style.background="";});Q("#rev-tb tr").forEach(function(tr){tr.classList.remove("chrow");});
   toast("Corrections saved \u2014 AI will use these for future evaluations!","ok");upBadges();
+  // Auto-refresh dashboard charts to reflect any FRR/category updates
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
 
 // ─── CATEGORIES ──────────────────────────────────────────────
@@ -2384,7 +2464,11 @@ function openEditResultModal(r){
     var corr=lsG(SK.CO,[])||[];
     corr.push({subject:String(r.subject||"").substring(0,80),ticket_type:r.ticket_type||"",field:"edit",original:"",corrected:"env:"+r.environment+",cat:"+r.category+",sub:"+r.sub_category,ts:Date.now()});
     lsS(SK.CO,corr);
+    // Save updated result to Firestore
+    if(FB.enabled&&FB.db){saveResultToFirestore(r).catch(function(){});}
     closeModal();applyF();toast("Result updated","ok");upBadges();
+    // Auto-refresh dashboard charts
+    var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
   };
 }
 
@@ -2842,15 +2926,43 @@ async function saveFirebaseSettings(){
     if(!config.apiKey||!config.projectId)throw new Error("Config must include apiKey and projectId");
     var ok=initFirebase(config);
     if(ok){
+      // Update HC_FIREBASE in memory so it persists for this session
+      HC_FIREBASE=config;
       lsS(SK.FB,JSON.stringify(config));
-      setBox("fb-res","<b>Firebase connected!</b> Project: "+esc(config.projectId)+"<br>Auth and Firestore are ready.","ok");
+      setBox("fb-res",
+        "<b>Firebase connected!</b> Project: "+esc(config.projectId)+"<br>"+
+        "&#10003; Auth and Firestore are ready.<br><br>"+
+        "<strong>&#11088; Share with your team:</strong> Click <em>Download Pre-configured App</em> below to get a version of this file with Firebase baked in. Deploy that file so all users can log in without any setup.<br><br>"+
+        "<button class='btn bpri bsm' onclick='downloadPreConfiguredApp()'>&#11015; Download Pre-configured App</button>",
+        "ok");
       upBadges();toast("Firebase initialized: "+config.projectId,"ok");
-      // Reload data from Firestore
       if(getSess())await loadDataFromFirestore();
     }else{
-      setBox("fb-res","Firebase initialization failed. Check console for details.","err");
+      setBox("fb-res","Firebase initialization failed. Check browser console for details.","err");
     }
   }catch(e){setBox("fb-res","Invalid config: "+esc(e.message),"err");}
+}
+
+// ─── DOWNLOAD PRE-CONFIGURED APP ─────────────────────────────
+function downloadPreConfiguredApp(){
+  var cfg=HC_FIREBASE||lsG(SK.FB,null);
+  if(!cfg){toast("No Firebase config to embed. Save Firebase settings first.","err");return;}
+  if(typeof cfg==="string")try{cfg=JSON.parse(cfg);}catch(e){toast("Invalid config","err");return;}
+  // Read the current page's HTML source
+  var html=document.documentElement.outerHTML;
+  // Replace the HC_FIREBASE null placeholder with the actual config
+  var cfgStr=JSON.stringify(cfg,null,2);
+  // Replace the line: var HC_FIREBASE = null;
+  html=html.replace(
+    /var HC_FIREBASE\s*=\s*null;[^\n]*/,
+    "var HC_FIREBASE = "+cfgStr.replace(/\n/g,"\n")+";"
+  );
+  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download="dispatchtrack-eval-app.html";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  toast("Pre-configured app downloaded! Deploy this file to your hosting. All users will be able to login.","ok");
 }
 async function testFirebase(){
   if(!FB.enabled){setBox("fb-res","Firebase not configured. Enter your config JSON and click Save.","err");return;}
@@ -2962,34 +3074,12 @@ function bootApp(){
 }
 
 function showFirebaseAuthBanner(){
-  // Remove any existing banner
   var existing=G("fb-auth-banner");if(existing)existing.parentNode.removeChild(existing);
-  if(!FB.enabled)return;
-  if(FB.user)return;
-  if(!isAdmin())return; // Only show to admins, not regular users
-  // Firebase is configured but no auth token — show gentle reminder
-  var topbar=G("topbar");if(!topbar)return;
-  var banner=document.createElement("div");
-  banner.id="fb-auth-banner";
-  banner.style.cssText="background:#FFFBEB;border-bottom:1px solid #FDE68A;padding:8px 24px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:#78350F;flex-shrink:0";
-  banner.innerHTML="<svg width=\"13\" height=\"13\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" viewBox=\"0 0 24 24\"><path d=\"M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>"+
-    "<span style=\"font-size:12px\"><strong>Firebase sync inactive.</strong> <a href=\"javascript:doLogout()\" style=\"color:#D97706;font-weight:600\">Log out &rarr; sign in again</a> to activate cloud sync.</span>"+
-    "<button onclick=\"this.parentNode.style.display=\'none\'\" style=\"background:none;border:none;color:#B45309;cursor:pointer;font-size:16px;padding:0;line-height:1;margin-left:auto\">&times;</button>";
-  // Insert after topbar
-  topbar.parentNode.insertBefore(banner, topbar.nextSibling);
+  // No banner needed — Firebase is embedded or configured via Settings
 }
 function updateLoginUI(){
-  if(FB.enabled){
-    var existing=G("signup-row");
-    if(!existing){
-      var lcard=document.querySelector(".lcard");if(!lcard)return;
-      var row=document.createElement("div");row.id="signup-row";
-      row.style.cssText="text-align:center;margin-top:12px;font-size:12.5px;color:rgba(255,255,255,.45)";
-      row.innerHTML="Don't have an account? <button onclick='doSignUp()' style='background:none;border:none;color:#93C5FD;cursor:pointer;font-size:12.5px;text-decoration:underline'>Sign Up</button>"+
-        " &nbsp;|&nbsp; <button onclick='doResetPassword()' style='background:none;border:none;color:rgba(255,255,255,.32);cursor:pointer;font-size:11px'>Forgot password?</button>";
-      lcard.insertBefore(row, lcard.querySelector(".lft"));
-    }
-  }
+  // Sign-up removed by design — users are created only by admin
+  // Forgot password link is always shown in the login HTML directly
 }
 
 // ─── INIT ────────────────────────────────────────────────────
@@ -3079,7 +3169,7 @@ document.addEventListener("DOMContentLoaded",function(){
     }else if(prev)prev.style.display="none";
   });
   // Chart filter buttons
-  var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn");
+  var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn"),drefresh=G("dash-refresh-btn");
   if(capply)capply.onclick=function(){renderDashboardCharts();};
   if(creset)creset.onclick=function(){
     var f=G("chart-date-from"),t=G("chart-date-to");if(f)f.value="";if(t)t.value="";
@@ -3092,6 +3182,7 @@ document.addEventListener("DOMContentLoaded",function(){
     var b=G("chart-count-badge");if(b)b.textContent=ST.curEval.length+" tickets (current eval)";
     renderDashboardCharts();
   };
+  if(drefresh)drefresh.onclick=refreshDashboard;
   if(agAdd)agAdd.onclick=function(){addZeroFrrAgent(gv("s-agent-new"));var inp=G("s-agent-new");if(inp)inp.value="";};
   if(agNew)agNew.addEventListener("keydown",function(e){if(e.key==="Enter")addZeroFrrAgent(gv("s-agent-new"));});
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
@@ -3138,8 +3229,10 @@ document.addEventListener("DOMContentLoaded",function(){
         }
       });
 
-      // ── Real-time listener for shared results (syncs across users) ──
+      // ── Real-time listener for shared results AND SMB data ──
       var _resultsUnsubscribe=null;
+      var _smbUnsubscribe=null;
+
       function startResultsListener(){
         if(!FB.enabled||!FB.db||_resultsUnsubscribe)return;
         try{
@@ -3147,23 +3240,50 @@ document.addEventListener("DOMContentLoaded",function(){
             .orderBy("savedAt","desc").limit(1000)
             .onSnapshot(function(snap){
               if(!snap||snap.empty)return;
-              var newResults=snap.docs.map(function(d){var r=d.data();return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);});
-              // Merge with local results (avoid duplicates by ticket id)
-              var existingIds={};
-              newResults.forEach(function(r){if(r.id)existingIds[r.id]=true;});
-              var local=ST.results.filter(function(r){return r.id&&!existingIds[r.id];});
-              ST.results=newResults.concat(local);
+              var newResults=snap.docs.map(function(d){
+                var r=d.data();
+                return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);
+              });
+              // Replace results entirely with Firestore data (source of truth)
+              ST.results=newResults;
               lsS(SK.RE,ST.results.slice(-200));
               upBadges();
               // Refresh dashboard if active
               var pg=G("pg-dashboard");
               if(pg&&pg.classList.contains("active"))try{renderDash();}catch(e){}
+              // Refresh results table if active
+              var rpg=G("pg-results");
+              if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
             },function(err){console.warn("Results listener error:",err);});
         }catch(le){console.warn("startResultsListener:",le);}
       }
 
-      // Start listener once auth is confirmed
-      setTimeout(function(){if(FB.enabled&&FB.user)startResultsListener();},1000);
+      function startSMBListener(){
+        if(!FB.enabled||!FB.db||_smbUnsubscribe)return;
+        try{
+          _smbUnsubscribe=FB.db.collection("shared").doc("smbdata")
+            .onSnapshot(function(snap){
+              if(!snap||!snap.exists)return;
+              var d=snap.data();
+              if(d&&d.map){
+                ST.smbData=d.map;ST.smbRaw=d.raw||[];
+                lsS(SK.SM,{data:ST.smbData,raw:ST.smbRaw});
+                upBadges();
+                // Refresh SMB page and dashboard if active
+                var spg=G("pg-smb");if(spg&&spg.classList.contains("active"))renderSMBPage();
+                var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+              }
+            },function(err){console.warn("SMB listener error:",err);});
+        }catch(le){console.warn("startSMBListener:",le);}
+      }
+
+      // Start listeners once auth is confirmed
+      setTimeout(function(){
+        if(FB.enabled&&FB.user){
+          startResultsListener();
+          startSMBListener();
+        }
+      },1200);
     }
   }, 300);
 
