@@ -240,7 +240,7 @@ select.fin{cursor:pointer}
 <body>
 <!-- LOGIN -->
 <div id="lw"><div class="lcard">
-  <div class="llogo"><div class="lic"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div><div class="lbr">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
+  <div class="llogo"><div class="lic" id="login-logo-ic"><svg id="login-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div style="display:flex;flex-direction:column;align-items:flex-start"><img id="login-logo-img" src="" alt="DispatchTrack" style="max-height:30px;max-width:200px;object-fit:contain;display:none"><div class="lbr" id="login-brand-name">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
   <div class="ltit">Welcome back</div><div class="lsub">Evaluate, classify and measure support tickets</div>
   <div class="lf"><label class="ll">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
   <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
@@ -253,11 +253,15 @@ select.fin{cursor:pointer}
 <div id="app" style="display:none">
   <nav id="sb">
     <div class="sbh"><div class="sblo" style="gap:0">
-  <div class="sbic" id="sb-logo-wrap" style="width:40px;height:40px;overflow:hidden;background:transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-    <img id="sb-logo-img" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:none" onerror="this.style.display='none'">
-    <svg id="sb-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+  <div class="sbic" style="width:36px;height:36px;background:linear-gradient(135deg,#4F6EF7,#7C5CF7);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
   </div>
-  <div style="margin-left:10px"><div class="sbbr" id="sb-brand-name">DispatchTrack</div><div class="sbbs">Ticket Eval Pro</div></div>
+  <div style="margin-left:10px;display:flex;flex-direction:column;justify-content:center">
+    <!-- Logo image OR brand text — only one shows at a time -->
+    <img id="sb-logo-img" src="" alt="DispatchTrack" style="max-height:28px;max-width:160px;object-fit:contain;display:none">
+    <div class="sbbr" id="sb-brand-name">DispatchTrack</div>
+    <div class="sbbs">Ticket Eval Pro</div>
+  </div>
 </div></div>
     <div class="sbnav">
       <div class="sbsc">Main</div>
@@ -1453,12 +1457,24 @@ function getLogo(){return lsG(SK_LOGO,null)||"";}
 function saveLogo(url){if(url)lsS(SK_LOGO,url);else lsD(SK_LOGO);}
 function updateSidebarLogo(){
   var url=getLogo();
-  var img=G("sb-logo-img"),svg=G("sb-logo-svg"),wrap=G("sb-logo-wrap");
-  if(url&&img&&svg){
-    img.onload=function(){img.style.display="block";if(svg)svg.style.display="none";if(wrap)wrap.style.background="transparent";};
-    img.onerror=function(){img.style.display="none";if(svg)svg.style.display="block";if(wrap)wrap.style.background="";};
-    img.src=url;
-  }else if(img&&svg){img.style.display="none";svg.style.display="block";if(wrap)wrap.style.background="";}
+  // ── Sidebar: logo replaces "DispatchTrack" text ──
+  var simg=G("sb-logo-img"),stxt=G("sb-brand-name");
+  if(url&&simg&&stxt){
+    simg.onload=function(){simg.style.display="block";stxt.style.display="none";};
+    simg.onerror=function(){simg.style.display="none";stxt.style.display="block";};
+    simg.src=url;
+  }else if(simg&&stxt){simg.style.display="none";stxt.style.display="block";}
+  // ── Login page: logo replaces "DispatchTrack" text ──
+  var limg=G("login-logo-img"),ltxt=G("login-brand-name"),lic=G("login-logo-ic");
+  if(url&&limg&&ltxt){
+    limg.onload=function(){
+      limg.style.display="block";ltxt.style.display="none";
+      // Shrink icon when logo shows
+      if(lic)lic.style.display="none";
+    };
+    limg.onerror=function(){limg.style.display="none";ltxt.style.display="block";if(lic)lic.style.display="";};
+    limg.src=url;
+  }else if(limg&&ltxt){limg.style.display="none";ltxt.style.display="block";if(lic)lic.style.display="";}
 }
 function saveBrandSettings(){
   var url=(gv("s-logo")||"").trim();
@@ -1470,7 +1486,8 @@ function saveBrandSettings(){
     pimg.onerror=function(){prev.style.display="none";toast("Logo URL could not be loaded. Check the URL is a direct image link.","warn");};
     pimg.src=url;
   }else if(prev){prev.style.display="none";}
-  toast(url?"Logo URL saved! It will appear in the sidebar.":"Logo removed","ok");
+  updateSidebarLogo(); // Updates both sidebar and login page
+  toast(url?"Logo saved! Updated in sidebar and login page.":"Logo removed","ok");
 }
 function loadBrandSettings(){
   var url=getLogo();
@@ -1515,18 +1532,35 @@ function downloadChart(canvasId,filename){
 }
 
 function showDrillDown(value,field,data){
-  var matching=(data||_chartCurrentData).filter(function(r){return(r[field]||"Unclassified")===value;});
-  if(!matching.length){toast("No tickets found for: "+value,"in");return;}
-  var h='<div style="margin-bottom:10px;font-size:13px;color:var(--tx2)"><strong>'+esc(value)+'</strong> — '+matching.length+' tickets</div>';
-  h+='<div style="max-height:400px;overflow-y:auto"><table class="tbl" style="font-size:12px"><thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>FRR</th><th>Environment</th><th>Category</th></tr></thead><tbody>';
-  matching.slice(0,100).forEach(function(r){
-    var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
-    h+="<tr><td><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:#4F6EF7'>#"+esc(r.id)+"</a></td><td class='tr' style='max-width:200px'>"+esc(r.subject||"--")+"</td><td style='font-size:11px'>"+esc(r.ticket_type||"--")+"</td><td style='font-family:monospace;color:"+fc+"'>"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td><td>"+esc(r.environment||"--")+"</td><td>"+catBdg(r.category)+"</td></tr>";
+  var src=data||_chartCurrentData||ST.results;
+  var matching=src.filter(function(r){
+    var v=r[field]||"Unclassified";
+    return v===value||v.trim()===value.trim();
   });
-  if(matching.length>100)h+='<tr><td colspan="6" class="te">+ '+(matching.length-100)+' more</td></tr>';
+  if(!matching.length){toast("No matching tickets found for: "+value,"in");return;}
+  var fieldLabel={"category":"Category","environment":"Environment","sub_category":"Sub Category"}[field]||field;
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bdr)">';
+  h+=catBdg(value)+'<span style="font-size:13px;color:var(--tx2)">'+matching.length+' ticket'+(matching.length!==1?"s":"")+'</span></div>';
+  h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
+  h+='<thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>FRR</th><th>Environment</th><th>Category</th><th>Sub Category</th></tr></thead><tbody>';
+  matching.slice(0,150).forEach(function(r){
+    var fc=r.frr>60?"var(--err)":r.frr>0?"var(--ok)":"var(--tx3)";
+    h+="<tr>";
+    h+="<td style='white-space:nowrap'><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:#4F6EF7;font-family:monospace'>#"+esc(r.id)+"</a></td>";
+    h+="<td class='tr' style='max-width:220px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx2)'>"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td>";
+    h+="<td style='font-size:11px'>"+esc(r.environment||"--")+"</td>";
+    h+="<td>"+catBdg(r.category)+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx2)'>"+esc(r.sub_category||"--")+"</td>";
+    h+="</tr>";
+  });
+  if(matching.length>150)h+='<tr><td colspan="7" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export the data for full list.</td></tr>';
   h+="</tbody></table></div>";
-  openModal(field.charAt(0).toUpperCase()+field.slice(1)+": "+esc(value),h,'<button class="btn bpri" id="dd-close">Close</button>','700px');
-  G("dd-close").onclick=closeModal;
+  // Use direct DOM manipulation instead of openModal to avoid timing issues
+  var ov=G("modal-overlay");if(!ov)return;
+  ov.style.display="flex";
+  ov.innerHTML='<div class="modal" style="max-width:760px;width:95vw"><div class="mhd"><div class="mti">'+esc(fieldLabel)+': '+esc(value)+'</div><button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx3);line-height:1">&times;</button></div><div class="mbd">'+h+'</div><div class="mft"><button class="btn bpri" onclick="closeModal()">Close</button></div></div>';
 }
 
 function makeLabelPlugin(field,data){
@@ -1583,7 +1617,7 @@ function renderDashboardCharts(){
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
         },
         scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:11}}}},
-        onClick:function(evt,els){if(els.length){var label=catKeys[els[0].index];showDrillDown(label,"category",r);}}
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!catKeys[idx])return;showDrillDown(catKeys[idx],"category",_chartCurrentData);}
       },
       plugins:[makeLabelPlugin("category",r)]
     });
@@ -1603,7 +1637,7 @@ function renderDashboardCharts(){
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
         },
         scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:11}}}},
-        onClick:function(evt,els){if(els.length){var label=envKeys[els[0].index];showDrillDown(label,"environment",r);}}
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!envKeys[idx])return;showDrillDown(envKeys[idx],"environment",_chartCurrentData);}
       },
       plugins:[makeLabelPlugin("environment",r)]
     });
@@ -1623,7 +1657,7 @@ function renderDashboardCharts(){
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";} }}
         },
         scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:10}}}},
-        onClick:function(evt,els){if(els.length){var label=subKeys[els[0].index];showDrillDown(label,"sub_category",r);}}
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined||!subKeys[idx])return;showDrillDown(subKeys[idx],"sub_category",_chartCurrentData);}
       },
       plugins:[makeLabelPlugin("sub_category",r)]
     });
