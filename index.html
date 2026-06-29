@@ -316,6 +316,19 @@ select.fin{cursor:pointer}
             <button class="btn bgst bsm" id="chart-reset-btn">Show All</button>
             <button class="btn bout bsm" id="chart-eval-btn">Current Eval Only</button>
             <span class="bdg bok2" id="chart-count-badge" style="font-size:11px"></span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:7px">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              <label style="font-size:12px;color:var(--tx2);white-space:nowrap;font-weight:500">Theme:</label>
+              <select id="chart-theme" class="fsel" style="font-size:12px;padding:4px 8px" onchange="applyChartTheme(this.value);renderDashboardCharts()">
+                <option value="default">Default (Blue)</option>
+                <option value="vivid">Vivid</option>
+                <option value="earth">Earth Tones</option>
+                <option value="ocean">Ocean</option>
+                <option value="sunset">Sunset</option>
+                <option value="mono">Monochrome</option>
+                <option value="pastel">Pastel</option>
+              </select>
+            </div>
           </div>
           <div class="g2">
             <div class="card">
@@ -599,7 +612,6 @@ select.fin{cursor:pointer}
         </div>
 
         <div class="card">
-        <div class="card">
           <div class="chd"><span class="ct">&#127744; Brand &amp; Appearance</span><button class="btn bpri bsm" id="brand-save-btn">Save</button></div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
             <div><label class="flb">Logo URL <span style="font-weight:400;color:var(--tx3)">(stored persistently, survives refresh)</span></label>
@@ -626,7 +638,7 @@ select.fin{cursor:pointer}
 service cloud.firestore {
   match /databases/{database}/documents {
     // Allow any authenticated Firebase user full access
-    // (Simple rule — works for single-org apps like DispatchTrack Ticket Eval)
+    // This covers both shared/ and users/ paths for all team members
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
@@ -722,10 +734,17 @@ async function fsGet(path) {
   if(!FB.enabled || !FB.db) return null;
   try {
     var parts = path.split("/");
-    var ref = FB.db;
-    for(var i=0;i<parts.length;i+=2) {
-      ref = ref.collection(parts[i]);
-      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    var ref;
+    // Handle shared/X paths => shared(col).doc("org").collection("X") or shared(col).doc("X")
+    if(parts.length===2 && parts[0]==="shared"){
+      // Treat as a document in the "shared" collection with id=X
+      ref = FB.db.collection("shared").doc(parts[1]);
+    } else {
+      ref = FB.db;
+      for(var i=0;i<parts.length;i+=2) {
+        ref = ref.collection(parts[i]);
+        if(parts[i+1]) ref = ref.doc(parts[i+1]);
+      }
     }
     var snap = await ref.get();
     return snap.exists ? snap.data() : null;
@@ -736,10 +755,15 @@ async function fsSet(path, data) {
   if(!FB.enabled || !FB.db) return;
   try {
     var parts = path.split("/");
-    var ref = FB.db;
-    for(var i=0;i<parts.length;i+=2) {
-      ref = ref.collection(parts[i]);
-      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    var ref;
+    if(parts.length===2 && parts[0]==="shared"){
+      ref = FB.db.collection("shared").doc(parts[1]);
+    } else {
+      ref = FB.db;
+      for(var i=0;i<parts.length;i+=2) {
+        ref = ref.collection(parts[i]);
+        if(parts[i+1]) ref = ref.doc(parts[i+1]);
+      }
     }
     await ref.set(data, {merge:true});
   } catch(e) { console.error("fsSet error:", path, e); }
@@ -748,13 +772,19 @@ async function fsSet(path, data) {
 async function fsAdd(collPath, data) {
   if(!FB.enabled || !FB.db) return null;
   try {
+    // Handle shared/X paths: shared=collection, X=subcollection under doc "org"
+    // e.g., "shared/results" => shared(col).doc("org").collection("results").add(...)
     var parts = collPath.split("/");
-    var ref = FB.db;
-    for(var i=0;i<parts.length;i+=2) {
-      ref = ref.collection(parts[i]);
-      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    var ref;
+    if(parts.length===2 && parts[0]==="shared"){
+      ref = FB.db.collection("shared").doc("org").collection(parts[1]);
+    } else {
+      ref = FB.db;
+      for(var i=0;i<parts.length;i+=2) {
+        ref = ref.collection(parts[i]);
+        if(parts[i+1]) ref = ref.doc(parts[i+1]);
+      }
     }
-    // Last part should be a collection
     var docRef = await ref.add(data);
     return docRef.id;
   } catch(e) { console.error("fsAdd error:", e); return null; }
@@ -780,10 +810,15 @@ async function fsDelete(path) {
   if(!FB.enabled || !FB.db) return;
   try {
     var parts = path.split("/");
-    var ref = FB.db;
-    for(var i=0;i<parts.length;i+=2) {
-      ref = ref.collection(parts[i]);
-      if(parts[i+1]) ref = ref.doc(parts[i+1]);
+    var ref;
+    if(parts.length===2 && parts[0]==="shared"){
+      ref = FB.db.collection("shared").doc(parts[1]);
+    } else {
+      ref = FB.db;
+      for(var i=0;i<parts.length;i+=2) {
+        ref = ref.collection(parts[i]);
+        if(parts[i+1]) ref = ref.doc(parts[i+1]);
+      }
     }
     await ref.delete();
   } catch(e) { console.error("fsDelete error:", e); }
@@ -835,15 +870,24 @@ function getCats(){return lsG(SK.CA,null)||DC.slice();}
 function getSubs(){return lsG(SK.SU,null)||DS.slice();}
 function getTech(){return lsG(SK.TY,null)||DT.slice();}
 async function loadLabelsFromFirestore(){
-  if(!FB.enabled)return;
-  var data=await fsGet("users/"+uid()+"/labels/default");
-  if(!data)return;
-  if(data.envs)lsS(SK.EN,data.envs);if(data.cats)lsS(SK.CA,data.cats);
-  if(data.subs)lsS(SK.SU,data.subs);if(data.tech)lsS(SK.TY,data.tech);
+  if(!FB.enabled||!FB.db)return;
+  try{
+    // Load from shared path first
+    var data=await fsGet("shared/labels");
+    if(!data){
+      // Migration: fallback to per-user path
+      var u=uid();
+      if(u!=="local")data=await fsGet("users/"+u+"/labels/default");
+    }
+    if(!data)return;
+    if(data.envs)lsS(SK.EN,data.envs);if(data.cats)lsS(SK.CA,data.cats);
+    if(data.subs)lsS(SK.SU,data.subs);if(data.tech)lsS(SK.TY,data.tech);
+  }catch(e){console.warn("loadLabelsFromFirestore:",e);}
 }
 async function saveLabelsToFirestore(){
-  if(!FB.enabled)return;
-  await fsSet("users/"+uid()+"/labels/default",{envs:getEnvs(),cats:getCats(),subs:getSubs(),tech:getTech(),savedAt:fsTs()});
+  if(!FB.enabled||!FB.db)return;
+  // Save to shared path so all users share the same label configuration
+  await fsSet("shared/labels",{envs:getEnvs(),cats:getCats(),subs:getSubs(),tech:getTech(),savedAt:fsTs()});
 }
 
 // ─── STATE ───────────────────────────────────────────────────
@@ -908,23 +952,22 @@ async function doLogin(){
       var role="user",name=em.split("@")[0];
       if(em.toLowerCase()===MASTER.email.toLowerCase())role="master";
       else if(profile){role=profile.role||"user";name=profile.name||name;}
-      // Try to write profile to Firestore (catch permission errors gracefully)
+      // Ensure profile exists in Firestore for future logins by this user
       try{
-        if(!profile||!profile.createdAt){
-          await FB.db.collection("users").doc(result.user.uid).set(
-            {email:em,name:name,role:role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},
-            {merge:true}
-          );
-        }
+        await FB.db.collection("users").doc(result.user.uid).set(
+          {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
+          {merge:true}
+        );
       }catch(we){console.warn("Profile write failed:",we.message);}
-      // Always save to localStorage
+      // Always save to localStorage as fallback
       var lsu2=lsG(SK.U,[])||[];
-      if(!lsu2.some(function(u){return u.id===result.user.uid;})){
-        lsu2.push({id:result.user.uid,email:em,name:name,role:role,created:Date.now()});
-        lsS(SK.U,lsu2);
-      }
+      var existIdx=-1;
+      for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===result.user.uid||( lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){existIdx=li2;break;}}
+      if(existIdx>=0){lsu2[existIdx]=Object.assign({},lsu2[existIdx],{id:result.user.uid,email:em,name:name,role:role});}
+      else{lsu2.push({id:result.user.uid,email:em,name:name,role:role,created:Date.now()});}
+      lsS(SK.U,lsu2);
       setSess({id:result.user.uid,email:em,name:name,role:role});
-      try{await loadDataFromFirestore();}catch(lde){}
+      try{await loadDataFromFirestore();}catch(lde){console.warn("Data load error:",lde);}
       bootApp();
     }else{
       // Fallback: hardcoded master
@@ -997,56 +1040,90 @@ function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master
 
 // ─── FIRESTORE DATA SYNC ─────────────────────────────────────
 async function loadDataFromFirestore(){
-  if(!FB.enabled||uid()==="local")return; // skip if not authenticated with Firebase Auth
-  var u=uid();
-  // Load results
+  if(!FB.enabled||!FB.db)return;
+  // ── Load shared results (visible to ALL users) ──
   try{
-    var results=await fsQuery("users/"+u+"/results",500);
-    if(results.length){
-      ST.results=results.map(function(r){return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""}, r);});
+    // PRIMARY path: shared(col) → org(doc) → results(subcol)
+    var sharedSnap=await FB.db.collection("shared").doc("org").collection("results")
+      .orderBy("savedAt","desc").limit(1000).get();
+    if(sharedSnap.docs.length>0){
+      ST.results=sharedSnap.docs.map(function(d){var r=d.data();return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);});
     }else{
-      ST.results=lsG(SK.RE,[])||[];
+      // Migration fallback: try per-user path for legacy data
+      var u=uid();
+      if(u!=="local"){
+        var legacySnap=await FB.db.collection("users").doc(u).collection("results")
+          .orderBy("savedAt","desc").limit(500).get();
+        if(legacySnap.docs.length>0){
+          ST.results=legacySnap.docs.map(function(d){var r=d.data();return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);});
+        }else{
+          ST.results=lsG(SK.RE,[])||[];
+        }
+      }else{
+        ST.results=lsG(SK.RE,[])||[];
+      }
     }
-  }catch(e){ST.results=lsG(SK.RE,[])||[];}
-  // Load SMB
-  try{var smb=await fsGet("users/"+u+"/smb/data");if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}}
-  catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
-  // Load labels
+  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];}
+  // ── Load shared SMB data ──
+  try{
+    var smb=await fsGet("shared/smbdata");
+    if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}
+    else{
+      var lsmb=lsG(SK.SM,null);
+      if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}
+    }
+  }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
+  // ── Load shared labels ──
   await loadLabelsFromFirestore();
-  // Load training data
+  // ── Load shared training data ──
   await loadTrainingFromFirestore();
   upBadges();
 }
 
 async function saveResultToFirestore(res){
-  if(!FB.enabled||uid()==="local")return; // skip if not authenticated with Firebase
-  var u=uid();
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",savedAt:fsTs()};
-  await fsAdd("users/"+u+"/results",toSave);
+  if(!FB.enabled||!FB.db)return;
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:uid()||"unknown",evaluatedAt:res.evaluatedAt||Date.now(),savedAt:fsTs()};
+  // Save to SHARED results subcollection so ALL users see it on their dashboard
+  try{
+    await FB.db.collection("shared").doc("org").collection("results").add(toSave);
+  }catch(e){console.warn("saveResultToFirestore error:",e);}
 }
 
 async function saveCorrectionsToFirestore(corrections){
-  if(!FB.enabled||uid()==="local")return;
-  var u=uid();
+  if(!FB.enabled||!FB.db)return;
   for(var i=0;i<corrections.length;i++){
     var c=corrections[i];
-    await fsAdd("users/"+u+"/corrections",{subject:c.subject||"",ticket_type:c.ticket_type||"",field:c.field||"",original:c.original||"",corrected:c.corrected||"",ts:c.ts||Date.now(),savedAt:fsTs()});
+    // Save to SHARED corrections subcollection (org-level, all users benefit)
+    try{
+      await FB.db.collection("shared").doc("org").collection("corrections").add({
+        subject:c.subject||"",ticket_type:c.ticket_type||"",field:c.field||"",
+        original:c.original||"",corrected:c.corrected||"",ts:c.ts||Date.now(),
+        savedAt:fsTs()
+      });
+    }catch(e){console.warn("Correction save error:",e);}
   }
 }
 
 async function loadCorrectionsFromFirestore(){
-  if(!FB.enabled)return lsG(SK.CO,[])||[];
-  var u=uid();
+  if(!FB.enabled||!FB.db)return lsG(SK.CO,[])||[];
   try{
-    var snap=await FB.db.collection("users").doc(u).collection("corrections").orderBy("ts","desc").limit(500).get();
-    return snap.docs.map(function(d){return d.data();});
+    // Load from shared corrections subcollection
+    var snap=await FB.db.collection("shared").doc("org").collection("corrections").orderBy("ts","desc").limit(500).get();
+    if(snap.docs.length>0)return snap.docs.map(function(d){return d.data();});
+    // Migration fallback: try per-user path
+    var u=uid();
+    if(u!=="local"){
+      var snap2=await FB.db.collection("users").doc(u).collection("corrections").orderBy("ts","desc").limit(500).get();
+      return snap2.docs.map(function(d){return d.data();});
+    }
+    return lsG(SK.CO,[])||[];
   }catch(e){return lsG(SK.CO,[])||[];}
 }
 
 async function saveSMBToFirestore(){
-  if(!FB.enabled||uid()==="local")return;
-  var u=uid();
-  await fsSet("users/"+u+"/smb/data",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
+  if(!FB.enabled||!FB.db)return;
+  // Save to SHARED SMB path so all users share the same SMB data
+  await fsSet("shared/smbdata",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
 }
 
 // ─── NAV ─────────────────────────────────────────────────────
@@ -1180,10 +1257,13 @@ function importTrainingData(){
   for(var i=0;i<combined.length;i++){var t=combined[i];var k=String(t.subject||"").substring(0,40)+t.environment+t.category;if(!seen2[k]){seen2[k]=1;deduped.push(t);}}
   saveTrainingData(deduped);
   // Save to Firestore if connected
-  if(FB.enabled){
-    var u=uid();
+  if(FB.enabled&&FB.db){
+    // Save to shared training collection so all users benefit from the training data
     for(var i=0;i<newExamples.length;i++){
-      (function(ex){fsAdd("users/"+u+"/training",Object.assign({savedAt:fsTs()},ex)).catch(function(e){console.warn("Firestore training save error:",e);});})(newExamples[i]);
+      (function(ex){
+        FB.db.collection("shared").doc("org").collection("training").add(Object.assign({savedAt:fsTs()},ex))
+          .catch(function(e){console.warn("Firestore training save error:",e);});
+      })(newExamples[i]);
     }
   }
   // Reset UI
@@ -1205,20 +1285,34 @@ function exportTraining(){
 async function clearTraining(){
   if(!confirm("Clear all "+getTraining().length+" training examples?"))return;
   saveTrainingData([]);
-  if(FB.enabled){
-    try{var snap=await FB.db.collection("users").doc(uid()).collection("training").get();var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();}catch(e){}
+  if(FB.enabled&&FB.db){
+    try{
+      var snap=await FB.db.collection("shared").doc("org").collection("training").get();
+      var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();
+    }catch(e){console.warn("Training clear error:",e);}
   }
   renderTrainingPage();toast("Training data cleared","ok");
 }
 
 // Load training from Firestore
 async function loadTrainingFromFirestore(){
-  if(!FB.enabled)return;
+  if(!FB.enabled||!FB.db)return;
   try{
-    var snap=await FB.db.collection("users").doc(uid()).collection("training").limit(2000).get();
+    // Load from shared training path
+    var snap=await FB.db.collection("shared").doc("org").collection("training").limit(2000).get();
     if(snap.size>0){
       var arr=snap.docs.map(function(d){return d.data();});
       saveTrainingData(arr);
+      return;
+    }
+    // Migration fallback: per-user path
+    var u=uid();
+    if(u!=="local"){
+      var snap2=await FB.db.collection("users").doc(u).collection("training").limit(2000).get();
+      if(snap2.size>0){
+        var arr2=snap2.docs.map(function(d){return d.data();});
+        saveTrainingData(arr2);
+      }
     }
   }catch(e){console.warn("Could not load training from Firestore:",e);}
 }
@@ -1288,7 +1382,7 @@ async function applySMB(ci,ti){
   var tg=G("smb-tg");if(tg)tg.innerHTML='<span class="bdg bok2">'+Object.keys(data).length+" records</span>";
 }
 function lookupSMB(code){return code?ST.smbData[String(code).trim().toLowerCase()]||"Unknown":"Unknown";}
-async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled)await fsDelete("users/"+uid()+"/smb/data");renderSMBPage();upBadges();toast("SMB cleared","ok");}
+async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
 function renderSMBPage(){
   var ks=Object.keys(ST.smbData),pc=G("smb-prev"),si=G("smb-stats-inner");
   // Fall back to old ID if new one not found
@@ -1515,9 +1609,24 @@ function loadBrandSettings(){
   }else if(prev){prev.style.display="none";}
 }
 
+// ─── CHART THEMES ─────────────────────────────────────────────
+var CHART_THEMES={
+  default:["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B","#EF4444","#8B5CF6","#06B6D4"],
+  vivid:["#FF3366","#FF6B35","#F7C59F","#EFEFD0","#00B4D8","#0077B6","#023E8A","#7B2D8B","#C77DFF","#E0AAFF","#00F5D4","#00BBF9"],
+  earth:["#8B4513","#A0522D","#CD853F","#DEB887","#D2691E","#8B6914","#6B4423","#A67B5B","#9C7253","#7D5A3C","#5C4033","#C19A6B"],
+  ocean:["#0077B6","#0096C7","#00B4D8","#48CAE4","#90E0EF","#ADE8F4","#0369A1","#0284C7","#0EA5E9","#38BDF8","#7DD3FC","#BAE6FD"],
+  sunset:["#FF4D00","#FF6B35","#FF8C42","#FFA552","#FFBE76","#FFD166","#EF233C","#D90429","#C1121F","#8B0000","#6A0572","#B5179E"],
+  mono:["#111827","#1F2937","#374151","#4B5563","#6B7280","#9CA3AF","#D1D5DB","#E5E7EB","#F3F4F6","#030712","#18181B","#27272A"],
+  pastel:["#A8DADC","#457B9D","#1D3557","#E63946","#F1FAEE","#2A9D8F","#E9C46A","#F4A261","#E76F51","#264653","#6A4C93","#1982C4"]
+};
+var CHART_PAL=CHART_THEMES.default.slice();
+
+function applyChartTheme(theme){
+  CHART_PAL=(CHART_THEMES[theme]||CHART_THEMES.default).slice();
+}
+
 // ─── DASHBOARD CHARTS ─────────────────────────────────────────
 var _dashCharts={};
-var CHART_PAL=["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B","#EF4444","#8B5CF6","#06B6D4"];
 var _chartCurrentData=[];
 
 // Register global datalabels plugin if available
@@ -1529,12 +1638,13 @@ function getChartData(){
   var dateFrom=gv("chart-date-from"),dateTo=gv("chart-date-to");
   var fromTs=dateFrom?new Date(dateFrom).getTime():0;
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
+  // Default: show ALL results (most useful for shared dashboard)
   if(!fromTs&&toTs===Infinity){
-    return ST.curEval.length?ST.curEval:ST.results;
+    return ST.results.length?ST.results:(ST.curEval.length?ST.curEval:[]);
   }
   return ST.results.filter(function(r){
     var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
-    return !ts||( ts>=fromTs&&ts<=toTs);
+    return !ts||(ts>=fromTs&&ts<=toTs);
   });
 }
 
@@ -1762,68 +1872,7 @@ function renderDashboardCharts(){
   }
 }
 
-var CHART_PAL=["#4F6EF7","#16A34A","#D97706","#DC2626","#0D9488","#7C3AED","#B45309","#0369A1","#BE185D","#374151","#059669","#F59E0B"];
-function destroyCharts(){Object.keys(_dashCharts).forEach(function(k){if(_dashCharts[k])_dashCharts[k].destroy();});_dashCharts={};}
-
-function renderDashboardCharts(){
-  destroyCharts();
-  var r=ST.results;
-  if(!r||!r.length){G("dash-charts").style.display="none";return;}
-  G("dash-charts").style.display="block";
-
-  // ── Category Chart ──
-  var catCnt={};r.forEach(function(x){var c=x.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
-  var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];});
-  var total=r.length;
-  var ctg=G("chart-cat-total");if(ctg)ctg.textContent=total+" tickets";
-  var c1=G("chart-cat");if(c1){c1.height=Math.max(220,catKeys.length*32);
-    _dashCharts.cat=new Chart(c1,{type:"bar",data:{labels:catKeys.map(function(k){return k+" ("+Math.round(catCnt[k]/total*100)+"%)"}),datasets:[{data:catKeys.map(function(k){return catCnt[k];}),backgroundColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:catKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";}}}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});}
-
-  // ── Environment Chart ──
-  var envCnt={};r.forEach(function(x){var e=x.environment||"Unknown";envCnt[e]=(envCnt[e]||0)+1;});
-  var envKeys=Object.keys(envCnt).sort(function(a,b){return envCnt[b]-envCnt[a];}).slice(0,10);
-  var c2=G("chart-env");if(c2){c2.height=Math.max(220,envKeys.length*32);
-    _dashCharts.env=new Chart(c2,{type:"bar",data:{labels:envKeys.map(function(k){return k+" ("+Math.round(envCnt[k]/total*100)+"%)"}),datasets:[{data:envKeys.map(function(k){return envCnt[k];}),backgroundColor:envKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length]+"CC";}),borderColor:envKeys.map(function(_,i){return CHART_PAL[i%CHART_PAL.length];}),borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});}
-
-  // ── Sub Category Chart (top 10) ──
-  var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
-  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,10);
-  var c3=G("chart-sub");if(c3){c3.height=320;
-    _dashCharts.sub=new Chart(c3,{type:"bar",data:{labels:subKeys.map(function(k){return k.length>25?k.substring(0,25)+"...":k;}),datasets:[{label:"Tickets",data:subKeys.map(function(k){return subCnt[k];}),backgroundColor:CHART_PAL.map(function(c){return c+"BB";}),borderColor:CHART_PAL,borderWidth:1,borderRadius:4}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/total*100)+"%)";}}}}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:10}}}}});}
-
-  // ── FRR Distribution Chart ──
-  var frrBuckets={"0-15m":0,"15-30m":0,"30-60m":0,"1-2h":0,"2h+":0,"Agent/Internal":0,"Not Calculated":0};
-  r.forEach(function(x){
-    if(x.frr_txt&&(x.frr_txt.indexOf("agent")>=0||x.frr_txt.indexOf("internal")>=0||x.frr_txt.indexOf("0m (")>=0))frrBuckets["Agent/Internal"]++;
-    else if(!x.frr||x.frr===0){if(x.frr_txt&&x.frr_txt!=="--"&&x.frr_txt!=="")frrBuckets["Not Calculated"]++;else if(x.frr===0)frrBuckets["0-15m"]++;}
-    else if(x.frr<=15)frrBuckets["0-15m"]++;
-    else if(x.frr<=30)frrBuckets["15-30m"]++;
-    else if(x.frr<=60)frrBuckets["30-60m"]++;
-    else if(x.frr<=120)frrBuckets["1-2h"]++;
-    else frrBuckets["2h+"]++;
-  });
-  var frrKeys=Object.keys(frrBuckets).filter(function(k){return frrBuckets[k]>0;});
-  var c4=G("chart-frr");if(c4){c4.height=280;
-    if(c4){c4.height=280;
-    var frrLabels=frrKeys;
-    var frrData=frrKeys.map(function(k){return frrBuckets[k];});
-    _dashCharts.frr=new Chart(c4,{
-      type:"doughnut",
-      data:{
-        labels:frrLabels,
-        datasets:[{data:frrData,backgroundColor:["#4F6EF7CC","#16A34ACC","#D97706CC","#DC2626CC","#7C3AEDCC","#94A3B8CC","#374151CC"],borderWidth:2,borderColor:"#fff"}]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{position:"bottom",labels:{font:{size:11},padding:8}},
-          tooltip:{callbacks:{label:function(ctx){return ctx.label+": "+ctx.parsed+" ("+Math.round(ctx.parsed/total*100)+"%)";} }}
-        }
-      }
-    });
-  }
-}
-}
+// (Duplicate renderDashboardCharts, CHART_PAL, and destroyCharts removed — the correct implementations appear above)
 
 // ─── ZERO-FRR AGENTS ─────────────────────────────────────────
 var SK_AGENTS="tep_agents";
@@ -2303,8 +2352,11 @@ function renderLrnTable(){renderLrnPage();}
 async function clearLrn(){
   if(!confirm("Clear all AI corrections?"))return;
   lsD(SK.CO);
-  if(FB.enabled){
-    try{var snap=await FB.db.collection("users").doc(uid()).collection("corrections").get();var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();}catch(e){console.warn("Firebase corrections clear error:",e);}
+  if(FB.enabled&&FB.db){
+    try{
+      var snap=await FB.db.collection("shared").doc("org").collection("corrections").get();
+      var batch=FB.db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});await batch.commit();
+    }catch(e){console.warn("Firebase corrections clear error:",e);}
   }
   var lc=G("lrn-cnt");if(lc)lc.textContent="0 corrections";var sl=G("s-lrn");if(sl)sl.textContent="0";var ls2=G("lrn-stats");if(ls2)ls2.innerHTML='<span style="color:var(--tx3)">No corrections yet.</span>';var tb=G("lrn-tb");if(tb)tb.innerHTML='<tr><td colspan="5" class="te">No corrections yet.</td></tr>';upBadges();toast("Cleared","ok");
 }
@@ -2916,7 +2968,7 @@ document.addEventListener("DOMContentLoaded",function(){
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
   if(fbt)fbt.onclick=testFirebase;if(fbs)fbs.onclick=saveFirebaseSettings;
   var cr2=G("clr-res"),cl2=G("clr-lrn"),cs2=G("clr-smb");
-  if(cr2)cr2.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
+  if(cr2)cr2.onclick=async function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
   if(cl2)cl2.onclick=clearLrn;if(cs2)cs2.onclick=clearSMBData;
 
   // Firebase Auth state listener — runs whenever auth state changes
@@ -2924,25 +2976,31 @@ document.addEventListener("DOMContentLoaded",function(){
     if(FB.enabled && FB.auth){
       FB.auth.onAuthStateChanged(function(user){
         if(user){
-          // Always update FB.user — even if there is already a session
-          // This fixes the case where master is logged in via sessionStorage but FB.user was null
           FB.user=user;
           var sess=getSess();
           if(!sess){
-            // No session — load profile and boot app
             FB.db.collection("users").doc(user.uid).get().then(function(snap){
               var profile=snap.exists?snap.data():null;
               if(profile){
                 var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":(profile.role||"user");
                 setSess({id:user.uid,email:user.email,name:profile.name||user.email.split("@")[0],role:role});
                 if(!G("app")||G("app").style.display==="none")bootApp();
+              } else {
+                // No Firestore profile - still boot with defaults
+                var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":"user";
+                var name=user.email.split("@")[0];
+                setSess({id:user.uid,email:user.email,name:name,role:role});
+                if(!G("app")||G("app").style.display==="none")bootApp();
               }
-            }).catch(function(e){console.warn("Profile load error:",e);});
+            }).catch(function(e){
+              // If Firestore fails, still allow login with defaults
+              var role=user.email.toLowerCase()===MASTER.email.toLowerCase()?"master":"user";
+              setSess({id:user.uid,email:user.email,name:user.email.split("@")[0],role:role});
+              if(!G("app")||G("app").style.display==="none")bootApp();
+            });
           } else {
-            // Session already exists — FB.user is now set; remove auth warning banner
             var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
             upBadges();
-            // Refresh user management if it is currently visible
             var usrPage=G("pg-users");
             if(usrPage&&usrPage.classList.contains("active"))renderUsers();
           }
@@ -2950,6 +3008,33 @@ document.addEventListener("DOMContentLoaded",function(){
           FB.user=null;
         }
       });
+
+      // ── Real-time listener for shared results (syncs across users) ──
+      var _resultsUnsubscribe=null;
+      function startResultsListener(){
+        if(!FB.enabled||!FB.db||_resultsUnsubscribe)return;
+        try{
+          _resultsUnsubscribe=FB.db.collection("shared").doc("org").collection("results")
+            .orderBy("savedAt","desc").limit(1000)
+            .onSnapshot(function(snap){
+              if(!snap||snap.empty)return;
+              var newResults=snap.docs.map(function(d){var r=d.data();return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);});
+              // Merge with local results (avoid duplicates by ticket id)
+              var existingIds={};
+              newResults.forEach(function(r){if(r.id)existingIds[r.id]=true;});
+              var local=ST.results.filter(function(r){return r.id&&!existingIds[r.id];});
+              ST.results=newResults.concat(local);
+              lsS(SK.RE,ST.results.slice(-200));
+              upBadges();
+              // Refresh dashboard if active
+              var pg=G("pg-dashboard");
+              if(pg&&pg.classList.contains("active"))try{renderDash();}catch(e){}
+            },function(err){console.warn("Results listener error:",err);});
+        }catch(le){console.warn("startResultsListener:",le);}
+      }
+
+      // Start listener once auth is confirmed
+      setTimeout(function(){if(FB.enabled&&FB.user)startResultsListener();},1000);
     }
   }, 300);
 
