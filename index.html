@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='55%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>✓</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='55%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>&#10003;</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DispatchTrack — Ticket Evaluation Platform</title>
 <!-- System fonts: Apple SF Pro, Helvetica Neue -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -990,66 +990,54 @@ service cloud.firestore {
         <div class="card"><div class="chd"><span class="ct">Data Management</span></div><div class="cbd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn bdan" id="clr-res">Clear All Results</button><button class="btn bdan" id="clr-lrn">Clear AI Corrections</button><button class="btn bout" id="clr-smb">Clear SMB Data</button><span style="font-size:12px;color:var(--tx-3)" id="dt-stats"></span></div></div>
       </div>
 
-
-      <!-- QA REVIEW MODULE — Master only -->
+    
+      <!-- QA REVIEW — Master only (revanth.abbati@dispatchtrack.com) -->
       <div class="page" id="pg-qa-review">
         <div class="pghd">
           <div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div>
-          <div class="pgs">Ticket quality review — rate tickets on a 1/3/5 scale (PST timezone)</div>
+          <div class="pgs">Ticket quality review — rate agent tickets on a 1/3/5 scale (all times in PST)</div>
         </div>
 
-        <!-- Hidden file inputs OUTSIDE all click handlers -->
-        <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px">
-        <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px" multiple>
+        <!-- Hidden file inputs — placed outside all click handlers -->
+        <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px">
+        <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
 
-        <!-- Progress bar -->
         <div id="qa-progress-bar" style="display:none;margin-bottom:12px">
-          <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
-            <div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div>
-          </div>
+          <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div></div>
           <div id="qa-pb-label" style="font-size:12px;color:var(--tx3);margin-top:4px;text-align:center"></div>
         </div>
 
         <div class="g2" style="margin-bottom:14px">
-          <!-- Upload Panel -->
           <div class="card">
             <div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div>
-            <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
-              <div class="dz" id="dz-qa-main"
-                   ondragover="event.preventDefault();this.classList.add('dzdrag')"
-                   ondragleave="this.classList.remove('dzdrag')"
-                   ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])qaHandleMain(event.dataTransfer.files[0])"
-                   onclick="document.getElementById('fi-qa-main').click()"
-                   style="cursor:pointer">
+            <div class="cbd">
+              <div class="dz" id="dz-qa-main" style="cursor:pointer"
+                ondragover="event.preventDefault();this.classList.add('dzdrag')"
+                ondragleave="this.classList.remove('dzdrag')"
+                ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])parseQAMain(event.dataTransfer.files[0])"
+                onclick="document.getElementById('fi-qa-main').click()">
                 <div class="dzi">&#128203;</div>
-                <div class="dzt">Drop agent inflow sheet here or click</div>
-                <div class="dzs">Excel or CSV with Ticket ID column</div>
+                <div class="dzt">Drop agent inflow sheet here or click to browse</div>
+                <div class="dzs">Excel (.xlsx/.xls) or CSV — must have a Ticket ID column</div>
               </div>
-              <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px">
-                <div style="font-weight:600;margin-bottom:4px" id="qa-sheet-name"></div>
-                <div style="color:var(--tx2)" id="qa-sheet-rows"></div>
+              <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:8px">
+                <span style="font-weight:600" id="qa-sheet-name"></span> — <span style="color:var(--tx2)" id="qa-sheet-rows"></span>
               </div>
             </div>
           </div>
-
-          <!-- Reference Sheets Panel -->
           <div class="card">
-            <div class="chd">
-              <span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span>
-              <button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button>
-            </div>
+            <div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span>
+              <button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button></div>
             <div class="cbd">
-              <div id="qa-ref-list" style="display:flex;flex-direction:column;gap:8px;min-height:60px">
-                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added yet.<br>Add previously reviewed sheets for better AI accuracy.</div>
+              <div id="qa-ref-list">
+                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added. Add previously reviewed sheets for better AI accuracy.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Process Configuration -->
         <div class="card" style="margin-bottom:14px">
-          <div class="chd">
-            <span class="ct">&#9654; Process Configuration</span>
+          <div class="chd"><span class="ct">&#9654; Process Configuration</span>
             <div style="display:flex;gap:8px">
               <button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button>
               <button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button>
@@ -1057,28 +1045,22 @@ service cloud.firestore {
           </div>
           <div class="cbd">
             <div class="g2" style="gap:10px;margin-bottom:12px">
-              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(optional — blank = process all)</span></label>
-                <input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div>
-              <div><label class="flb">Quarter / Period</label>
-                <input id="qa-quarter" class="fin" placeholder="e.g. Q3 2026" value="Q3 2026"></div>
+              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(blank = all)</span></label><input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div>
+              <div><label class="flb">Quarter / Period</label><input id="qa-quarter" class="fin" placeholder="e.g. Q3 2026" value="Q3 2026"></div>
             </div>
-            <div style="font-size:12px;color:var(--tx3);display:flex;gap:16px;flex-wrap:wrap">
-              <span>&#9432; Each ticket is fetched from Zendesk and rated by Gemini AI</span>
-              <span>&#9432; Scale: <strong style="color:#DC2626">1</strong>=Poor &nbsp; <strong style="color:#D97706">3</strong>=Average &nbsp; <strong style="color:#16A34A">5</strong>=Excellent &nbsp; | All times in PST</span>
+            <div style="font-size:12px;color:var(--tx3);display:flex;gap:20px;flex-wrap:wrap">
+              <span>&#9432; Each ticket fetched from Zendesk &amp; rated by Gemini AI</span>
+              <span>&#9432; Scale: <strong style="color:#DC2626">1</strong>=Poor &nbsp;<strong style="color:#D97706">3</strong>=Average &nbsp;<strong style="color:#16A34A">5</strong>=Excellent &nbsp;&#8226; All times PST</span>
             </div>
           </div>
         </div>
 
-        <!-- Live Log -->
         <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px">
-          <div class="chd">
-            <span class="ct">&#128260; Processing Log</span>
-            <button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping...','warn')">&#9632; Stop</button>
-          </div>
+          <div class="chd"><span class="ct">&#128260; Processing Log</span>
+            <button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping after current ticket...','warn')">&#9632; Stop</button></div>
           <div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:220px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div>
         </div>
 
-        <!-- Results -->
         <div id="qa-results-card" class="card" style="display:none">
           <div class="chd">
             <span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span>
@@ -1089,34 +1071,30 @@ service cloud.firestore {
           </div>
           <div class="tw" style="max-height:600px">
             <table class="tbl" id="qa-results-tbl">
-              <thead>
-                <tr>
-                  <th style="min-width:80px">Ticket ID</th>
-                  <th style="min-width:140px">Subject</th>
-                  <th style="min-width:100px">Assignee</th>
-                  <th style="min-width:70px">Status</th>
-                  <th style="min-width:80px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
-                  <th style="min-width:80px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
-                  <th style="min-width:80px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
-                  <th style="min-width:80px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
-                  <th style="min-width:80px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
-                  <th style="min-width:80px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
-                  <th style="min-width:160px">Overall Comment</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th style="min-width:80px">Ticket ID</th><th style="min-width:150px">Subject</th><th style="min-width:110px">Assignee</th><th style="min-width:65px">Status</th>
+                <th style="min-width:75px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
+                <th style="min-width:75px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
+                <th style="min-width:75px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
+                <th style="min-width:75px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
+                <th style="min-width:75px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
+                <th style="min-width:75px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
+                <th style="min-width:170px">Overall Comment</th>
+              </tr></thead>
               <tbody id="qa-results-tb"></tbody>
             </table>
           </div>
         </div>
       </div>
-    </div><!-- /pgwrap -->
+
+</div><!-- /pgwrap -->
   </div><!-- /main -->
 </div><!-- /app -->
 
 <div id="mov"><div class="modal" id="mbox" style="max-width:500px"><div class="mhd"><div class="mtt" id="mtit">Modal</div><button class="mcl" id="mcl">&#215;</button></div><div class="mbd" id="mbd"></div><div class="mft" id="mft"></div></div></div>
 <div id="tw"></div>
 <script>
-// strict mode removed — prevents block-scoped function declarations
+"use strict";
 // ─── MASTER CONFIG (hardcoded, always works) ──────────────────
 var MASTER = {email:"revanth.abbati@dispatchtrack.com",pass:"Test@12322",role:"master",name:"Revanth Abbati",id:"__master__"};
 var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-3.1-flash-lite",ZD_PROXY:""};
@@ -1330,7 +1308,7 @@ function getTech(){return lsG(SK.TY,null)||DT.slice();}
 async function loadLabelsFromFirestore(){
   if(!FB.enabled||!FB.db)return;
   try{
-    // Load from shared path (may fail with permissions - that's OK)
+    // Load from shared path first
     var data=null;try{data=await fsGet("shared/labels");}catch(e){}
     if(!data){
       // Migration: fallback to per-user path
@@ -1399,125 +1377,58 @@ async function doLogin(){
   var em=(gv("lem")||"").trim();
   var pw=gv("lpw")||"";
   var er=G("lerr"),lb=G("lbtn");
-
-  // Clear previous errors
   if(er){er.style.display="none";er.innerHTML="";}
-
-  if(!em||!pw){
-    if(er){er.innerHTML="Please enter your email and password.";er.style.display="block";}
-    return;
-  }
-
-  if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
-  function restoreBtn(){if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}}
+  if(!em||!pw){if(er){er.innerHTML="Please enter your email and password.";er.style.display="block";}return;}
+  if(lb){lb.textContent="Signing in…";lb.disabled=true;}
+  function restoreBtn(){if(lb){lb.textContent="Sign In →";lb.disabled=false;}}
   function showErr(msg){if(er){er.innerHTML=msg;er.style.display="block";}restoreBtn();}
 
-  // ═══════════════════════════════════════════════════════
-  //  MASTER LOGIN — always succeeds with hardcoded creds
-  // ═══════════════════════════════════════════════════════
+  // ── MASTER LOGIN (hardcoded — never needs Firebase) ──
   if(em.toLowerCase()===MASTER.email.toLowerCase()){
-    if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){
-      showErr("Incorrect admin password. Check and try again.");
-      return;
-    }
-    // Set session and boot IMMEDIATELY — no waiting for Firebase
+    if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect password. Please try again.");return;}
     setSess(MASTER);
     restoreBtn();
-    (typeof bootApp!=="undefined"?bootApp:window.bootApp)();
-
-    // Firebase auth runs in background (NEVER blocks login)
+    bootApp();
+    // Try Firebase in background (never blocks login)
     if(FB.enabled&&FB.auth){
       FB.auth.signInWithEmailAndPassword(em,MASTER.pass)
-        .then(function(r){
-          FB.user=r.user;
-          var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
-          try{
-            FB.db.collection("users").doc(r.user.uid).set(
-              {email:em,name:MASTER.name,role:"master",
-               lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
-              {merge:true}
-            ).catch(function(e){console.warn("Profile write:",e.message);});
-          }catch(pe){}
-        })
-        .catch(function(fe){
-          console.warn("Master Firebase auth (optional):",fe.code||fe.message);
-        });
+        .then(function(r){FB.user=r.user;})
+        .catch(function(e){console.warn("Master FB auth (optional):",e.code);});
     }
-    return; // login complete
-  }
-
-  // ═══════════════════════════════════════════════════════
-  //  REGULAR USER LOGIN via Firebase
-  // ═══════════════════════════════════════════════════════
-  if(!FB.enabled){tryAutoInitFirebase();}
-  if(!FB.enabled||!FB.auth){
-    showErr("Firebase is not configured on this device.<br>"+
-      "Contact your administrator or paste your Firebase config below.");
-    showFbSetupPanel();
     return;
   }
 
+  // ── REGULAR USER — requires Firebase ──
+  if(!FB.enabled)tryAutoInitFirebase();
+  if(!FB.enabled||!FB.auth){
+    showErr("Firebase not configured on this device. Contact your admin.");
+    var fbs=G("fb-login-setup");if(fbs)fbs.style.display="block";
+    return;
+  }
   try{
     var result=await FB.auth.signInWithEmailAndPassword(em,pw);
     FB.user=result.user;
-    hideFbSetupPanel();
-
-    // Load profile (Firestore first, then localStorage fallback)
+    var fbs2=G("fb-login-setup");if(fbs2)fbs2.style.display="none";
     var profile=null;
-    try{
-      var sn=await FB.db.collection("users").doc(FB.user.uid).get();
-      if(sn.exists)profile=sn.data();
-    }catch(fe){console.warn("Profile read:",fe.message);}
-
-    if(!profile){
-      var lsu=lsG(SK.U,[])||[];
-      for(var i=0;i<lsu.length;i++){
-        if(lsu[i].email&&lsu[i].email.toLowerCase()===em.toLowerCase()){
-          profile=lsu[i];break;
-        }
-      }
-    }
-
+    try{var sn=await FB.db.collection("users").doc(FB.user.uid).get();if(sn.exists)profile=sn.data();}catch(fe){}
+    if(!profile){var lsu=lsG(SK.U,[])||[];for(var i=0;i<lsu.length;i++){if(lsu[i].email&&lsu[i].email.toLowerCase()===em.toLowerCase()){profile=lsu[i];break;}}}
     var role=profile&&profile.role?profile.role:"user";
     var name=profile&&profile.name?profile.name:em.split("@")[0];
-
-    // Update Firestore profile (non-blocking)
-    FB.db.collection("users").doc(FB.user.uid).set(
-      {email:em,name:name,role:role,
-       lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
-      {merge:true}
-    ).catch(function(e){console.warn("Profile update:",e.message);});
-
-    // Cache in localStorage
-    var lsu2=lsG(SK.U,[])||[];
-    var ei=-1;
-    for(var j=0;j<lsu2.length;j++){
-      if(lsu2[j].id===FB.user.uid||
-        (lsu2[j].email&&lsu2[j].email.toLowerCase()===em.toLowerCase())){
-        ei=j;break;
-      }
-    }
+    FB.db.collection("users").doc(FB.user.uid).set({email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(function(){});
+    var lsu2=lsG(SK.U,[])||[];var ei=-1;
+    for(var j=0;j<lsu2.length;j++){if(lsu2[j].email&&lsu2[j].email.toLowerCase()===em.toLowerCase()){ei=j;break;}}
     var pe={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
     if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe);else lsu2.push(pe);
     lsS(SK.U,lsu2);
-
     setSess({id:FB.user.uid,email:em,name:name,role:role});
     try{await loadDataFromFirestore();}catch(lde){}
-    restoreBtn();
-    bootApp();
-
+    restoreBtn();bootApp();
   }catch(authErr){
     var msg=authErr.message||"Login failed.";
-    if(msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||msg.indexOf("wrong-password")>=0||
-       msg.indexOf("invalid-credential")>=0||msg.indexOf("user-not-found")>=0){
-      msg="Invalid email or password. Please check and try again.";
-    }else if(msg.indexOf("too-many-requests")>=0){
-      msg="Too many failed attempts. Please wait a few minutes before trying again.";
-    }else if(msg.indexOf("user-disabled")>=0){
-      msg="This account has been disabled. Contact your administrator.";
-    }else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0){
-      msg="Email/Password auth is not enabled in Firebase Console.";
-    }
+    if(msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0||msg.indexOf("user-not-found")>=0)
+      msg="Invalid email or password.";
+    else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please wait.";
+    else if(msg.indexOf("user-disabled")>=0)msg="Account disabled. Contact administrator.";
     showErr(msg);
   }
 }
@@ -1656,10 +1567,10 @@ async function loadDataFromFirestore(){
       // Firestore empty — use localStorage (will be migrated shortly)
       ST.results=lsG(SK.RE,[])||[];
     }
-  }catch(e){ST.results=lsG(SK.RE,[])||[];} // Firestore permission denied — use localStorage
+  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];}
   // ── Load shared SMB data ──
   try{
-    var smb=null;try{smb=await fsGet("shared/smbdata");}catch(e){}
+    var smb=await fsGet("shared/smbdata");
     if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}
     else{var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
@@ -1717,7 +1628,7 @@ async function saveSMBToFirestore(){
 var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
-  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is restricted","err");return;}
+  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is restricted to master account","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
@@ -1727,7 +1638,7 @@ function goPage(pg){
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
   if(pg==="training")renderTrainingPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
-  if(pg==="qa-review"){if(!isQAUser()){toast("Access denied","err");return;}renderQAPage();}
+  if(pg==="qa-review"){if(!isQAUser()){toast("Access restricted","err");return;}renderQAPage();}
 }
 
 // ─── BADGES ──────────────────────────────────────────────────
@@ -1903,7 +1814,7 @@ async function loadTrainingFromFirestore(){
         saveTrainingData(arr2);
       }
     }
-  }catch(e){// Could not load training from Firestore (Firestore rules may need updating)}
+  }catch(e){// Could not load training from Firestore (permissions not yet configured)}
 }
 
 function upBadges(){
@@ -2674,9 +2585,9 @@ function parseGeminiOutput(txt,envs,cats,subs){
     result.confidence=parseInt(parsed.confidence)||0;
   }catch(je){
     // Fallback: extract from key-value or plain text format
-    var envM=txt.match(/Environment[":\s]+([A-Za-z][^\n"]{1,40})/i);
-    var catM=txt.match(/Category[":\s]+([A-Za-z][^\n"]{1,40})/i);
-    var subM=txt.match(/Sub\s*Category[":\s]+([A-Za-z][^\n"]{1,60})/i);
+    var envM=txt.match(/[Ee]nvironment[":s]+([A-Za-z][^n",}]{1,40})/);
+    var catM=txt.match(/[Cc]ategory[":s]+([A-Za-z][^n",}]{1,40})/);
+    var subM=txt.match(/[Ss]ub[s]*[Cc]ategory[":s]+([A-Za-z][^n",}]{1,60})/);
     var confM=txt.match(/[Cc]onfidence[":s]+([0-9]+)/);
     if(envM)result.environment=envM[1].replace(/[",]/g,"").trim();
     if(catM)result.category=catM[1].replace(/[",]/g,"").trim();
@@ -3653,6 +3564,7 @@ function bootApp(){
   }
   updateLoginUI();
   updateSidebarLogo();
+  setupQASidebar();
 }
 
 function showFirebaseAuthBanner(){
@@ -3666,593 +3578,375 @@ function updateLoginUI(){
 
 // ─── INIT ────────────────────────────────────────────────────
 
-
 // ════════════════════════════════════════════════════════════
-//  QA REVIEW MODULE
-
-// ─── PST Timezone Utilities ───────────────────────────────
-function toPSTDate(dateStr){
-  // Convert any date to PST Date object
-  try{
-    var d=dateStr instanceof Date?dateStr:new Date(dateStr);
-    var pstStr=d.toLocaleString("en-US",{timeZone:"America/Los_Angeles"});
-    return new Date(pstStr);
-  }catch(e){return new Date(dateStr);}
-}
-function pstDateStr(dateStr){
-  try{
-    var d=dateStr instanceof Date?dateStr:new Date(dateStr);
-    return d.toLocaleString("en-US",{timeZone:"America/Los_Angeles",year:"numeric",month:"2-digit",day:"2-digit"});
-  }catch(e){return String(dateStr);}
-}
-function diffMinsPST(d1,d2){
-  // Difference in minutes between two dates (d2 - d1), in PST
-  try{
-    var p1=toPSTDate(d1),p2=toPSTDate(d2);
-    return Math.round((p2-p1)/60000);
-  }catch(e){return 9999;}
-}
-function sameDayPST(d1,d2){
-  return pstDateStr(d1)===pstDateStr(d2);
-}
-function formatPST(dateStr){
-  try{
-    var d=dateStr instanceof Date?dateStr:new Date(dateStr);
-    return d.toLocaleString("en-US",{timeZone:"America/Los_Angeles",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})+" PST";
-  }catch(e){return String(dateStr);}
-} // visible only to revanth.abbati@dispatchtrack.com
+//  QA REVIEW MODULE — visible only to revanth.abbati@dispatchtrack.com
 // ════════════════════════════════════════════════════════════
-var QA={
-  rows:[],headers:[],colIdx:{},
-  refs:[],          // reference sheet data
-  results:[],
-  stop:false,
-  paused:false
-};
 
-function isQAUser(){
-  var s=getSess();
-  return s&&s.email&&s.email.toLowerCase()==="revanth.abbati@dispatchtrack.com";
+var QA={rows:[],headers:[],colIdx:{},refs:[],results:[],stop:false};
+
+// ── PST timezone helpers ──────────────────────────────────
+function toPST(d){try{var p=new Date((d instanceof Date?d:new Date(d)).toLocaleString("en-US",{timeZone:"America/Los_Angeles"}));return p;}catch(e){return new Date(d);}}
+function formatPST(d){try{return(d instanceof Date?d:new Date(d)).toLocaleString("en-US",{timeZone:"America/Los_Angeles",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})+" PST";}catch(e){return String(d);}}
+function sameDayPST(d1,d2){try{var o={timeZone:"America/Los_Angeles",year:"numeric",month:"2-digit",day:"2-digit"};return(d1 instanceof Date?d1:new Date(d1)).toLocaleDateString("en-US",o)===(d2 instanceof Date?d2:new Date(d2)).toLocaleDateString("en-US",o);}catch(e){return false;}}
+function diffMinsPST(d1,d2){try{return Math.round((toPST(d2)-toPST(d1))/60000);}catch(e){return 9999;}}
+
+function isQAUser(){var s=getSess();return s&&s.email&&s.email.toLowerCase()==="revanth.abbati@dispatchtrack.com";}
+
+function setupQASidebar(){var el=document.getElementById("sb-qa");if(el)el.style.display=isQAUser()?"flex":"none";}
+
+function renderQAPage(){
+  if(!isQAUser()){goPage("dashboard");return;}
+  // Bind file inputs every render
+  var fi=document.getElementById("fi-qa-main");
+  var rfi=document.getElementById("fi-qa-ref");
+  if(fi&&!fi._qaBound){fi._qaBound=true;fi.addEventListener("change",function(){if(this.files&&this.files[0])parseQAMain(this.files[0]);this.value="";});}
+  if(rfi&&!rfi._qaBound){rfi._qaBound=true;rfi.addEventListener("change",function(){Array.from(this.files||[]).forEach(function(f){parseQARef(f);});this.value="";});}
 }
 
-// ── Show/hide QA sidebar ──────────────────────────────────
-function setupQASidebar(){
-  var el=G("sb-qa");
-  if(el)el.style.display=isQAUser()?"flex":"none";
-}
-
-// ── QA logger ────────────────────────────────────────────
 function qaLog(msg,type){
-  var log=G("qa-log");if(!log)return;
-  var color=type==="ok"?"#16A34A":type==="err"?"#DC2626":type==="warn"?"#D97706":"#94A3B8";
-  var ts=new Date().toLocaleTimeString();
-  log.innerHTML+='<div style="color:'+color+'"><span style="opacity:.5">['+ts+']</span> '+esc(msg)+'</div>';
+  var log=document.getElementById("qa-log");if(!log)return;
+  var c2=type==="ok"?"#16A34A":type==="err"?"#DC2626":type==="warn"?"#D97706":"#94A3B8";
+  log.innerHTML+="<div style='color:"+c2+"'><span style='opacity:.5'>["+new Date().toLocaleTimeString()+"]</span> "+String(msg).replace(/</g,"&lt;")+"</div>";
   log.scrollTop=log.scrollHeight;
 }
 
-// ── Render QA page ───────────────────────────────────────
-function renderQAPage(){
-  if(!isQAUser()){goPage("dashboard");return;}
-  setupQAPageListeners();
-  // Re-bind file inputs every time page renders (they may have been reset)
-  setTimeout(initQAFileInputs, 50);
-}
-
-// Bind file input change events in DOMContentLoaded (not page render)
-function initQAFileInputs(){
-  var fi=document.getElementById("fi-qa-main");
-  var rfi=document.getElementById("fi-qa-ref");
-  if(fi&&!fi._bound){
-    fi._bound=true;
-    fi.addEventListener("change",function(){
-      if(this.files&&this.files[0]){qaHandleMain(this.files[0]);}
-      this.value=""; // reset so same file can be re-selected
-    });
-  }
-  if(rfi&&!rfi._bound){
-    rfi._bound=true;
-    rfi.addEventListener("change",function(){
-      Array.from(this.files||[]).forEach(function(f){parseQARef(f);});
-      this.value="";
-    });
-  }
-}
-function setupQAPageListeners(){
-  initQAFileInputs(); // ensure file inputs are bound
-}
-// Alias — called from inline HTML onclick handlers
-function qaHandleMain(file){parseQAMain(file);}
-
-// ── Parse inflow sheet ────────────────────────────────────
+// ── Parse inflow sheet ──────────────────────────────────
 function parseQAMain(file){
-  if(!file){toast("No file selected","err");return;}
-  var allowedExts=/\.(xlsx|xls|csv)$/i;
-  if(!allowedExts.test(file.name)){toast("Please upload Excel (.xlsx/.xls) or CSV file","err");return;}
-  toast("Reading: "+file.name+"...","ok");
+  if(!file)return;
+  var ext=file.name.split(".").pop().toLowerCase();
+  if(ext!=="xlsx"&&ext!=="xls"&&ext!=="csv"){toast("Please upload Excel (.xlsx/.xls) or CSV file","err");return;}
+  toast("Reading "+file.name+"...","ok");
   var reader=new FileReader();
-  reader.onerror=function(){toast("Error reading file. Please try again.","err");};
+  reader.onerror=function(){toast("Error reading file","err");};
   reader.onload=function(e){
     var data=e.target.result,rows=[],headers=[];
     try{
-      if(file.name.match(/\.(xlsx|xls)$/i)){
+      if(ext==="xlsx"||ext==="xls"){
         var wb=XLSX.read(data,{type:"binary"});
         var ws=wb.Sheets[wb.SheetNames[0]];
         var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-        // Skip rows until we find the header (row with "Ticket ID")
-        var hdrIdx=0;
-        for(var i=0;i<Math.min(arr.length,10);i++){
-          if(arr[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket id")>=0||String(c||"").toLowerCase().indexOf("ticket_id")>=0;})){hdrIdx=i;break;}
-        }
-        headers=arr[hdrIdx].map(function(h){return String(h||"").trim();});
-        for(var r=hdrIdx+1;r<arr.length;r++){
-          if(arr[r].some(function(c){return c!==null&&c!==""})){
-            var obj={};headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");});
-            rows.push(obj);
-          }
-        }
+        var hi=0;
+        for(var i=0;i<Math.min(arr.length,10);i++){if(arr[i].some(function(x){return String(x||"").toLowerCase().indexOf("ticket")>=0;})){hi=i;break;}}
+        headers=arr[hi].map(function(h){return String(h||"").trim();});
+        for(var r=hi+1;r<arr.length;r++){if(arr[r].some(function(x){return x!==""})){var o={};headers.forEach(function(h,idx){o[h]=String(arr[r][idx]||"");});rows.push(o);}}
       }else{
         var parsed=Papa.parse(data,{header:false,skipEmptyLines:true});
-        var hdrIdx=0;
-        for(var i=0;i<Math.min(parsed.data.length,10);i++){
-          if(parsed.data[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket id")>=0;})){hdrIdx=i;break;}
-        }
-        headers=parsed.data[hdrIdx].map(function(h){return String(h||"").trim();});
-        for(var r=hdrIdx+1;r<parsed.data.length;r++){
-          var row=parsed.data[r];if(!row.some(function(c){return c!==""}))continue;
-          var obj={};headers.forEach(function(h,idx){obj[h]=String(row[idx]||"");});
-          rows.push(obj);
-        }
+        var hi2=0;
+        for(var i2=0;i2<Math.min(parsed.data.length,10);i2++){if(parsed.data[i2].some(function(x){return String(x||"").toLowerCase().indexOf("ticket")>=0;})){hi2=i2;break;}}
+        headers=parsed.data[hi2].map(function(h){return String(h||"").trim();});
+        for(var r2=hi2+1;r2<parsed.data.length;r2++){if(parsed.data[r2].some(function(x){return x!==""})){var o2={};headers.forEach(function(h2,idx2){o2[h2]=String(parsed.data[r2][idx2]||"");});rows.push(o2);}}
       }
       QA.rows=rows;QA.headers=headers;
-      // Build column index
       var ci={};
-      headers.forEach(function(h,i){
+      headers.forEach(function(h,i3){
         var lh=h.toLowerCase();
-        if(lh.indexOf("ticket id")>=0||lh==="id")ci.ticket_id=i;
-        if(lh.indexOf("assignee")>=0)ci.assignee=i;
-        if(lh.indexOf("type")>=0)ci.ticket_type=i;
-        if(lh.indexOf("subject")>=0||lh.indexOf("title")>=0)ci.subject=i;
-        if(lh.indexOf("status")>=0)ci.status=i;
-        if(lh.indexOf("priority")>=0)ci.priority=i;
-        if(lh.indexOf("category")>=0)ci.category=i;
-        if(lh.indexOf("jira")>=0)ci.jira=i;
-        if(lh.indexOf("activation")>=0)ci.activation=i;
+        if(lh.indexOf("ticket id")>=0||lh==="id"||lh==="ticket_id")ci.ticket_id=i3;
+        if(lh.indexOf("assignee")>=0)ci.assignee=i3;
+        if(lh.indexOf("type")>=0)ci.ticket_type=i3;
+        if(lh.indexOf("subject")>=0||lh.indexOf("title")>=0)ci.subject=i3;
+        if(lh.indexOf("status")>=0)ci.status=i3;
+        if(lh.indexOf("jira")>=0)ci.jira=i3;
       });
       QA.colIdx=ci;
-      var info=G("qa-sheet-info"),nm=G("qa-sheet-name"),rw=G("qa-sheet-rows");
-      if(info){info.style.display="block";}
+      var info=document.getElementById("qa-sheet-info"),nm=document.getElementById("qa-sheet-name"),rw=document.getElementById("qa-sheet-rows");
+      if(info)info.style.display="block";
       if(nm)nm.textContent=file.name;
-      if(rw)rw.textContent=rows.length+" tickets found"+( ci.ticket_id===undefined?" (no Ticket ID column found — check format!)":" ✓");
-      var sb=G("qa-start-btn");if(sb)sb.disabled=rows.length===0||ci.ticket_id===undefined;
-      var cb=G("qa-clear-btn");if(cb)cb.style.display="inline-flex";
-      toast(rows.length+" tickets loaded from "+file.name,"ok");
-    }catch(err){toast("Error reading file: "+err.message,"err");}
+      if(rw)rw.textContent=rows.length+" tickets"+(ci.ticket_id===undefined?" (no Ticket ID column found!)":"");
+      var sb=document.getElementById("qa-start-btn");if(sb)sb.disabled=!rows.length||ci.ticket_id===undefined;
+      var cb=document.getElementById("qa-clear-btn");if(cb)cb.style.display="inline-flex";
+      toast(rows.length+" tickets loaded","ok");
+    }catch(err){toast("Error reading file: "+err.message,"err");console.error(err);}
   };
-  if(file.name.match(/\.(xlsx|xls)$/i))reader.readAsBinaryString(file);
-  else reader.readAsText(file);
+  if(ext==="xlsx"||ext==="xls")reader.readAsBinaryString(file);else reader.readAsText(file);
 }
 
-// ── Parse reference sheet ─────────────────────────────────
+// ── Parse reference sheets ──────────────────────────────
 function parseQARef(file){
+  var ext=file.name.split(".").pop().toLowerCase();
   var reader=new FileReader();
   reader.onload=function(e){
-    var data=e.target.result;
     try{
       var rows=[],headers=[];
-      if(file.name.match(/\.(xlsx|xls)$/i)){
-        var wb=XLSX.read(data,{type:"binary"});
-        var ws=wb.Sheets[wb.SheetNames[0]];
-        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-        var hdrIdx=0;
-        for(var i=0;i<Math.min(arr.length,10);i++){
-          if(arr[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket")>=0;})){hdrIdx=i;break;}
-        }
-        headers=arr[hdrIdx].map(function(h){return String(h||"").trim();});
-        for(var r=hdrIdx+1;r<arr.length;r++){
-          if(arr[r].some(function(c){return c!==""})){var obj={};headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");});rows.push(obj);}
-        }
+      if(ext==="xlsx"||ext==="xls"){
+        var wb=XLSX.read(e.target.result,{type:"binary"});
+        var arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
+        var hi=0;for(var i=0;i<Math.min(arr.length,10);i++){if(arr[i].some(function(x){return String(x).toLowerCase().indexOf("ticket")>=0;})){hi=i;break;}}
+        headers=arr[hi].map(function(h){return String(h).trim();});
+        for(var r=hi+1;r<arr.length;r++){if(arr[r].some(function(x){return x!==""})){var o={};headers.forEach(function(h,j){o[h]=String(arr[r][j]||"");});rows.push(o);}}
       }else{
-        var parsed=Papa.parse(data,{header:true,skipEmptyLines:true});rows=parsed.data;headers=parsed.meta.fields||[];
+        var parsed=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});rows=parsed.data;headers=parsed.meta.fields||[];
       }
       QA.refs.push({name:file.name,rows:rows,headers:headers});
       renderQARefList();
-      toast("Reference sheet added: "+file.name+" ("+rows.length+" rows)","ok");
+      toast("Reference added: "+file.name+" ("+rows.length+" rows)","ok");
     }catch(err){toast("Error reading reference: "+err.message,"err");}
   };
-  if(file.name.match(/\.(xlsx|xls)$/i))reader.readAsBinaryString(file);
-  else reader.readAsText(file);
-}
-
-function renderQARefList(){
-  var list=G("qa-ref-list"),cnt=G("qa-ref-count");
-  if(!list)return;
-  if(cnt)cnt.textContent=QA.refs.length;
-  if(!QA.refs.length){list.innerHTML='<div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added.</div>';return;}
-  list.innerHTML=QA.refs.map(function(r,i){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px">'+
-      '<svg width="13" height="13" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+
-      '<span style="flex:1;font-size:12.5px">'+esc(r.name)+'</span>'+
-      '<span style="font-size:11px;color:var(--tx3)">'+r.rows.length+' rows</span>'+
-      '<button onclick="removeQARef('+i+')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0;line-height:1">&times;</button>'+
-      '</div>';
-  }).join('');
+  if(ext==="xlsx"||ext==="xls")reader.readAsBinaryString(file);else reader.readAsText(file);
 }
 
 function removeQARef(idx){QA.refs.splice(idx,1);renderQARefList();}
 
+function renderQARefList(){
+  var list=document.getElementById("qa-ref-list"),cnt=document.getElementById("qa-ref-count");
+  if(cnt)cnt.textContent=QA.refs.length;
+  if(!list)return;
+  if(!QA.refs.length){list.innerHTML="<div style='font-size:12.5px;color:var(--tx3);text-align:center;padding:20px'>No reference sheets added.</div>";return;}
+  list.innerHTML=QA.refs.map(function(r,i){
+    return "<div style='display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px'>"+
+      "<svg width='13' height='13' fill='none' stroke='#16A34A' stroke-width='2' viewBox='0 0 24 24'><polyline points='20 6 9 17 4 12'/></svg>"+
+      "<span style='flex:1;font-size:12.5px'>"+r.name+"</span>"+
+      "<span style='font-size:11px;color:var(--tx3)'>"+r.rows.length+" rows</span>"+
+      "<button onclick='removeQARef("+i+")' style='background:none;border:none;color:var(--err);cursor:pointer;font-size:16px;padding:0'>&times;</button></div>";
+  }).join("");
+}
+
 function clearQA(){
   QA.rows=[];QA.headers=[];QA.colIdx={};QA.results=[];QA.stop=false;
-  var fi=G("fi-qa-main");if(fi)fi.value="";
-  var info=G("qa-sheet-info");if(info)info.style.display="none";
-  var sb=G("qa-start-btn");if(sb)sb.disabled=true;
-  var cb=G("qa-clear-btn");if(cb)cb.style.display="none";
-  var log=G("qa-log-card");if(log)log.style.display="none";
-  var rc=G("qa-results-card");if(rc)rc.style.display="none";
-  var pb=G("qa-progress-bar");if(pb)pb.style.display="none";
+  var fi=document.getElementById("fi-qa-main");if(fi)fi.value="";
+  var si=document.getElementById("qa-sheet-info");if(si)si.style.display="none";
+  var sb=document.getElementById("qa-start-btn");if(sb)sb.disabled=true;
+  var cb=document.getElementById("qa-clear-btn");if(cb)cb.style.display="none";
+  var lc=document.getElementById("qa-log-card");if(lc)lc.style.display="none";
+  var rc=document.getElementById("qa-results-card");if(rc)rc.style.display="none";
+  var pb=document.getElementById("qa-progress-bar");if(pb)pb.style.display="none";
   toast("Cleared","ok");
 }
 
-// ── Build reference examples for Gemini ──────────────────
-function buildQARefExamples(){
-  if(!QA.refs.length)return"";
-  var ex="=== REFERENCE EXAMPLES (previously reviewed tickets) ===\n";
-  QA.refs.forEach(function(ref){
-    var sample=ref.rows.slice(0,3);
-    sample.forEach(function(row){
-      var id=row["Ticket ID"]||row["ticket id"]||row["ID"]||"?";
-      var sir=row["Initial Response"]||row["SIR"]||"";
-      var doc=row["Ticket internal documentation"]||row["Documentation"]||"";
-      var fu=row["Follow up accuracy"]||row["Followup"]||"";
-      var on=row["Ongoing Response"]||"";
-      var cl=row["Closing Response"]||"";
-      var esc2=row["In time escaltion of issues"]||row["Escalation"]||"";
-      if(sir||doc||fu)ex+="Ticket "+id+": SIR="+sir+", Docs="+doc+", FU="+fu+", Ongoing="+on+", Closing="+cl+", Escalation="+esc2+"\n";
-    });
-  });
-  return ex+"\n";
-}
-
-// ── Rate ticket with Gemini ───────────────────────────────
-async function rateQATicketWithGemini(ticketId,subject,ticketType,agent,status,created,conversation,internalNotes,timingSummary,ongoingAnalysis,irMins,irText,supportCCed,jiraLinked,jiraStatusUpdated){
-  var key=cfg("GEM_KEY"),mod=cfg("GEM_MOD")||"gemini-1.5-flash";
-  var refEx=buildQARefExamples();
-  var prompt=
-    "You are a professional DispatchTrack support quality reviewer.\n"+
-    "Read the COMPLETE ticket data carefully. All times are in PST (Pacific Standard Time).\n\n"+
-    "=== TICKET INFO ===\n"+
-    "Ticket ID: "+ticketId+"\nSubject: "+subject+"\nType: "+(ticketType||"")+"\nAgent: "+(agent||"")+"\nStatus: "+(status||"")+"\nCreated: "+(created||"")+"\n\n"+
-    "=== TIMING & METADATA (PST) ===\n"+String(timingSummary||"").substring(0,1000)+"\n"+
-    "=== ONGOING RESPONSE ANALYSIS ===\n"+String(ongoingAnalysis||"").substring(0,600)+"\n"+
-    "=== FULL CONVERSATION (PST times) ===\n"+String(conversation||"No data").substring(0,3000)+"\n\n"+
-    "=== INTERNAL NOTES ===\n"+String(internalNotes||"No internal notes").substring(0,1500)+"\n\n"+
-    refEx+
-    "=== RATING CRITERIA (1=Poor, 3=Average, 5=Excellent) — ALL times in PST ===\n\n"+
-    "1. SIR (Smart Initial Reply — use provided timing data):\n"+
-    "   5: First agent reply WITHIN 30 MINUTES (PST) AND substantive reply (addresses issue specifically, not generic)\n"+
-    "   3: First agent reply >30 minutes BUT <3 hours AND response quality is GOOD (addresses the issue, not just 'looking into it' or 'checking')\n"+
-    "   1: First agent reply >3 hours OR reply is generic/not substantive (just 'looking into it', 'will check', 'investigating' with no real content) regardless of timing\n"+
-    "   Time to first reply: "+irMins+" minutes. IR snippet: "+irText.substring(0,150)+"\n\n"+
-    "2. Ticket Internal Documentation:\n"+
-    "   5: Detailed internal notes about testing and actions taken. support@dispatchtrack.com was added in CC before/with IR. If Jira created, Jira status field updated to Yes. If multiple agents, clear handoff notes.\n"+
-    "   3: Some documentation but missing elements (e.g., partial notes, CC added late, Jira status not updated, incomplete handoff)\n"+
-    "   1: No internal notes. OR support@dispatchtrack.com NOT added in CC at all. OR Jira is linked but Jira status was never updated to Yes.\n"+
-    "   support@dispatchtrack.com in CC: "+(supportCCed?"YES - GOOD":"NO - deduct points")+"\n"+
-    "   Jira linked: "+(jiraLinked?"YES":"NO")+". Jira status updated to Yes: "+(jiraStatusUpdated?"YES":"NO")+"\n\n"+
-    "3. Follow-up Response:\n"+
-    "   5: Agent followed up with customer every day or within 24 hours even when customer did not respond\n"+
-    "   3: Agent followed up but with 2-3 day gaps\n"+
-    "   1: No follow-up sent OR follow-up gap >4 days\n\n"+
-    "4. Ongoing Response (check Ongoing Response Analysis above):\n"+
-    "   5: When customer sent a message/email, agent responded on the SAME DAY (PST) with CORRECT and COMPLETE information\n"+
-    "   3: Agent responded same day BUT information was incorrect, incomplete, or not helpful\n"+
-    "   1: Agent did NOT respond on the same day (PST) — response came next day or later\n\n"+
-    "5. Closing Response:\n"+
-    "   5: Clear professional closing message after resolution. Ticket closed after 2 unanswered follow-ups if issue unconfirmed. Timely closure.\n"+
-    "   3: Basic closing message, somewhat delayed closure\n"+
-    "   1: No proper closing message OR ticket dragged on without closure after multiple unanswered follow-ups\n\n"+
-    "6. In-time Escalation:\n"+
-    "   5: When issue required engineering/product escalation, it was done promptly with Jira created. If no escalation needed, give 5.\n"+
-    "   3: Escalation happened but with delay\n"+
-    "   1: Issue required escalation but was NOT escalated, or escalated very late\n\n"+
-    "IMPORTANT: Base ALL ratings strictly on evidence in the ticket data. Use 3 for ambiguous cases.\n"+
-    "Return ONLY this JSON (no markdown, no text outside JSON):\n"+
-    '{"sir":{"rating":5,"reason":"..."},"documentation":{"rating":5,"reason":"..."},"followup":{"rating":5,"reason":"..."},"ongoing":{"rating":5,"reason":"..."},"closing":{"rating":5,"reason":"..."},"escalation":{"rating":5,"reason":"..."},"overall":"..."}';
-
-  var doFetch=async function(withMime){
-    var cfg2={contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200}};
-    if(withMime)cfg2.generationConfig.responseMimeType="application/json";
-    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg2)});
-    return r;
-  };
-  var resp=await doFetch(true);
-  if(!resp.ok)resp=await doFetch(false);
-  if(!resp.ok)throw new Error("Gemini error "+resp.status);
-  var d=await resp.json();
-  var txt="";
-  try{txt=d.candidates[0].content.parts[0].text||"";}catch(e){throw new Error("Gemini response format error");}
-  txt=txt.trim().replace(/```json|```/gi,"").trim();
-  var result=JSON.parse(txt);
-  // Validate: only 1, 3, or 5 allowed
-  ["sir","documentation","followup","ongoing","closing","escalation"].forEach(function(k){
-    if(result[k]){
-      var r=parseInt(result[k].rating)||3;
-      if(r<=1)r=1;else if(r<=3)r=3;else r=5;
-      result[k].rating=r;
-    }else{result[k]={rating:3,reason:"No data"};}
-  });
-  return result;
-}
-
-// ── Fetch complete ticket from Zendesk ───────────────────
+// ── Fetch complete ticket from Zendesk ──────────────────
 async function fetchQATicketData(ticketId){
   var base=zdBase();
   var td=await zdGet(base+"/tickets/"+ticketId+".json");
   var t=td.ticket||{};
-  var cd=await zdGetComments(ticketId);
-  var audits=[];try{var ad=await zdGetAudits(ticketId);audits=ad;}catch(e){}
-
-  // ── Determine IR (first agent public reply) time in PST ──
-  var irTime=null,irText="",irMins=9999;
+  var cd=[];try{cd=await zdGetComments(ticketId);}catch(e){}
+  var audits=[];try{var ad=await zdGetAudits(ticketId);audits=ad||[];}catch(e){}
   var ticketCreated=t.created_at?new Date(t.created_at):null;
-  var publicComments=cd.filter(function(c){return c.public;});
-  for(var ci=0;ci<publicComments.length;ci++){
-    var c=publicComments[ci];
-    if(c.author_id!==t.requester_id){
-      irTime=new Date(c.created_at);
-      irText=String(c.body||"").substring(0,600);
+  // First agent public reply
+  var irTime=null,irText="",irMins=9999;
+  var publicComments=cd.filter(function(c2){return c2.public;});
+  for(var i=0;i<publicComments.length;i++){
+    if(publicComments[i].author_id!==t.requester_id){
+      irTime=new Date(publicComments[i].created_at);
+      irText=String(publicComments[i].body||"").substring(0,300);
       if(ticketCreated)irMins=diffMinsPST(ticketCreated,irTime);
       break;
     }
   }
-
-  // ── Check support@dispatchtrack.com in CC ──
+  // Support CC check
   var supportCCed=false;
-  try{
-    var collabs=await zdGet(base+"/tickets/"+ticketId+"/collaborators.json");
-    var ccList=(collabs.collaborators||collabs.users||[]);
-    ccList.forEach(function(u){if((u.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});
-  }catch(e){}
-  // Also check email_cc_ids from ticket and from first comment
-  if(!supportCCed&&t.email_ccs&&t.email_ccs.length){
-    t.email_ccs.forEach(function(cc){if((cc.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});
-  }
-  // Check if added before IR
-  var supportAddedBeforeIR=supportCCed; // simplified
-
-  // ── Check Jira status fields in audits ──
-  var jiraLinked=false,jiraStatusUpdated=false,jiraUrl="";
-  // Check ticket fields for jira
-  (t.custom_fields||[]).forEach(function(f){
-    var v=String(f.value||"");
-    if(v.indexOf("atlassian")>=0||v.indexOf("jira")>=0||/[A-Z]+-\d+/.test(v)){jiraLinked=true;jiraUrl=v;}
+  try{var col=await zdGet(base+"/tickets/"+ticketId+"/collaborators.json");(col.collaborators||col.users||[]).forEach(function(u){if((u.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});}catch(e){}
+  if(!supportCCed&&t.email_ccs)(t.email_ccs||[]).forEach(function(cc){if((cc.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});
+  // Jira check in audits
+  var jiraLinked=false,jiraStatusUpdated=false;
+  audits.forEach(function(a){(a.events||[]).forEach(function(ev){
+    if((ev.field_name||"").toLowerCase().indexOf("jira")>=0&&ev.value&&ev.value!=="no")jiraStatusUpdated=true;
+    if(ev.body&&(String(ev.body).indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(String(ev.body))))jiraLinked=true;
+  });});
+  (t.custom_fields||[]).forEach(function(f){var v=String(f.value||"");if(v.indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(v))jiraLinked=true;});
+  // Build conversation
+  var conv=[],notes=[];
+  cd.forEach(function(c3){
+    var ts=c3.created_at?formatPST(c3.created_at):"?";
+    var body=String(c3.body||"").substring(0,600);
+    var isAgent=c3.author_id!==t.requester_id;
+    if(c3.public)conv.push("["+ts+"] "+(isAgent?"AGENT":"CUSTOMER")+": "+body);
+    else notes.push("["+ts+"] INTERNAL NOTE: "+body);
   });
-  // Check audits for jira field change
-  audits.forEach(function(a){
-    (a.events||[]).forEach(function(ev){
-      if(ev.field_name&&(ev.field_name.toLowerCase().indexOf("jira")>=0||ev.field_name.toLowerCase().indexOf("custom_status_jira")>=0)){
-        if(ev.value&&String(ev.value).toLowerCase()!=="no"&&ev.value!==null)jiraStatusUpdated=true;
-      }
-      // Also detect Jira URL in comment events
-      if(ev.body&&(String(ev.body).indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(String(ev.body)))){jiraLinked=true;}
-    });
-  });
-  // Also check ticket.external_id and description
-  if(t.external_id&&/[A-Z]+-\d+/.test(t.external_id)){jiraLinked=true;jiraUrl=t.external_id;}
-
-  // ── Build conversation with PST times ──
-  var conversation=[],internalNotes=[];
-  cd.forEach(function(c){
-    var ts=c.created_at?formatPST(c.created_at):"?";
-    var body=String(c.body||"").substring(0,800);
-    var role=c.author_id===t.requester_id?"CUSTOMER":"AGENT";
-    var isAgent=c.author_id!==t.requester_id;
-    if(c.public){
-      var sameDay=ticketCreated&&isAgent?sameDayPST(new Date(c.created_at),new Date(c.created_at)):false;
-      conversation.push("["+ts+"] "+role+(isAgent?" (public reply)":"")+": "+body.substring(0,600));
-    }else{
-      internalNotes.push("["+ts+"] INTERNAL NOTE: "+body.substring(0,500));
-    }
-  });
-
-  // ── Build timing summary for AI ──
-  var timingSummary="=== TIMING ANALYSIS (PST) ===\n"+
-    "Ticket created: "+(ticketCreated?formatPST(ticketCreated):"unknown")+"\n"+
-    "First agent reply: "+(irTime?formatPST(irTime):"No agent reply found")+"\n"+
-    "Time to first reply: "+(irMins<9999?irMins+" minutes":"N/A")+"\n"+
-    "SIR within 30min: "+(irMins<=30?"YES":"NO")+" ("+irMins+" min)\n"+
-    "IR quality snippet: "+irText.substring(0,200)+"\n"+
-    "support@dispatchtrack.com in CC: "+(supportCCed?"YES":"NO")+"\n"+
-    "Jira linked to ticket: "+(jiraLinked?"YES "+(jiraUrl?jiraUrl:""):"NO")+"\n"+
-    "Jira status updated to Yes: "+(jiraStatusUpdated?"YES":"NO")+"\n";
-
-  // ── Check ongoing response timing ──
-  var ongoingAnalysis="=== ONGOING RESPONSE ANALYSIS (PST) ===\n";
-  var customerMsgs=[],agentReplies=[];
-  publicComments.forEach(function(c){
-    if(c.author_id===t.requester_id)customerMsgs.push(c);
-    else agentReplies.push(c);
-  });
-  // Check each customer message — did agent reply same day?
-  customerMsgs.forEach(function(cm,i){
-    if(i===0)return; // skip first (IR handled separately)
+  // Ongoing analysis
+  var ongoingLog="";
+  var custMsgs=publicComments.filter(function(c4){return c4.author_id===t.requester_id;});
+  var agentReplies=publicComments.filter(function(c5){return c5.author_id!==t.requester_id;});
+  custMsgs.forEach(function(cm,idx2){
+    if(idx2===0)return;
     var cmDate=new Date(cm.created_at);
-    var replied=agentReplies.some(function(ar){
-      var arDate=new Date(ar.created_at);
-      return arDate>cmDate&&sameDayPST(cmDate,arDate);
-    });
-    ongoingAnalysis+="Customer msg "+formatPST(cm.created_at)+": agent replied same day PST = "+(replied?"YES":"NO")+"\n";
+    var replied=agentReplies.some(function(ar){return new Date(ar.created_at)>cmDate&&sameDayPST(cmDate,new Date(ar.created_at));});
+    ongoingLog+="Customer msg "+formatPST(cm.created_at)+": same-day PST reply="+(replied?"YES":"NO")+"\n";
   });
-
-  return{
-    ticket:t,
-    conversation:conversation.join("\n\n"),
-    internalNotes:internalNotes.join("\n\n"),
-    created:ticketCreated?formatPST(ticketCreated):"",
-    timingSummary:timingSummary,
-    ongoingAnalysis:ongoingAnalysis,
-    irMins:irMins,
-    irText:irText,
-    supportCCed:supportCCed,
-    jiraLinked:jiraLinked,
-    jiraStatusUpdated:jiraStatusUpdated
-  };
+  var timingSummary="Ticket created: "+(ticketCreated?formatPST(ticketCreated):"?")+"\n"+
+    "First agent reply: "+(irTime?formatPST(irTime):"none")+"\n"+
+    "Time to IR: "+(irMins<9999?irMins+" min":"N/A")+"\n"+
+    "IR within 30min: "+(irMins<=30?"YES":"NO")+" ("+irMins+"min)\n"+
+    "IR content: "+irText.substring(0,150)+"\n"+
+    "support@dispatchtrack.com in CC: "+(supportCCed?"YES":"NO")+"\n"+
+    "Jira linked: "+(jiraLinked?"YES":"NO")+", Jira status updated: "+(jiraStatusUpdated?"YES":"NO");
+  return{ticket:t,conversation:conv.join("\n\n"),internalNotes:notes.join("\n\n"),created:ticketCreated?formatPST(ticketCreated):"",
+    timingSummary:timingSummary,ongoingAnalysis:ongoingLog,
+    irMins:irMins,irText:irText,supportCCed:supportCCed,jiraLinked:jiraLinked,jiraStatusUpdated:jiraStatusUpdated};
 }
 
-// ── Main QA processing loop ───────────────────────────────
+// ── Rate ticket with Gemini ─────────────────────────────
+async function rateQATicketWithGemini(tid,subject,agentName,status,fetchData){
+  var key=cfg("GEM_KEY"),mod=cfg("GEM_MOD")||"gemini-1.5-flash";
+  var refEx="";
+  if(QA.refs.length){
+    refEx="=== REFERENCE EXAMPLES (previously reviewed) ===\n";
+    QA.refs.forEach(function(ref){ref.rows.slice(0,3).forEach(function(row){
+      var id=row["Ticket ID"]||row["ticket id"]||row["ID"]||"?";
+      var sir=row["Initial Response"]||row["SIR"]||"";
+      var doc=row["Ticket internal documentation"]||"";
+      var fu=row["Follow up accuracy"]||"";
+      var on=row["Ongoing Response"]||"";
+      var cl=row["Closing Response"]||"";
+      var es=row["In time escaltion of issues"]||"";
+      if(sir||doc)refEx+="Ticket "+id+": SIR="+sir+", Docs="+doc+", FU="+fu+", Ongoing="+on+", Closing="+cl+", Esc="+es+"\n";
+    });});
+  }
+  var prompt=
+    "You are a professional DispatchTrack support quality reviewer. All times are in PST.\n\n"+
+    "=== TICKET INFO ===\nID: "+tid+"\nSubject: "+subject+"\nAgent: "+agentName+"\nStatus: "+status+"\n\n"+
+    "=== TIMING ANALYSIS (PST) ===\n"+String(fetchData.timingSummary||"").substring(0,800)+"\n\n"+
+    "=== ONGOING RESPONSE ANALYSIS ===\n"+String(fetchData.ongoingAnalysis||"No follow-up data").substring(0,500)+"\n\n"+
+    "=== FULL CONVERSATION (PST times) ===\n"+String(fetchData.conversation||"No data").substring(0,3000)+"\n\n"+
+    "=== INTERNAL NOTES ===\n"+String(fetchData.internalNotes||"No internal notes").substring(0,1500)+"\n\n"+
+    refEx+
+    "=== RATING CRITERIA (1=Poor, 3=Average, 5=Excellent) — all times PST ===\n\n"+
+    "1. SIR (Smart Initial Reply):\n"+
+    "   5: Agent replied WITHIN 30 minutes PST AND response is substantive (addresses issue, not just 'looking into it')\n"+
+    "   3: Agent replied >30min but <3 hours PST AND response quality is GOOD (addresses issue specifically)\n"+
+    "   1: Agent replied >3 hours OR response is generic ('looking into it', 'will check', 'investigating')\n\n"+
+    "2. Ticket Internal Documentation:\n"+
+    "   5: Clear internal notes documenting what was tested/done. support@dispatchtrack.com in CC. If Jira linked, Jira status updated to Yes. Clear handoff notes if multiple agents.\n"+
+    "   3: Some documentation but incomplete (partial notes, CC added late, Jira not updated, incomplete handoff)\n"+
+    "   1: No internal notes OR support@dispatchtrack.com NOT in CC OR Jira linked but status never updated\n\n"+
+    "3. Follow-up Response:\n"+
+    "   5: Agent followed up with customer daily (within 24hr) even when customer did NOT respond\n"+
+    "   3: Agent followed up but with 2-3 day gaps\n"+
+    "   1: No follow-up OR gap of 4+ days without contact\n\n"+
+    "4. Ongoing Response:\n"+
+    "   5: When customer replied, agent responded SAME DAY PST with correct and complete information\n"+
+    "   3: Agent responded same day BUT information was incorrect or incomplete\n"+
+    "   1: Agent did NOT respond same day (PST) — response came next day or later\n\n"+
+    "5. Closing Response:\n"+
+    "   5: Clear professional closing message. Ticket closed promptly after resolution or after 2 unanswered follow-ups.\n"+
+    "   3: Basic closing, somewhat delayed\n"+
+    "   1: No proper closing message OR ticket dragged on after multiple unanswered follow-ups\n\n"+
+    "6. In-time Escalation:\n"+
+    "   5: Escalated to engineering/product promptly when needed with Jira created. If no escalation needed, give 5.\n"+
+    "   3: Some delay in escalation\n"+
+    "   1: Escalation needed but NOT done, or very late\n\n"+
+    "Return ONLY valid JSON (no markdown, no text outside JSON):\n"+
+    "{\"sir\":{\"rating\":5,\"reason\":\"...\"},\"documentation\":{\"rating\":5,\"reason\":\"...\"},\"followup\":{\"rating\":5,\"reason\":\"...\"},\"ongoing\":{\"rating\":5,\"reason\":\"...\"},\"closing\":{\"rating\":5,\"reason\":\"...\"},\"escalation\":{\"rating\":5,\"reason\":\"...\"},\"overall\":\"...\"}";
+
+  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json"}})
+  });
+  if(!resp.ok){
+    resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200}})
+    });
+  }
+  if(!resp.ok)throw new Error("Gemini API error "+resp.status);
+  var d=await resp.json();
+  var txt="";try{txt=d.candidates[0].content.parts[0].text||"";}catch(e){throw new Error("Gemini response format error");}
+  txt=txt.trim().replace(/```json|```/gi,"").trim();
+  var result=JSON.parse(txt);
+  ["sir","documentation","followup","ongoing","closing","escalation"].forEach(function(k){
+    if(!result[k])result[k]={rating:3,reason:"No data"};
+    var r=parseInt(result[k].rating)||3;
+    result[k].rating=r<=1?1:r<=3?3:5;
+  });
+  return result;
+}
+
+// ── Main QA processing loop ─────────────────────────────
 async function startQAReview(){
   if(!QA.rows.length){toast("Upload an agent sheet first","err");return;}
   var ci=QA.colIdx;
-  if(ci.ticket_id===undefined){toast("No Ticket ID column found in sheet","err");return;}
-  var agentFilter=(gv("qa-agent-filter")||"").trim().toLowerCase();
-
-  // Filter rows
-  var toProcess=QA.rows.filter(function(r){
-    var vals=Object.values(r);
-    if(!vals.some(function(v){return v!==""}))return false;
-    var headers=Object.keys(r);
-    var tid=r[headers[ci.ticket_id]]||r["Ticket ID"]||r["ticket id"]||r["ID"]||"";
-    if(!tid)return false;
-    if(agentFilter){var ag=(r[headers[ci.assignee]]||r["Assignee name"]||r["Assignee"]||"").toLowerCase();if(ag.indexOf(agentFilter)<0)return false;}
+  if(ci.ticket_id===undefined){toast("No Ticket ID column found","err");return;}
+  var agentFilter=(document.getElementById("qa-agent-filter")||{value:""}).value.trim().toLowerCase();
+  var headers=QA.headers;
+  var toProcess=QA.rows.filter(function(row){
+    var tid=row[headers[ci.ticket_id]]||"";
+    if(!tid||!String(tid).trim())return false;
+    if(agentFilter){var ag=(row[headers[ci.assignee]]||row["Assignee name"]||"").toLowerCase();if(ag.indexOf(agentFilter)<0)return false;}
     return true;
   });
-
-  if(!toProcess.length){toast("No tickets to process (check agent filter)","err");return;}
-
+  if(!toProcess.length){toast("No tickets to process","err");return;}
   QA.results=[];QA.stop=false;
-  var log=G("qa-log-card"),pb=G("qa-progress-bar"),rc=G("qa-results-card");
-  if(log)log.style.display="block";
-  if(pb)pb.style.display="block";
-  if(rc)rc.style.display="none";
-  var logDiv=G("qa-log");if(logDiv)logDiv.innerHTML="";
-
-  var sb=G("qa-start-btn");if(sb){sb.disabled=true;sb.textContent="Processing...";}
-
-  qaLog("Starting QA Review for "+toProcess.length+" tickets","ok");
-  if(agentFilter)qaLog("Agent filter: "+agentFilter,"");
-  if(QA.refs.length)qaLog("Using "+QA.refs.length+" reference sheet(s) for context","");
-
+  var lc=document.getElementById("qa-log-card"),pb=document.getElementById("qa-progress-bar"),rc=document.getElementById("qa-results-card");
+  if(lc)lc.style.display="block";if(pb)pb.style.display="block";if(rc)rc.style.display="none";
+  var logDiv=document.getElementById("qa-log");if(logDiv)logDiv.innerHTML="";
+  var sb=document.getElementById("qa-start-btn");if(sb){sb.disabled=true;sb.textContent="Processing...";}
+  qaLog("Starting QA Review: "+toProcess.length+" tickets","ok");
+  if(QA.refs.length)qaLog("Using "+QA.refs.length+" reference sheet(s)","");
   for(var i=0;i<toProcess.length;i++){
     if(QA.stop){qaLog("Stopped by user","warn");break;}
     var row=toProcess[i];
-    var headers=Object.keys(row);
-    var tid=row[headers[ci.ticket_id]]||row["Ticket ID"]||row["ticket id"]||row["ID"]||"";
-    var agent=row[headers[ci.assignee]]||row["Assignee name"]||row["Assignee"]||"";
+    var tid=String(row[headers[ci.ticket_id]]||"").trim();
+    var agent=row[headers[ci.assignee]]||row["Assignee name"]||"";
     var subject=row[headers[ci.subject]]||row["Ticket subject"]||row["Subject"]||"";
-    var ticketType=row[headers[ci.ticket_type]]||row["Ticket Type"]||"";
     var status=row[headers[ci.status]]||row["Ticket status"]||"";
-    var jira=row[headers[ci.jira]]||row["link the Jira to"]||"";
-
-    tid=tid.toString().trim();
-    if(!tid||isNaN(+tid)){qaLog("Skipping row "+(i+1)+": invalid ticket ID '"+tid+"'","warn");continue;}
-
-    // Update progress
     var pct=Math.round((i/toProcess.length)*100);
-    var fill=G("qa-pb-fill"),lbl=G("qa-pb-label");
+    var fill=document.getElementById("qa-pb-fill"),lbl=document.getElementById("qa-pb-label");
     if(fill)fill.style.width=pct+"%";
-    if(lbl)lbl.textContent="Processing ticket "+(i+1)+" of "+toProcess.length+" ("+pct+"%)";
-    qaLog("["+(i+1)+"/"+toProcess.length+"] Processing #"+tid+" — "+subject.substring(0,50),"");
-
-    var result={
-      ticket_id:tid,subject:subject,agent:agent,ticket_type:ticketType,status:status,
-      jira:jira,row:row,
-      sir:{rating:0,reason:""},documentation:{rating:0,reason:""},
-      followup:{rating:0,reason:""},ongoing:{rating:0,reason:""},
-      closing:{rating:0,reason:""},escalation:{rating:0,reason:""},
-      overall:"",error:""
-    };
-
+    if(lbl)lbl.textContent="Processing "+(i+1)+" of "+toProcess.length+" ("+pct+"%)";
+    qaLog("["+(i+1)+"/"+toProcess.length+"] #"+tid+" — "+subject.substring(0,50),"");
+    var result={ticket_id:tid,subject:subject,agent:agent,status:status,row:row,
+      sir:{rating:0,reason:""},documentation:{rating:0,reason:""},followup:{rating:0,reason:""},
+      ongoing:{rating:0,reason:""},closing:{rating:0,reason:""},escalation:{rating:0,reason:""},overall:"",error:""};
     try{
-      // Fetch from Zendesk
-      var td=await fetchQATicketData(tid);
-      result.status=td.ticket.status||status;
-      // Log PST timing details
-      if(td.irMins<9999)qaLog("  IR time: "+td.irMins+"min PST | Support CC: "+(td.supportCCed?"YES":"NO")+" | Jira: "+(td.jiraLinked?("linked, status="+(td.jiraStatusUpdated?"YES":"NOT updated")):"no"),"");
-      // Rate with Gemini
-      var rating=await rateQATicketWithGemini(tid,subject,ticketType,agent,td.ticket.status,td.created,td.conversation,td.internalNotes,td.timingSummary,td.ongoingAnalysis,td.irMins,td.irText,td.supportCCed,td.jiraLinked,td.jiraStatusUpdated);
-      result.sir=rating.sir||{rating:3,reason:""};
-      result.documentation=rating.documentation||{rating:3,reason:""};
-      result.followup=rating.followup||{rating:3,reason:""};
-      result.ongoing=rating.ongoing||{rating:3,reason:""};
-      result.closing=rating.closing||{rating:3,reason:""};
-      result.escalation=rating.escalation||{rating:3,reason:""};
+      var fd=await fetchQATicketData(tid);
+      result.status=fd.ticket.status||status;
+      qaLog("  IR: "+fd.irMins+"min | CC: "+(fd.supportCCed?"YES":"NO")+" | Jira: "+(fd.jiraLinked?"linked":"no"),"");
+      var rating=await rateQATicketWithGemini(tid,subject,agent,result.status,fd);
+      result.sir=rating.sir;result.documentation=rating.documentation;result.followup=rating.followup;
+      result.ongoing=rating.ongoing;result.closing=rating.closing;result.escalation=rating.escalation;
       result.overall=rating.overall||"";
-      qaLog("  ✓ Rated: SIR="+result.sir.rating+" Docs="+result.documentation.rating+" FU="+result.followup.rating+" Ongoing="+result.ongoing.rating+" Closing="+result.closing.rating+" Esc="+result.escalation.rating,"ok");
-    }catch(e){
-      result.error=e.message||"Error";
-      result.sir={rating:0,reason:"Error: "+result.error};
-      result.documentation={rating:0,reason:"Error"};result.followup={rating:0,reason:"Error"};
-      result.ongoing={rating:0,reason:"Error"};result.closing={rating:0,reason:"Error"};result.escalation={rating:0,reason:"Error"};
-      qaLog("  ✗ Error: "+result.error,"err");
-    }
+      qaLog("  Rated: SIR="+result.sir.rating+" Docs="+result.documentation.rating+" FU="+result.followup.rating+" On="+result.ongoing.rating+" Cl="+result.closing.rating+" Esc="+result.escalation.rating,"ok");
+    }catch(e){result.error=e.message;result.sir=result.documentation=result.followup=result.ongoing=result.closing=result.escalation={rating:0,reason:"Error: "+e.message};qaLog("  Error: "+e.message,"err");}
     QA.results.push(result);
     renderQAResultsTable();
-    // Small delay to avoid rate limits
     await new Promise(function(res){setTimeout(res,800);});
   }
-
-  // Complete
-  var fill2=G("qa-pb-fill"),lbl2=G("qa-pb-label");
-  if(fill2)fill2.style.width="100%";
-  if(lbl2)lbl2.textContent="Complete! "+QA.results.length+" tickets reviewed.";
-  if(sb){sb.disabled=false;sb.textContent="⏵ Start QA Review";}
-  qaLog("QA Review complete. "+QA.results.length+" tickets processed.","ok");
+  if(fill)fill.style.width="100%";
+  if(lbl)lbl.textContent="Complete! "+QA.results.length+" tickets reviewed.";
+  if(sb){sb.disabled=false;sb.textContent="\u25B6 Start QA Review";}
   if(rc)rc.style.display="block";
+  qaLog("Complete. "+QA.results.length+" tickets processed.","ok");
   toast("QA Review complete — "+QA.results.length+" tickets rated","ok");
 }
 
-// ── Render results table ──────────────────────────────────
+// ── Results display ─────────────────────────────────────
 function qaRatingBadge(r){
-  if(!r||r.rating===0)return'<span style="color:var(--tx3)">--</span>';
-  var c=r.rating===5?"#16A34A":r.rating===3?"#D97706":"#DC2626";
+  if(!r||r.rating===0)return"<td style='text-align:center'><span style='color:var(--tx3)'>--</span></td>";
+  var c2=r.rating===5?"#16A34A":r.rating===3?"#D97706":"#DC2626";
   var bg=r.rating===5?"rgba(22,163,74,.12)":r.rating===3?"rgba(217,119,6,.12)":"rgba(220,38,38,.12)";
   var label=r.rating===5?"Excellent":r.rating===3?"Average":"Poor";
-  return'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'+
-    '<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+c+';font-weight:700;font-size:15px;">'+r.rating+'</span>'+
-    '<span style="font-size:9px;color:'+c+';font-weight:600">'+label+'</span>'+
-    '</div>';
-}
-function qaRatingCell(r){
-  if(!r||r.rating===0)return"<td style='text-align:center'><span style='color:var(--tx3)'>--</span></td>";
-  var re2=String(r.reason||"").substring(0,80).replace(/"/g,"&quot;");
-  return "<td style='text-align:center;vertical-align:top'>"+qaRatingBadge(r)+
-    "<div style='font-size:9px;color:var(--tx3);line-height:1.3;padding:2px' title='"+re2+"'>"+re2.substring(0,50)+"</div></td>";
+  var reason=String(r.reason||"").replace(/"/g,"&quot;").substring(0,120);
+  return"<td style='text-align:center;vertical-align:top;padding:8px'>"+
+    "<div style='display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:"+bg+";color:"+c2+";font-weight:700;font-size:15px;margin:0 auto'>"+r.rating+"</div>"+
+    "<div style='font-size:9px;color:"+c2+";font-weight:600;margin-top:2px'>"+label+"</div>"+
+    "<div style='font-size:9px;color:var(--tx3);max-width:80px;margin:2px auto;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical' title=\""+reason+"\">"+reason.substring(0,55)+"</div></td>";
 }
 
 function renderQAResultsTable(){
-  var tb=G("qa-results-tb"),rc=G("qa-results-card"),cnt=G("qa-results-count");
+  var tb=document.getElementById("qa-results-tb"),rc=document.getElementById("qa-results-card"),cnt=document.getElementById("qa-results-count");
   if(!tb||!QA.results.length)return;
   if(rc)rc.style.display="block";
   if(cnt)cnt.textContent=QA.results.length+" tickets";
   var h="";
   QA.results.forEach(function(r){
-    var rowErr=r.error?"style='background:rgba(220,38,38,.05)'":"";
-    h+="<tr "+rowErr+">";
-    h+="<td style='font-family:monospace;font-size:12px'><a href='https://dispatchtrack.zendesk.com/agent/tickets/"+esc(r.ticket_id)+"' target='_blank' style='color:#4F6EF7'>#"+esc(r.ticket_id)+"</a></td>";
-    h+="<td class='tr' style='max-width:180px;font-size:12px' title='"+esc(r.subject||"")+"'>"+esc((r.subject||"--").substring(0,40)+(r.subject&&r.subject.length>40?"...":""))+"</td>";
-    h+="<td style='font-size:12px;color:var(--tx2)'>"+esc(r.agent||"--")+"</td>";
-    h+="<td style='font-size:11px;color:var(--tx3)'>"+esc(r.ticket_type||"--")+"</td>";
-    h+=qaRatingCell(r.sir);
-    h+=qaRatingCell(r.documentation);
-    h+=qaRatingCell(r.followup);
-    h+=qaRatingCell(r.ongoing);
-    h+=qaRatingCell(r.closing);
-    h+=qaRatingCell(r.escalation);
-    h+="<td style='font-size:11px;color:var(--tx2);max-width:180px' title='"+esc(r.overall||"")+"'>"+esc((r.overall||r.error||"").substring(0,80))+"</td>";
+    var err=r.error?"style='background:rgba(220,38,38,.04)'":" ";
+    h+="<tr "+err+">";
+    h+="<td style='font-family:monospace;font-size:12px'><a href='https://dispatchtrack.zendesk.com/agent/tickets/"+r.ticket_id+"' target='_blank' style='color:#4F6EF7'>#"+r.ticket_id+"</a></td>";
+    h+="<td style='max-width:160px;font-size:12px' title='"+String(r.subject||"").replace(/'/g,"&#39;")+"'>"+String(r.subject||"--").substring(0,45)+"</td>";
+    h+="<td style='font-size:12px;color:var(--tx2)'>"+String(r.agent||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx3)'>"+String(r.status||"--")+"</td>";
+    h+=qaRatingBadge(r.sir)+qaRatingBadge(r.documentation)+qaRatingBadge(r.followup)+qaRatingBadge(r.ongoing)+qaRatingBadge(r.closing)+qaRatingBadge(r.escalation);
+    h+="<td style='font-size:11px;color:var(--tx2);max-width:180px' title='"+String(r.overall||"").replace(/'/g,"&#39;")+"'>"+String(r.overall||r.error||"").substring(0,80)+"</td>";
     h+="</tr>";
   });
   tb.innerHTML=h;
 }
 
-// ── Export QA results ─────────────────────────────────────
+// ── Export ──────────────────────────────────────────────
 function exportQA(fmt){
   if(!QA.results.length){toast("No results to export","err");return;}
-  var q=(gv("qa-quarter")||"Q3 2026").trim();
+  var q=(document.getElementById("qa-quarter")||{value:"Q3 2026"}).value.trim();
   var rows=QA.results.map(function(r){
-    var row={};
-    // Copy original sheet data
-    if(r.row)Object.assign(row,r.row);
-    // Add ratings and reasons
-    row["Initial Response (SIR)"]=r.sir?r.sir.rating:"";
+    var row={};if(r.row)Object.assign(row,r.row);
+    row["Initial Response (SIR Rating)"]=r.sir?r.sir.rating:"";
     row["SIR Reason"]=r.sir?r.sir.reason:"";
     row["Ticket internal documentation"]=r.documentation?r.documentation.rating:"";
     row["Documentation Reason"]=r.documentation?r.documentation.reason:"";
@@ -4266,31 +3960,21 @@ function exportQA(fmt){
     row["Escalation Reason"]=r.escalation?r.escalation.reason:"";
     row["Overall Comment"]=r.overall||"";
     row["QA Quarter"]=q;
-    row["QA Reviewed At"]=new Date().toLocaleString();
     return row;
   });
-  var fn="QA-Review-"+q.replace(/\s/g,"-")+"-"+stamp();
+  var fn="QA-Review-"+q.replace(/\s/g,"-")+"-"+new Date().toISOString().slice(0,10);
   if(fmt==="csv"){
-    dlBlob(new Blob([Papa.unparse(rows)],{type:"text/csv;charset=utf-8;"}),fn+".csv");
+    var blob=new Blob([Papa.unparse(rows)],{type:"text/csv;charset=utf-8;"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fn+".csv";a.click();
   }else{
     var ws=XLSX.utils.json_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"QA Review");XLSX.writeFile(wb,fn+".xlsx");
   }
-  toast("QA results exported ("+rows.length+" tickets)","ok");
+  toast("Exported "+rows.length+" tickets","ok");
 }
+
 // ════════════════════════════════════════════════════════════
 //  END QA REVIEW MODULE
 // ════════════════════════════════════════════════════════════
-
-// ─── GLOBAL EXPORTS (ensures all critical functions accessible everywhere) ──
-window.bootApp = bootApp;
-window.doLogin = doLogin;
-window.goPage = goPage;
-window.setSess = setSess;
-window.getSess = getSess;
-window.toast = toast;
-window.closeModal = closeModal;
-window.openModal = openModal;
-
 
 document.addEventListener("DOMContentLoaded",function(){
   // Auto-init Firebase if saved config exists
@@ -4471,11 +4155,11 @@ document.addEventListener("DOMContentLoaded",function(){
       if(FB.user){
         startResultsListener();
         startSMBListener();
-      }else if(_retries<10){
+      }else if(_retries<24){
         _retries++;
-        setTimeout(tryStartListeners,800);
+        setTimeout(tryStartListeners,500);
       }else{
-        // FB.user not set - Firebase auth not active, using localStorage
+        console.warn("tryStartListeners: gave up after 12s, FB.user never set");
       }
     }
 
@@ -4531,9 +4215,7 @@ document.addEventListener("DOMContentLoaded",function(){
   ST.tech=getTech();showPh(1);
   updateSidebarLogo();
   setupQASidebar();
-  initQAFileInputs(); // Bind QA file inputs at startup
 });
-} // close outer scope
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 </body>
