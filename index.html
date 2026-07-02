@@ -992,10 +992,17 @@ service cloud.firestore {
 
       <!-- QA REVIEW MODULE — Master only -->
       <div class="page" id="pg-qa-review">
-        <div class="pghd"><div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div><div class="pgs">Ticket quality review — rate tickets on a 1/3/5 scale</div></div>
+        <div class="pghd">
+          <div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div>
+          <div class="pgs">Ticket quality review — rate tickets on a 1/3/5 scale (PST timezone)</div>
+        </div>
+
+        <!-- Hidden file inputs OUTSIDE all click handlers -->
+        <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px">
+        <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px" multiple>
 
         <!-- Progress bar -->
-        <div id="qa-progress-bar" style="display:none;margin-bottom:10px">
+        <div id="qa-progress-bar" style="display:none;margin-bottom:12px">
           <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
             <div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div>
           </div>
@@ -1007,52 +1014,67 @@ service cloud.firestore {
           <div class="card">
             <div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div>
             <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
-              <label for="fi-qa-main" class="dz" id="dz-qa-main" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px"><div class="dzi">&#128203;</div><div class="dzt">Drop agent inflow sheet here or click</div><div class="dzs">Excel or CSV with Ticket ID column</div></label>
-              <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="display:none">
+              <div class="dz" id="dz-qa-main"
+                   ondragover="event.preventDefault();this.classList.add('dzdrag')"
+                   ondragleave="this.classList.remove('dzdrag')"
+                   ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])qaHandleMain(event.dataTransfer.files[0])"
+                   onclick="document.getElementById('fi-qa-main').click()"
+                   style="cursor:pointer">
+                <div class="dzi">&#128203;</div>
+                <div class="dzt">Drop agent inflow sheet here or click</div>
+                <div class="dzs">Excel or CSV with Ticket ID column</div>
+              </div>
               <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px">
                 <div style="font-weight:600;margin-bottom:4px" id="qa-sheet-name"></div>
                 <div style="color:var(--tx2)" id="qa-sheet-rows"></div>
               </div>
             </div>
           </div>
+
           <!-- Reference Sheets Panel -->
           <div class="card">
-            <div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span><label for="fi-qa-ref" class="btn bout bsm" style="cursor:pointer">+ Add Reference</label></div>
+            <div class="chd">
+              <span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span>
+              <button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button>
+            </div>
             <div class="cbd">
-              <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="display:none" multiple id="fi-qa-ref">
               <div id="qa-ref-list" style="display:flex;flex-direction:column;gap:8px;min-height:60px">
-                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added yet. Add previously reviewed sheets for better AI accuracy.</div>
+                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added yet.<br>Add previously reviewed sheets for better AI accuracy.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Agent Selection + Processing Controls -->
+        <!-- Process Configuration -->
         <div class="card" style="margin-bottom:14px">
-          <div class="chd"><span class="ct">&#9654; Process Configuration</span>
+          <div class="chd">
+            <span class="ct">&#9654; Process Configuration</span>
             <div style="display:flex;gap:8px">
-              <button class="btn bgst bsm" id="qa-clear-btn" style="display:none">&#215; Clear</button>
-              <button class="btn bpri" id="qa-start-btn" disabled>&#9654; Start QA Review</button>
+              <button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button>
+              <button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button>
             </div>
           </div>
           <div class="cbd">
             <div class="g2" style="gap:10px;margin-bottom:12px">
-              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(optional — leave blank to process all)</span></label>
+              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(optional — blank = process all)</span></label>
                 <input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div>
-              <div><label class="flb">Quarter</label>
+              <div><label class="flb">Quarter / Period</label>
                 <input id="qa-quarter" class="fin" placeholder="e.g. Q3 2026" value="Q3 2026"></div>
             </div>
             <div style="font-size:12px;color:var(--tx3);display:flex;gap:16px;flex-wrap:wrap">
-              <span>&#9432; Each ticket will be fetched from Zendesk and rated using Gemini AI</span>
-              <span>&#9432; Rating scale: <strong style="color:#DC2626">1</strong> = Poor &nbsp; <strong style="color:#D97706">3</strong> = Average &nbsp; <strong style="color:#16A34A">5</strong> = Excellent</span>
+              <span>&#9432; Each ticket is fetched from Zendesk and rated by Gemini AI</span>
+              <span>&#9432; Scale: <strong style="color:#DC2626">1</strong>=Poor &nbsp; <strong style="color:#D97706">3</strong>=Average &nbsp; <strong style="color:#16A34A">5</strong>=Excellent &nbsp; | All times in PST</span>
             </div>
           </div>
         </div>
 
         <!-- Live Log -->
         <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px">
-          <div class="chd"><span class="ct">&#128260; Processing Log</span><button class="btn bdan bsm" id="qa-stop-btn">&#9632; Stop</button></div>
-          <div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:200px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div>
+          <div class="chd">
+            <span class="ct">&#128260; Processing Log</span>
+            <button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping...','warn')">&#9632; Stop</button>
+          </div>
+          <div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:220px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div>
         </div>
 
         <!-- Results -->
@@ -1060,8 +1082,8 @@ service cloud.firestore {
           <div class="chd">
             <span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span>
             <div style="display:flex;gap:8px">
-              <button class="btn bout bsm" id="qa-exp-csv">&#8595; CSV</button>
-              <button class="btn bok2 bsm" id="qa-exp-xl">&#8595; Excel</button>
+              <button type="button" class="btn bout bsm" onclick="exportQA('csv')">&#8595; CSV</button>
+              <button type="button" class="btn bok2 bsm" onclick="exportQA('xlsx')">&#8595; Excel</button>
             </div>
           </div>
           <div class="tw" style="max-height:600px">
@@ -1069,16 +1091,16 @@ service cloud.firestore {
               <thead>
                 <tr>
                   <th style="min-width:80px">Ticket ID</th>
-                  <th style="min-width:130px">Subject</th>
+                  <th style="min-width:140px">Subject</th>
                   <th style="min-width:100px">Assignee</th>
-                  <th style="min-width:80px">Type</th>
-                  <th style="min-width:70px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
-                  <th style="min-width:70px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
-                  <th style="min-width:70px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
-                  <th style="min-width:70px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
-                  <th style="min-width:70px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
-                  <th style="min-width:70px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
-                  <th style="min-width:140px">Overall Comment</th>
+                  <th style="min-width:70px">Status</th>
+                  <th style="min-width:80px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
+                  <th style="min-width:80px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
+                  <th style="min-width:80px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
+                  <th style="min-width:80px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
+                  <th style="min-width:80px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
+                  <th style="min-width:80px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
+                  <th style="min-width:160px">Overall Comment</th>
                 </tr>
               </thead>
               <tbody id="qa-results-tb"></tbody>
@@ -1086,7 +1108,6 @@ service cloud.firestore {
           </div>
         </div>
       </div>
-
     </div><!-- /pgwrap -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1308,8 +1329,8 @@ function getTech(){return lsG(SK.TY,null)||DT.slice();}
 async function loadLabelsFromFirestore(){
   if(!FB.enabled||!FB.db)return;
   try{
-    // Load from shared path first
-    var data=await fsGet("shared/labels");
+    // Load from shared path (may fail with permissions - that's OK)
+    var data=null;try{data=await fsGet("shared/labels");}catch(e){}
     if(!data){
       // Migration: fallback to per-user path
       var u=uid();
@@ -1576,7 +1597,7 @@ async function syncLocalDataToFirestore(){
     }
 
     // ── Migrate SMB data ──
-    var smbCheck=await fsGet("shared/smbdata");
+    var smbCheck=null;try{smbCheck=await fsGet("shared/smbdata");}catch(e){}
     if(!smbCheck){
       var localSMB=lsG(SK.SM,null);
       if(localSMB&&localSMB.data&&Object.keys(localSMB.data).length>0){
@@ -1630,10 +1651,10 @@ async function loadDataFromFirestore(){
       // Firestore empty — use localStorage (will be migrated shortly)
       ST.results=lsG(SK.RE,[])||[];
     }
-  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];}
+  }catch(e){ST.results=lsG(SK.RE,[])||[];} // Firestore permission denied — use localStorage
   // ── Load shared SMB data ──
   try{
-    var smb=await fsGet("shared/smbdata");
+    var smb=null;try{smb=await fsGet("shared/smbdata");}catch(e){}
     if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}
     else{var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
@@ -1875,7 +1896,7 @@ async function loadTrainingFromFirestore(){
         saveTrainingData(arr2);
       }
     }
-  }catch(e){console.warn("Could not load training from Firestore:",e);}
+  }catch(e){// Could not load training from Firestore (Firestore rules may need updating)}
 }
 
 function upBadges(){
@@ -2646,9 +2667,9 @@ function parseGeminiOutput(txt,envs,cats,subs){
     result.confidence=parseInt(parsed.confidence)||0;
   }catch(je){
     // Fallback: extract from key-value or plain text format
-    var envM=txt.match(/[Ee]nvironment[":s]+([A-Za-z][^n",}]{1,40})/);
-    var catM=txt.match(/[Cc]ategory[":s]+([A-Za-z][^n",}]{1,40})/);
-    var subM=txt.match(/[Ss]ub[s]*[Cc]ategory[":s]+([A-Za-z][^n",}]{1,60})/);
+    var envM=txt.match(/Environment[":\s]+([A-Za-z][^\n"]{1,40})/i);
+    var catM=txt.match(/Category[":\s]+([A-Za-z][^\n"]{1,40})/i);
+    var subM=txt.match(/Sub\s*Category[":\s]+([A-Za-z][^\n"]{1,60})/i);
     var confM=txt.match(/[Cc]onfidence[":s]+([0-9]+)/);
     if(envM)result.environment=envM[1].replace(/[",]/g,"").trim();
     if(catM)result.category=catM[1].replace(/[",]/g,"").trim();
@@ -3706,44 +3727,43 @@ function qaLog(msg,type){
 function renderQAPage(){
   if(!isQAUser()){showPg("dashboard");return;}
   setupQAPageListeners();
+  // Re-bind file inputs every time page renders (they may have been reset)
+  setTimeout(initQAFileInputs, 50);
 }
 
-function setupQAPageListeners(){
-  // Use event delegation on the QA page for reliability
-  var page=G("pg-qa-review");
-  if(!page||page._qaListened)return;
-  page._qaListened=true;
-
-  // Drag and drop for main sheet
-  var dz=G("dz-qa-main");
-  if(dz){
-    dz.ondragover=function(e){e.preventDefault();dz.classList.add("dzdrag");};
-    dz.ondragleave=function(){dz.classList.remove("dzdrag");};
-    dz.ondrop=function(e){e.preventDefault();dz.classList.remove("dzdrag");if(e.dataTransfer&&e.dataTransfer.files[0])parseQAMain(e.dataTransfer.files[0]);};
+// Bind file input change events in DOMContentLoaded (not page render)
+function initQAFileInputs(){
+  var fi=document.getElementById("fi-qa-main");
+  var rfi=document.getElementById("fi-qa-ref");
+  if(fi&&!fi._bound){
+    fi._bound=true;
+    fi.addEventListener("change",function(){
+      if(this.files&&this.files[0]){qaHandleMain(this.files[0]);}
+      this.value=""; // reset so same file can be re-selected
+    });
   }
-
-  // File input change handlers
-  var fi=G("fi-qa-main");
-  if(fi)fi.addEventListener("change",function(){if(this.files&&this.files[0])parseQAMain(this.files[0]);this.value="";});
-
-  var rfi=G("fi-qa-ref");
-  if(rfi)rfi.addEventListener("change",function(){Array.from(this.files||[]).forEach(parseQARef);this.value="";});
-
-  // Button handlers via event delegation on the page
-  page.addEventListener("click",function(e){
-    var tgt=e.target;
-    var id=tgt.id||(tgt.closest&&tgt.closest("[id]")?tgt.closest("[id]").id:"");
-    if(id==="qa-start-btn"||tgt.id==="qa-start-btn")startQAReview();
-    else if(id==="qa-stop-btn"||tgt.id==="qa-stop-btn"){QA.stop=true;toast("Stopping...","warn");}
-    else if(id==="qa-clear-btn"||tgt.id==="qa-clear-btn")clearQA();
-    else if(id==="qa-exp-csv"||tgt.id==="qa-exp-csv")exportQA("csv");
-    else if(id==="qa-exp-xl"||tgt.id==="qa-exp-xl")exportQA("xlsx");
-  });
+  if(rfi&&!rfi._bound){
+    rfi._bound=true;
+    rfi.addEventListener("change",function(){
+      Array.from(this.files||[]).forEach(function(f){parseQARef(f);});
+      this.value="";
+    });
+  }
 }
+function setupQAPageListeners(){
+  initQAFileInputs(); // ensure file inputs are bound
+}
+// Alias — called from inline HTML onclick handlers
+function qaHandleMain(file){parseQAMain(file);}
 
 // ── Parse inflow sheet ────────────────────────────────────
 function parseQAMain(file){
+  if(!file){toast("No file selected","err");return;}
+  var allowedExts=/\.(xlsx|xls|csv)$/i;
+  if(!allowedExts.test(file.name)){toast("Please upload Excel (.xlsx/.xls) or CSV file","err");return;}
+  toast("Reading: "+file.name+"...","ok");
   var reader=new FileReader();
+  reader.onerror=function(){toast("Error reading file. Please try again.","err");};
   reader.onload=function(e){
     var data=e.target.result,rows=[],headers=[];
     try{
@@ -4493,7 +4513,9 @@ document.addEventListener("DOMContentLoaded",function(){
   ST.tech=getTech();showPh(1);
   updateSidebarLogo();
   setupQASidebar();
+  initQAFileInputs(); // Bind QA file inputs at startup
 });
+} // close QA module scope
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 </body>
