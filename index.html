@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='55%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>&#10003;</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='58%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>&#10003;</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DispatchTrack — Ticket Evaluation Platform</title>
 <!-- System fonts: Apple SF Pro, Helvetica Neue -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -491,8 +491,8 @@ select.fin{cursor:pointer}
   <div class="llogo"><div class="lic" id="login-logo-ic"><svg id="login-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div style="display:flex;flex-direction:column;align-items:flex-start"><img id="login-logo-img" src="" alt="DispatchTrack" style="max-height:30px;max-width:200px;object-fit:contain;display:none"><div class="lbr" id="login-brand-name">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
   <div class="ltit">Welcome back</div><div class="lsub">Evaluate, classify and measure support tickets</div>
   <div class="lf"><label class="ll">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
-  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" onkeydown="if(event.key==='Enter')doLogin()" placeholder="••••••••" autocomplete="current-password"></div>
-  <button class="lbtn" id="lbtn" onclick="doLogin()">Sign In &#8594;</button>
+  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+  <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
   <div style="text-align:center;margin-top:14px">
     <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:12px;text-decoration:underline;padding:0">Forgot password?</button>
@@ -532,8 +532,8 @@ select.fin{cursor:pointer}
       <div class="sbi" data-pg="learning"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>AI Learning<span class="sbbd w" id="bd-lrn">0</span></div>
       <div class="sbi" data-pg="training"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>AI Training<span class="sbbd" id="bd-trn" style="background:#7C3AED">0</span></div>
       <div class="sbsc" id="sb-adm" style="display:none">Admin</div>
-      <div class="sbi" id="sb-usr" data-pg="users" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>User Management</div>
       <div class="sbi" id="sb-qa" data-pg="qa-review" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>QA Review</div>
+      <div class="sbi" id="sb-usr" data-pg="users" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>User Management</div>
       <div class="sbi" id="sb-set" data-pg="settings" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>API Settings</div>
     </div>
     <div class="sbusr"><div class="sbav" id="sbav">?</div><div><div class="sbun" id="sbun">--</div><div class="sbur" id="sbur">--</div></div><button class="sbout" id="sblo" title="Sign out"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
@@ -990,28 +990,21 @@ service cloud.firestore {
         <div class="card"><div class="chd"><span class="ct">Data Management</span></div><div class="cbd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn bdan" id="clr-res">Clear All Results</button><button class="btn bdan" id="clr-lrn">Clear AI Corrections</button><button class="btn bout" id="clr-smb">Clear SMB Data</button><span style="font-size:12px;color:var(--tx-3)" id="dt-stats"></span></div></div>
       </div>
 
-    
+
       <div class="page" id="pg-qa-review">
-        <div class="pghd"><div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div><div class="pgs">Ticket quality review — 1/3/5 ratings (PST timezone)</div></div>
-        <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px">
-        <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
+        <div class="pghd"><div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div><div class="pgs">Ticket quality review &mdash; 1/3/5 scale (PST timezone)</div></div>
+        <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px">
+        <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px" multiple>
         <div id="qa-progress-bar" style="display:none;margin-bottom:12px"><div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div></div><div id="qa-pb-label" style="font-size:12px;color:var(--tx3);margin-top:4px;text-align:center"></div></div>
         <div class="g2" style="margin-bottom:14px">
-          <div class="card"><div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div><div class="cbd">
-            <div class="dz" id="dz-qa-main" style="cursor:pointer" ondragover="event.preventDefault();this.classList.add('dzdrag')" ondragleave="this.classList.remove('dzdrag')" ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])parseQAMain(event.dataTransfer.files[0])" onclick="document.getElementById('fi-qa-main').click()">
-              <div class="dzi">&#128203;</div><div class="dzt">Drop agent inflow sheet here or click</div><div class="dzs">Excel (.xlsx/.xls) or CSV — needs Ticket ID column</div>
-            </div>
-            <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:8px"><span style="font-weight:600" id="qa-sheet-name"></span> — <span style="color:var(--tx2)" id="qa-sheet-rows"></span></div>
-          </div></div>
-          <div class="card"><div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span><button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button></div><div class="cbd"><div id="qa-ref-list"><div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added.</div></div></div></div>
+          <div class="card"><div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:12px"><div class="dz" id="dz-qa-main" ondragover="event.preventDefault();this.classList.add('dzdrag')" ondragleave="this.classList.remove('dzdrag')" ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])parseQAMain(event.dataTransfer.files[0])" onclick="document.getElementById('fi-qa-main').click()" style="cursor:pointer"><div class="dzi">&#128203;</div><div class="dzt">Drop agent inflow sheet here or click</div><div class="dzs">Excel or CSV with Ticket ID column</div></div><div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px"><div style="font-weight:600;margin-bottom:4px" id="qa-sheet-name"></div><div style="color:var(--tx2)" id="qa-sheet-rows"></div></div></div></div>
+          <div class="card"><div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span><button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button></div><div class="cbd"><div id="qa-ref-list" style="min-height:60px"><div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added yet.</div></div></div></div>
         </div>
-        <div class="card" style="margin-bottom:14px"><div class="chd"><span class="ct">&#9654; Configuration</span><div style="display:flex;gap:8px"><button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button><button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button></div></div><div class="cbd"><div class="g2" style="gap:10px;margin-bottom:10px"><div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(blank=all)</span></label><input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div><div><label class="flb">Quarter</label><input id="qa-quarter" class="fin" value="Q3 2026"></div></div><div style="font-size:12px;color:var(--tx3);display:flex;gap:16px;flex-wrap:wrap"><span>&#9432; Fetches from Zendesk &amp; rates via Gemini AI</span><span>&#9432; <strong style="color:#DC2626">1</strong>=Poor &nbsp;<strong style="color:#D97706">3</strong>=Average &nbsp;<strong style="color:#16A34A">5</strong>=Excellent &nbsp;| PST</span></div></div></div>
-        <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px"><div class="chd"><span class="ct">&#128260; Processing Log</span><button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping...','warn')">&#9632; Stop</button></div><div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:220px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div></div>
-        <div id="qa-results-card" class="card" style="display:none"><div class="chd"><span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span><div style="display:flex;gap:8px"><button type="button" class="btn bout bsm" onclick="exportQA('csv')">&#8595; CSV</button><button type="button" class="btn bok2 bsm" onclick="exportQA('xlsx')">&#8595; Excel</button></div></div>
-          <div class="tw" style="max-height:600px"><table class="tbl" id="qa-results-tbl"><thead><tr><th style="min-width:80px">Ticket ID</th><th style="min-width:150px">Subject</th><th style="min-width:110px">Assignee</th><th style="min-width:65px">Status</th><th style="min-width:75px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th><th style="min-width:75px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal</div></th><th style="min-width:75px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th><th style="min-width:75px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th><th style="min-width:75px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th><th style="min-width:75px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th><th style="min-width:170px">Overall</th></tr></thead><tbody id="qa-results-tb"></tbody></table></div></div>
+        <div class="card" style="margin-bottom:14px"><div class="chd"><span class="ct">&#9654; Process Configuration</span><div style="display:flex;gap:8px"><button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button><button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button></div></div><div class="cbd"><div class="g2" style="gap:10px;margin-bottom:12px"><div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(blank=all)</span></label><input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div><div><label class="flb">Quarter</label><input id="qa-quarter" class="fin" value="Q3 2026"></div></div><div style="font-size:12px;color:var(--tx3)">Scale: <strong style="color:#DC2626">1</strong>=Poor &nbsp;<strong style="color:#D97706">3</strong>=Average &nbsp;<strong style="color:#16A34A">5</strong>=Excellent | PST timezone</div></div></div>
+        <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px"><div class="chd"><span class="ct">&#128260; Log</span><button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping...','warn')">&#9632; Stop</button></div><div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:200px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div></div>
+        <div id="qa-results-card" class="card" style="display:none"><div class="chd"><span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span><div style="display:flex;gap:8px"><button type="button" class="btn bout bsm" onclick="exportQA('csv')">&#8595; CSV</button><button type="button" class="btn bok2 bsm" onclick="exportQA('xlsx')">&#8595; Excel</button></div></div><div class="tw" style="max-height:600px"><table class="tbl" id="qa-results-tbl"><thead><tr><th>Ticket ID</th><th>Subject</th><th>Assignee</th><th>Status</th><th>SIR</th><th>Docs</th><th>Follow-up</th><th>Ongoing</th><th>Closing</th><th>Escalation</th><th>Overall</th></tr></thead><tbody id="qa-results-tb"></tbody></table></div></div>
       </div>
-
-</div><!-- /pgwrap -->
+    </div><!-- /pgwrap -->
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -1298,49 +1291,128 @@ async function ensureFirebaseUser(){
 }
 
 async function doLogin(){
-  var em=(gv("lem")||"").trim();
-  var pw=gv("lpw")||"";
-  var er=G("lerr"),lb=G("lbtn");
-  if(er){er.style.display="none";er.innerHTML="";}
-  if(!em||!pw){if(er){er.innerHTML="Please enter your email and password.";er.style.display="block";}return;}
-  if(lb){lb.textContent="Signing in…";lb.disabled=true;}
-  function restoreBtn(){if(lb){lb.textContent="Sign In →";lb.disabled=false;}}
-  function showErr(msg){if(er){er.innerHTML=msg;er.style.display="block";}restoreBtn();}
-  // ── MASTER: always works, no Firebase needed ──
-  if(em.toLowerCase()===MASTER.email.toLowerCase()){
-    if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect password. Please try again.");return;}
-    setSess(MASTER);restoreBtn();bootApp();
-    if(FB.enabled&&FB.auth)FB.auth.signInWithEmailAndPassword(em,MASTER.pass).then(function(r){FB.user=r.user;}).catch(function(e){console.warn("Master FB auth:",e.code);});
-    return;
-  }
-  // ── REGULAR USER: requires Firebase ──
-  if(!FB.enabled)tryAutoInitFirebase();
-  if(!FB.enabled||!FB.auth){showErr("Firebase not configured on this device. Contact admin.");return;}
-  try{
-    var result=await FB.auth.signInWithEmailAndPassword(em,pw);
-    FB.user=result.user;
-    var profile=null;
-    try{var sn=await FB.db.collection("users").doc(FB.user.uid).get();if(sn.exists)profile=sn.data();}catch(fe){}
-    if(!profile){var lsu=lsG(SK.U,[])||[];for(var i=0;i<lsu.length;i++){if(lsu[i].email&&lsu[i].email.toLowerCase()===em.toLowerCase()){profile=lsu[i];break;}}}
-    var role=profile&&profile.role?profile.role:"user";
-    var name=profile&&profile.name?profile.name:em.split("@")[0];
-    FB.db.collection("users").doc(FB.user.uid).set({email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(function(){});
-    var lsu2=lsG(SK.U,[])||[];var ei=-1;
-    for(var j=0;j<lsu2.length;j++){if(lsu2[j].email&&lsu2[j].email.toLowerCase()===em.toLowerCase()){ei=j;break;}}
-    var pe={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
-    if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe);else lsu2.push(pe);
-    lsS(SK.U,lsu2);setSess({id:FB.user.uid,email:em,name:name,role:role});
-    try{await loadDataFromFirestore();}catch(lde){}
-    restoreBtn();bootApp();
-  }catch(ae){
-    var msg=ae.message||"Login failed.";
-    if(/INVALID_LOGIN_CREDENTIALS|wrong-password|invalid-credential|user-not-found/.test(msg))msg="Invalid email or password.";
-    else if(/too-many-requests/.test(msg))msg="Too many attempts. Please wait a few minutes.";
-    else if(/user-disabled/.test(msg))msg="Account disabled. Contact administrator.";
-    showErr(msg);
-  }
-}
+  var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
+  if(er){er.style.display="none";er.style.background="";er.style.borderColor="";er.style.color="";}
+  if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
+  var lb=G("lbtn");if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
+  function restoreBtn(){if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}}
+  function showErr(msg){if(er){er.textContent=msg;er.style.display="block";}restoreBtn();}
 
+  try{
+    // ── MASTER LOGIN ──────────────────────────────────────────
+    if(em.toLowerCase()===MASTER.email.toLowerCase()){
+      if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect admin password.");return;}
+      setSess(MASTER);
+
+      if(FB.enabled&&FB.auth){
+        var fbAuthOk=false;
+
+        // Step 1: Try signing in with master email+password
+        try{
+          var r=await FB.auth.signInWithEmailAndPassword(em,MASTER.pass);
+          FB.user=r.user;fbAuthOk=true;
+          console.log("Master: Firebase sign-in OK as",em);
+        }catch(me){
+          var ec=String(me.code||me.message||"");
+          console.warn("Master Firebase sign-in failed:",ec);
+
+          // Step 2: Account not found → auto-create it
+          var needsCreate=ec.indexOf("user-not-found")>=0||ec.indexOf("invalid-credential")>=0||
+            ec.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||ec.indexOf("no-such-user")>=0;
+          if(needsCreate){
+            try{
+              var cr=await FB.auth.createUserWithEmailAndPassword(em,MASTER.pass);
+              FB.user=cr.user;fbAuthOk=true;
+              console.log("Master: Firebase account created OK");
+              toast("Firebase account created \u2013 data sync is now active","ok");
+            }catch(ce){
+              console.warn("Master: account create failed:",ce.code);
+              // Step 3: Email exists with a different password → use anonymous auth
+              fbAuthOk=await ensureFirebaseUser();
+              if(fbAuthOk)toast("Using anonymous Firebase auth for data sync","in");
+            }
+          }else{
+            // Step 3: Other error (network etc.) → anonymous fallback
+            fbAuthOk=await ensureFirebaseUser();
+            if(fbAuthOk)toast("Using anonymous Firebase auth for data sync","in");
+          }
+        }
+
+        if(FB.user){
+          // Write/update master Firestore profile
+          if(!FB.user.isAnonymous){
+            try{
+              await FB.db.collection("users").doc(FB.user.uid).set(
+                {email:em,name:MASTER.name,role:"master",lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
+                {merge:true}
+              );
+            }catch(pe){console.warn("Master profile:",pe.message);}
+          }
+          // CRITICAL: Sync all local data to Firestore (non-blocking)
+          syncLocalDataToFirestore().catch(function(e){
+            console.error("syncLocalDataToFirestore FAILED:",e.message||e);
+            toast("Data sync error: "+e.message,"err");
+          });
+        }else{
+          console.error("Master: no Firebase auth available — data will NOT sync to other users.");
+          toast("Firebase auth unavailable. Enable Anonymous sign-in in Firebase Console.","err");
+        }
+      }
+      restoreBtn();bootApp();return;
+    }
+
+    // ── REGULAR USER LOGIN ─────────────────────────────────────
+    if(!FB.enabled)tryAutoInitFirebase();
+    if(!FB.enabled||!FB.auth){showErr("Firebase is not configured on this device.");showFbSetupPanel();return;}
+
+    var result;
+    try{
+      result=await FB.auth.signInWithEmailAndPassword(em,pw);
+    }catch(authErr){
+      var msg=authErr.message||"Login failed";
+      if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||
+         msg.indexOf("invalid-credential")>=0||msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0)
+        msg="Invalid email or password.";
+      else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please wait a few minutes.";
+      else if(msg.indexOf("user-disabled")>=0)msg="This account has been disabled. Contact your administrator.";
+      else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
+        msg="Email/Password sign-in is not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Enable Email/Password.";
+      showErr(msg);return;
+    }
+    FB.user=result.user;
+    hideFbSetupPanel();
+
+    // Load profile from Firestore
+    var profile=null;
+    try{var sn=await FB.db.collection("users").doc(FB.user.uid).get();profile=sn.exists?sn.data():null;}
+    catch(fe){console.warn("Profile read:",fe.message);}
+    if(!profile){
+      var lsu=lsG(SK.U,[])||[];
+      for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
+    }
+    var role="user",name=em.split("@")[0];
+    if(profile){role=profile.role||"user";name=profile.name||name;}
+
+    // Update Firestore profile
+    try{
+      await FB.db.collection("users").doc(FB.user.uid).set(
+        {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}
+      );
+    }catch(we){console.warn("Profile update:",we.message);}
+
+    // Cache on this device
+    var lsu2=lsG(SK.U,[])||[];var ei=-1;
+    for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===FB.user.uid||(lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){ei=li2;break;}}
+    var pe2={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
+    if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe2);else lsu2.push(pe2);
+    lsS(SK.U,lsu2);
+    setSess({id:FB.user.uid,email:em,name:name,role:role});
+
+    // Load all shared data from Firestore
+    try{await loadDataFromFirestore();}catch(lde){console.warn("Data load:",lde);}
+    restoreBtn();bootApp();
+  }catch(e){showErr(e.message||"Login failed. Please try again.");}
+}
 
 async function doResetPassword(){
   var em=(gv("lem")||"").trim(),er=G("lerr");
@@ -1536,7 +1608,6 @@ async function saveSMBToFirestore(){
 var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
-  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is master-only","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
@@ -1546,7 +1617,6 @@ function goPage(pg){
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
   if(pg==="training")renderTrainingPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
-  if(pg==="qa-review"){if(!isQAUser()){toast("Access restricted","err");return;}renderQAPage();}
 }
 
 // ─── BADGES ──────────────────────────────────────────────────
@@ -1722,7 +1792,7 @@ async function loadTrainingFromFirestore(){
         saveTrainingData(arr2);
       }
     }
-  }catch(e){// Training load skipped (Firestore permissions)}
+  }catch(e){}  // Firestore load failed silently
 }
 
 function upBadges(){
@@ -3472,7 +3542,6 @@ function bootApp(){
   }
   updateLoginUI();
   updateSidebarLogo();
-  setupQASidebar();
 }
 
 function showFirebaseAuthBanner(){
@@ -3485,405 +3554,6 @@ function updateLoginUI(){
 }
 
 // ─── INIT ────────────────────────────────────────────────────
-
-// ════════════════════════════════════════════════════════════
-//  QA REVIEW MODULE — visible only to revanth.abbati@dispatchtrack.com
-// ════════════════════════════════════════════════════════════
-
-var QA={rows:[],headers:[],colIdx:{},refs:[],results:[],stop:false};
-
-// ── PST timezone helpers ──────────────────────────────────
-function toPST(d){try{var p=new Date((d instanceof Date?d:new Date(d)).toLocaleString("en-US",{timeZone:"America/Los_Angeles"}));return p;}catch(e){return new Date(d);}}
-function formatPST(d){try{return(d instanceof Date?d:new Date(d)).toLocaleString("en-US",{timeZone:"America/Los_Angeles",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})+" PST";}catch(e){return String(d);}}
-function sameDayPST(d1,d2){try{var o={timeZone:"America/Los_Angeles",year:"numeric",month:"2-digit",day:"2-digit"};return(d1 instanceof Date?d1:new Date(d1)).toLocaleDateString("en-US",o)===(d2 instanceof Date?d2:new Date(d2)).toLocaleDateString("en-US",o);}catch(e){return false;}}
-function diffMinsPST(d1,d2){try{return Math.round((toPST(d2)-toPST(d1))/60000);}catch(e){return 9999;}}
-
-function isQAUser(){var s=getSess();return s&&s.email&&s.email.toLowerCase()==="revanth.abbati@dispatchtrack.com";}
-
-function setupQASidebar(){var el=document.getElementById("sb-qa");if(el)el.style.display=isQAUser()?"flex":"none";}
-
-function renderQAPage(){
-  if(!isQAUser()){goPage("dashboard");return;}
-  // Bind file inputs every render
-  var fi=document.getElementById("fi-qa-main");
-  var rfi=document.getElementById("fi-qa-ref");
-  if(fi&&!fi._qaBound){fi._qaBound=true;fi.addEventListener("change",function(){if(this.files&&this.files[0])parseQAMain(this.files[0]);this.value="";});}
-  if(rfi&&!rfi._qaBound){rfi._qaBound=true;rfi.addEventListener("change",function(){Array.from(this.files||[]).forEach(function(f){parseQARef(f);});this.value="";});}
-}
-
-function qaLog(msg,type){
-  var log=document.getElementById("qa-log");if(!log)return;
-  var c2=type==="ok"?"#16A34A":type==="err"?"#DC2626":type==="warn"?"#D97706":"#94A3B8";
-  log.innerHTML+="<div style='color:"+c2+"'><span style='opacity:.5'>["+new Date().toLocaleTimeString()+"]</span> "+String(msg).replace(/</g,"&lt;")+"</div>";
-  log.scrollTop=log.scrollHeight;
-}
-
-// ── Parse inflow sheet ──────────────────────────────────
-function parseQAMain(file){
-  if(!file)return;
-  var ext=file.name.split(".").pop().toLowerCase();
-  if(ext!=="xlsx"&&ext!=="xls"&&ext!=="csv"){toast("Please upload Excel (.xlsx/.xls) or CSV file","err");return;}
-  toast("Reading "+file.name+"...","ok");
-  var reader=new FileReader();
-  reader.onerror=function(){toast("Error reading file","err");};
-  reader.onload=function(e){
-    var data=e.target.result,rows=[],headers=[];
-    try{
-      if(ext==="xlsx"||ext==="xls"){
-        var wb=XLSX.read(data,{type:"binary"});
-        var ws=wb.Sheets[wb.SheetNames[0]];
-        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-        var hi=0;
-        for(var i=0;i<Math.min(arr.length,10);i++){if(arr[i].some(function(x){return String(x||"").toLowerCase().indexOf("ticket")>=0;})){hi=i;break;}}
-        headers=arr[hi].map(function(h){return String(h||"").trim();});
-        for(var r=hi+1;r<arr.length;r++){if(arr[r].some(function(x){return x!==""})){var o={};headers.forEach(function(h,idx){o[h]=String(arr[r][idx]||"");});rows.push(o);}}
-      }else{
-        var parsed=Papa.parse(data,{header:false,skipEmptyLines:true});
-        var hi2=0;
-        for(var i2=0;i2<Math.min(parsed.data.length,10);i2++){if(parsed.data[i2].some(function(x){return String(x||"").toLowerCase().indexOf("ticket")>=0;})){hi2=i2;break;}}
-        headers=parsed.data[hi2].map(function(h){return String(h||"").trim();});
-        for(var r2=hi2+1;r2<parsed.data.length;r2++){if(parsed.data[r2].some(function(x){return x!==""})){var o2={};headers.forEach(function(h2,idx2){o2[h2]=String(parsed.data[r2][idx2]||"");});rows.push(o2);}}
-      }
-      QA.rows=rows;QA.headers=headers;
-      var ci={};
-      headers.forEach(function(h,i3){
-        var lh=h.toLowerCase();
-        if(lh.indexOf("ticket id")>=0||lh==="id"||lh==="ticket_id")ci.ticket_id=i3;
-        if(lh.indexOf("assignee")>=0)ci.assignee=i3;
-        if(lh.indexOf("type")>=0)ci.ticket_type=i3;
-        if(lh.indexOf("subject")>=0||lh.indexOf("title")>=0)ci.subject=i3;
-        if(lh.indexOf("status")>=0)ci.status=i3;
-        if(lh.indexOf("jira")>=0)ci.jira=i3;
-      });
-      QA.colIdx=ci;
-      var info=document.getElementById("qa-sheet-info"),nm=document.getElementById("qa-sheet-name"),rw=document.getElementById("qa-sheet-rows");
-      if(info)info.style.display="block";
-      if(nm)nm.textContent=file.name;
-      if(rw)rw.textContent=rows.length+" tickets"+(ci.ticket_id===undefined?" (no Ticket ID column found!)":"");
-      var sb=document.getElementById("qa-start-btn");if(sb)sb.disabled=!rows.length||ci.ticket_id===undefined;
-      var cb=document.getElementById("qa-clear-btn");if(cb)cb.style.display="inline-flex";
-      toast(rows.length+" tickets loaded","ok");
-    }catch(err){toast("Error reading file: "+err.message,"err");console.error(err);}
-  };
-  if(ext==="xlsx"||ext==="xls")reader.readAsBinaryString(file);else reader.readAsText(file);
-}
-
-// ── Parse reference sheets ──────────────────────────────
-function parseQARef(file){
-  var ext=file.name.split(".").pop().toLowerCase();
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var rows=[],headers=[];
-      if(ext==="xlsx"||ext==="xls"){
-        var wb=XLSX.read(e.target.result,{type:"binary"});
-        var arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
-        var hi=0;for(var i=0;i<Math.min(arr.length,10);i++){if(arr[i].some(function(x){return String(x).toLowerCase().indexOf("ticket")>=0;})){hi=i;break;}}
-        headers=arr[hi].map(function(h){return String(h).trim();});
-        for(var r=hi+1;r<arr.length;r++){if(arr[r].some(function(x){return x!==""})){var o={};headers.forEach(function(h,j){o[h]=String(arr[r][j]||"");});rows.push(o);}}
-      }else{
-        var parsed=Papa.parse(e.target.result,{header:true,skipEmptyLines:true});rows=parsed.data;headers=parsed.meta.fields||[];
-      }
-      QA.refs.push({name:file.name,rows:rows,headers:headers});
-      renderQARefList();
-      toast("Reference added: "+file.name+" ("+rows.length+" rows)","ok");
-    }catch(err){toast("Error reading reference: "+err.message,"err");}
-  };
-  if(ext==="xlsx"||ext==="xls")reader.readAsBinaryString(file);else reader.readAsText(file);
-}
-
-function removeQARef(idx){QA.refs.splice(idx,1);renderQARefList();}
-
-function renderQARefList(){
-  var list=document.getElementById("qa-ref-list"),cnt=document.getElementById("qa-ref-count");
-  if(cnt)cnt.textContent=QA.refs.length;
-  if(!list)return;
-  if(!QA.refs.length){list.innerHTML="<div style='font-size:12.5px;color:var(--tx3);text-align:center;padding:20px'>No reference sheets added.</div>";return;}
-  list.innerHTML=QA.refs.map(function(r,i){
-    return "<div style='display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px'>"+
-      "<svg width='13' height='13' fill='none' stroke='#16A34A' stroke-width='2' viewBox='0 0 24 24'><polyline points='20 6 9 17 4 12'/></svg>"+
-      "<span style='flex:1;font-size:12.5px'>"+r.name+"</span>"+
-      "<span style='font-size:11px;color:var(--tx3)'>"+r.rows.length+" rows</span>"+
-      "<button onclick='removeQARef("+i+")' style='background:none;border:none;color:var(--err);cursor:pointer;font-size:16px;padding:0'>&times;</button></div>";
-  }).join("");
-}
-
-function clearQA(){
-  QA.rows=[];QA.headers=[];QA.colIdx={};QA.results=[];QA.stop=false;
-  var fi=document.getElementById("fi-qa-main");if(fi)fi.value="";
-  var si=document.getElementById("qa-sheet-info");if(si)si.style.display="none";
-  var sb=document.getElementById("qa-start-btn");if(sb)sb.disabled=true;
-  var cb=document.getElementById("qa-clear-btn");if(cb)cb.style.display="none";
-  var lc=document.getElementById("qa-log-card");if(lc)lc.style.display="none";
-  var rc=document.getElementById("qa-results-card");if(rc)rc.style.display="none";
-  var pb=document.getElementById("qa-progress-bar");if(pb)pb.style.display="none";
-  toast("Cleared","ok");
-}
-
-// ── Fetch complete ticket from Zendesk ──────────────────
-async function fetchQATicketData(ticketId){
-  var base=zdBase();
-  var td=await zdGet(base+"/tickets/"+ticketId+".json");
-  var t=td.ticket||{};
-  var cd=[];try{cd=await zdGetComments(ticketId);}catch(e){}
-  var audits=[];try{var ad=await zdGetAudits(ticketId);audits=ad||[];}catch(e){}
-  var ticketCreated=t.created_at?new Date(t.created_at):null;
-  // First agent public reply
-  var irTime=null,irText="",irMins=9999;
-  var publicComments=cd.filter(function(c2){return c2.public;});
-  for(var i=0;i<publicComments.length;i++){
-    if(publicComments[i].author_id!==t.requester_id){
-      irTime=new Date(publicComments[i].created_at);
-      irText=String(publicComments[i].body||"").substring(0,300);
-      if(ticketCreated)irMins=diffMinsPST(ticketCreated,irTime);
-      break;
-    }
-  }
-  // Support CC check
-  var supportCCed=false;
-  try{var col=await zdGet(base+"/tickets/"+ticketId+"/collaborators.json");(col.collaborators||col.users||[]).forEach(function(u){if((u.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});}catch(e){}
-  if(!supportCCed&&t.email_ccs)(t.email_ccs||[]).forEach(function(cc){if((cc.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0)supportCCed=true;});
-  // Jira check in audits
-  var jiraLinked=false,jiraStatusUpdated=false;
-  audits.forEach(function(a){(a.events||[]).forEach(function(ev){
-    if((ev.field_name||"").toLowerCase().indexOf("jira")>=0&&ev.value&&ev.value!=="no")jiraStatusUpdated=true;
-    if(ev.body&&(String(ev.body).indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(String(ev.body))))jiraLinked=true;
-  });});
-  (t.custom_fields||[]).forEach(function(f){var v=String(f.value||"");if(v.indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(v))jiraLinked=true;});
-  // Build conversation
-  var conv=[],notes=[];
-  cd.forEach(function(c3){
-    var ts=c3.created_at?formatPST(c3.created_at):"?";
-    var body=String(c3.body||"").substring(0,600);
-    var isAgent=c3.author_id!==t.requester_id;
-    if(c3.public)conv.push("["+ts+"] "+(isAgent?"AGENT":"CUSTOMER")+": "+body);
-    else notes.push("["+ts+"] INTERNAL NOTE: "+body);
-  });
-  // Ongoing analysis
-  var ongoingLog="";
-  var custMsgs=publicComments.filter(function(c4){return c4.author_id===t.requester_id;});
-  var agentReplies=publicComments.filter(function(c5){return c5.author_id!==t.requester_id;});
-  custMsgs.forEach(function(cm,idx2){
-    if(idx2===0)return;
-    var cmDate=new Date(cm.created_at);
-    var replied=agentReplies.some(function(ar){return new Date(ar.created_at)>cmDate&&sameDayPST(cmDate,new Date(ar.created_at));});
-    ongoingLog+="Customer msg "+formatPST(cm.created_at)+": same-day PST reply="+(replied?"YES":"NO")+"\n";
-  });
-  var timingSummary="Ticket created: "+(ticketCreated?formatPST(ticketCreated):"?")+"\n"+
-    "First agent reply: "+(irTime?formatPST(irTime):"none")+"\n"+
-    "Time to IR: "+(irMins<9999?irMins+" min":"N/A")+"\n"+
-    "IR within 30min: "+(irMins<=30?"YES":"NO")+" ("+irMins+"min)\n"+
-    "IR content: "+irText.substring(0,150)+"\n"+
-    "support@dispatchtrack.com in CC: "+(supportCCed?"YES":"NO")+"\n"+
-    "Jira linked: "+(jiraLinked?"YES":"NO")+", Jira status updated: "+(jiraStatusUpdated?"YES":"NO");
-  return{ticket:t,conversation:conv.join("\n\n"),internalNotes:notes.join("\n\n"),created:ticketCreated?formatPST(ticketCreated):"",
-    timingSummary:timingSummary,ongoingAnalysis:ongoingLog,
-    irMins:irMins,irText:irText,supportCCed:supportCCed,jiraLinked:jiraLinked,jiraStatusUpdated:jiraStatusUpdated};
-}
-
-// ── Rate ticket with Gemini ─────────────────────────────
-async function rateQATicketWithGemini(tid,subject,agentName,status,fetchData){
-  var key=cfg("GEM_KEY"),mod=cfg("GEM_MOD")||"gemini-1.5-flash";
-  var refEx="";
-  if(QA.refs.length){
-    refEx="=== REFERENCE EXAMPLES (previously reviewed) ===\n";
-    QA.refs.forEach(function(ref){ref.rows.slice(0,3).forEach(function(row){
-      var id=row["Ticket ID"]||row["ticket id"]||row["ID"]||"?";
-      var sir=row["Initial Response"]||row["SIR"]||"";
-      var doc=row["Ticket internal documentation"]||"";
-      var fu=row["Follow up accuracy"]||"";
-      var on=row["Ongoing Response"]||"";
-      var cl=row["Closing Response"]||"";
-      var es=row["In time escaltion of issues"]||"";
-      if(sir||doc)refEx+="Ticket "+id+": SIR="+sir+", Docs="+doc+", FU="+fu+", Ongoing="+on+", Closing="+cl+", Esc="+es+"\n";
-    });});
-  }
-  var prompt=
-    "You are a professional DispatchTrack support quality reviewer. All times are in PST.\n\n"+
-    "=== TICKET INFO ===\nID: "+tid+"\nSubject: "+subject+"\nAgent: "+agentName+"\nStatus: "+status+"\n\n"+
-    "=== TIMING ANALYSIS (PST) ===\n"+String(fetchData.timingSummary||"").substring(0,800)+"\n\n"+
-    "=== ONGOING RESPONSE ANALYSIS ===\n"+String(fetchData.ongoingAnalysis||"No follow-up data").substring(0,500)+"\n\n"+
-    "=== FULL CONVERSATION (PST times) ===\n"+String(fetchData.conversation||"No data").substring(0,3000)+"\n\n"+
-    "=== INTERNAL NOTES ===\n"+String(fetchData.internalNotes||"No internal notes").substring(0,1500)+"\n\n"+
-    refEx+
-    "=== RATING CRITERIA (1=Poor, 3=Average, 5=Excellent) — all times PST ===\n\n"+
-    "1. SIR (Smart Initial Reply):\n"+
-    "   5: Agent replied WITHIN 30 minutes PST AND response is substantive (addresses issue, not just 'looking into it')\n"+
-    "   3: Agent replied >30min but <3 hours PST AND response quality is GOOD (addresses issue specifically)\n"+
-    "   1: Agent replied >3 hours OR response is generic ('looking into it', 'will check', 'investigating')\n\n"+
-    "2. Ticket Internal Documentation:\n"+
-    "   5: Clear internal notes documenting what was tested/done. support@dispatchtrack.com in CC. If Jira linked, Jira status updated to Yes. Clear handoff notes if multiple agents.\n"+
-    "   3: Some documentation but incomplete (partial notes, CC added late, Jira not updated, incomplete handoff)\n"+
-    "   1: No internal notes OR support@dispatchtrack.com NOT in CC OR Jira linked but status never updated\n\n"+
-    "3. Follow-up Response:\n"+
-    "   5: Agent followed up with customer daily (within 24hr) even when customer did NOT respond\n"+
-    "   3: Agent followed up but with 2-3 day gaps\n"+
-    "   1: No follow-up OR gap of 4+ days without contact\n\n"+
-    "4. Ongoing Response:\n"+
-    "   5: When customer replied, agent responded SAME DAY PST with correct and complete information\n"+
-    "   3: Agent responded same day BUT information was incorrect or incomplete\n"+
-    "   1: Agent did NOT respond same day (PST) — response came next day or later\n\n"+
-    "5. Closing Response:\n"+
-    "   5: Clear professional closing message. Ticket closed promptly after resolution or after 2 unanswered follow-ups.\n"+
-    "   3: Basic closing, somewhat delayed\n"+
-    "   1: No proper closing message OR ticket dragged on after multiple unanswered follow-ups\n\n"+
-    "6. In-time Escalation:\n"+
-    "   5: Escalated to engineering/product promptly when needed with Jira created. If no escalation needed, give 5.\n"+
-    "   3: Some delay in escalation\n"+
-    "   1: Escalation needed but NOT done, or very late\n\n"+
-    "Return ONLY valid JSON (no markdown, no text outside JSON):\n"+
-    "{\"sir\":{\"rating\":5,\"reason\":\"...\"},\"documentation\":{\"rating\":5,\"reason\":\"...\"},\"followup\":{\"rating\":5,\"reason\":\"...\"},\"ongoing\":{\"rating\":5,\"reason\":\"...\"},\"closing\":{\"rating\":5,\"reason\":\"...\"},\"escalation\":{\"rating\":5,\"reason\":\"...\"},\"overall\":\"...\"}";
-
-  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json"}})
-  });
-  if(!resp.ok){
-    resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200}})
-    });
-  }
-  if(!resp.ok)throw new Error("Gemini API error "+resp.status);
-  var d=await resp.json();
-  var txt="";try{txt=d.candidates[0].content.parts[0].text||"";}catch(e){throw new Error("Gemini response format error");}
-  txt=txt.trim().replace(/```json|```/gi,"").trim();
-  var result=JSON.parse(txt);
-  ["sir","documentation","followup","ongoing","closing","escalation"].forEach(function(k){
-    if(!result[k])result[k]={rating:3,reason:"No data"};
-    var r=parseInt(result[k].rating)||3;
-    result[k].rating=r<=1?1:r<=3?3:5;
-  });
-  return result;
-}
-
-// ── Main QA processing loop ─────────────────────────────
-async function startQAReview(){
-  if(!QA.rows.length){toast("Upload an agent sheet first","err");return;}
-  var ci=QA.colIdx;
-  if(ci.ticket_id===undefined){toast("No Ticket ID column found","err");return;}
-  var agentFilter=(document.getElementById("qa-agent-filter")||{value:""}).value.trim().toLowerCase();
-  var headers=QA.headers;
-  var toProcess=QA.rows.filter(function(row){
-    var tid=row[headers[ci.ticket_id]]||"";
-    if(!tid||!String(tid).trim())return false;
-    if(agentFilter){var ag=(row[headers[ci.assignee]]||row["Assignee name"]||"").toLowerCase();if(ag.indexOf(agentFilter)<0)return false;}
-    return true;
-  });
-  if(!toProcess.length){toast("No tickets to process","err");return;}
-  QA.results=[];QA.stop=false;
-  var lc=document.getElementById("qa-log-card"),pb=document.getElementById("qa-progress-bar"),rc=document.getElementById("qa-results-card");
-  if(lc)lc.style.display="block";if(pb)pb.style.display="block";if(rc)rc.style.display="none";
-  var logDiv=document.getElementById("qa-log");if(logDiv)logDiv.innerHTML="";
-  var sb=document.getElementById("qa-start-btn");if(sb){sb.disabled=true;sb.textContent="Processing...";}
-  qaLog("Starting QA Review: "+toProcess.length+" tickets","ok");
-  if(QA.refs.length)qaLog("Using "+QA.refs.length+" reference sheet(s)","");
-  for(var i=0;i<toProcess.length;i++){
-    if(QA.stop){qaLog("Stopped by user","warn");break;}
-    var row=toProcess[i];
-    var tid=String(row[headers[ci.ticket_id]]||"").trim();
-    var agent=row[headers[ci.assignee]]||row["Assignee name"]||"";
-    var subject=row[headers[ci.subject]]||row["Ticket subject"]||row["Subject"]||"";
-    var status=row[headers[ci.status]]||row["Ticket status"]||"";
-    var pct=Math.round((i/toProcess.length)*100);
-    var fill=document.getElementById("qa-pb-fill"),lbl=document.getElementById("qa-pb-label");
-    if(fill)fill.style.width=pct+"%";
-    if(lbl)lbl.textContent="Processing "+(i+1)+" of "+toProcess.length+" ("+pct+"%)";
-    qaLog("["+(i+1)+"/"+toProcess.length+"] #"+tid+" — "+subject.substring(0,50),"");
-    var result={ticket_id:tid,subject:subject,agent:agent,status:status,row:row,
-      sir:{rating:0,reason:""},documentation:{rating:0,reason:""},followup:{rating:0,reason:""},
-      ongoing:{rating:0,reason:""},closing:{rating:0,reason:""},escalation:{rating:0,reason:""},overall:"",error:""};
-    try{
-      var fd=await fetchQATicketData(tid);
-      result.status=fd.ticket.status||status;
-      qaLog("  IR: "+fd.irMins+"min | CC: "+(fd.supportCCed?"YES":"NO")+" | Jira: "+(fd.jiraLinked?"linked":"no"),"");
-      var rating=await rateQATicketWithGemini(tid,subject,agent,result.status,fd);
-      result.sir=rating.sir;result.documentation=rating.documentation;result.followup=rating.followup;
-      result.ongoing=rating.ongoing;result.closing=rating.closing;result.escalation=rating.escalation;
-      result.overall=rating.overall||"";
-      qaLog("  Rated: SIR="+result.sir.rating+" Docs="+result.documentation.rating+" FU="+result.followup.rating+" On="+result.ongoing.rating+" Cl="+result.closing.rating+" Esc="+result.escalation.rating,"ok");
-    }catch(e){result.error=e.message;result.sir=result.documentation=result.followup=result.ongoing=result.closing=result.escalation={rating:0,reason:"Error: "+e.message};qaLog("  Error: "+e.message,"err");}
-    QA.results.push(result);
-    renderQAResultsTable();
-    await new Promise(function(res){setTimeout(res,800);});
-  }
-  if(fill)fill.style.width="100%";
-  if(lbl)lbl.textContent="Complete! "+QA.results.length+" tickets reviewed.";
-  if(sb){sb.disabled=false;sb.textContent="\u25B6 Start QA Review";}
-  if(rc)rc.style.display="block";
-  qaLog("Complete. "+QA.results.length+" tickets processed.","ok");
-  toast("QA Review complete — "+QA.results.length+" tickets rated","ok");
-}
-
-// ── Results display ─────────────────────────────────────
-function qaRatingBadge(r){
-  if(!r||r.rating===0)return"<td style='text-align:center'><span style='color:var(--tx3)'>--</span></td>";
-  var c2=r.rating===5?"#16A34A":r.rating===3?"#D97706":"#DC2626";
-  var bg=r.rating===5?"rgba(22,163,74,.12)":r.rating===3?"rgba(217,119,6,.12)":"rgba(220,38,38,.12)";
-  var label=r.rating===5?"Excellent":r.rating===3?"Average":"Poor";
-  var reason=String(r.reason||"").replace(/"/g,"&quot;").substring(0,120);
-  return"<td style='text-align:center;vertical-align:top;padding:8px'>"+
-    "<div style='display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:"+bg+";color:"+c2+";font-weight:700;font-size:15px;margin:0 auto'>"+r.rating+"</div>"+
-    "<div style='font-size:9px;color:"+c2+";font-weight:600;margin-top:2px'>"+label+"</div>"+
-    "<div style='font-size:9px;color:var(--tx3);max-width:80px;margin:2px auto;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical' title=\""+reason+"\">"+reason.substring(0,55)+"</div></td>";
-}
-
-function renderQAResultsTable(){
-  var tb=document.getElementById("qa-results-tb"),rc=document.getElementById("qa-results-card"),cnt=document.getElementById("qa-results-count");
-  if(!tb||!QA.results.length)return;
-  if(rc)rc.style.display="block";
-  if(cnt)cnt.textContent=QA.results.length+" tickets";
-  var h="";
-  QA.results.forEach(function(r){
-    var err=r.error?"style='background:rgba(220,38,38,.04)'":" ";
-    h+="<tr "+err+">";
-    h+="<td style='font-family:monospace;font-size:12px'><a href='https://dispatchtrack.zendesk.com/agent/tickets/"+r.ticket_id+"' target='_blank' style='color:#4F6EF7'>#"+r.ticket_id+"</a></td>";
-    h+="<td style='max-width:160px;font-size:12px' title='"+String(r.subject||"").replace(/'/g,"&#39;")+"'>"+String(r.subject||"--").substring(0,45)+"</td>";
-    h+="<td style='font-size:12px;color:var(--tx2)'>"+String(r.agent||"--")+"</td>";
-    h+="<td style='font-size:11px;color:var(--tx3)'>"+String(r.status||"--")+"</td>";
-    h+=qaRatingBadge(r.sir)+qaRatingBadge(r.documentation)+qaRatingBadge(r.followup)+qaRatingBadge(r.ongoing)+qaRatingBadge(r.closing)+qaRatingBadge(r.escalation);
-    h+="<td style='font-size:11px;color:var(--tx2);max-width:180px' title='"+String(r.overall||"").replace(/'/g,"&#39;")+"'>"+String(r.overall||r.error||"").substring(0,80)+"</td>";
-    h+="</tr>";
-  });
-  tb.innerHTML=h;
-}
-
-// ── Export ──────────────────────────────────────────────
-function exportQA(fmt){
-  if(!QA.results.length){toast("No results to export","err");return;}
-  var q=(document.getElementById("qa-quarter")||{value:"Q3 2026"}).value.trim();
-  var rows=QA.results.map(function(r){
-    var row={};if(r.row)Object.assign(row,r.row);
-    row["Initial Response (SIR Rating)"]=r.sir?r.sir.rating:"";
-    row["SIR Reason"]=r.sir?r.sir.reason:"";
-    row["Ticket internal documentation"]=r.documentation?r.documentation.rating:"";
-    row["Documentation Reason"]=r.documentation?r.documentation.reason:"";
-    row["Follow up accuracy"]=r.followup?r.followup.rating:"";
-    row["Followup Reason"]=r.followup?r.followup.reason:"";
-    row["Ongoing Response"]=r.ongoing?r.ongoing.rating:"";
-    row["Ongoing Reason"]=r.ongoing?r.ongoing.reason:"";
-    row["Closing Response"]=r.closing?r.closing.rating:"";
-    row["Closing Reason"]=r.closing?r.closing.reason:"";
-    row["In time escaltion of issues"]=r.escalation?r.escalation.rating:"";
-    row["Escalation Reason"]=r.escalation?r.escalation.reason:"";
-    row["Overall Comment"]=r.overall||"";
-    row["QA Quarter"]=q;
-    return row;
-  });
-  var fn="QA-Review-"+q.replace(/\s/g,"-")+"-"+new Date().toISOString().slice(0,10);
-  if(fmt==="csv"){
-    var blob=new Blob([Papa.unparse(rows)],{type:"text/csv;charset=utf-8;"});
-    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fn+".csv";a.click();
-  }else{
-    var ws=XLSX.utils.json_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"QA Review");XLSX.writeFile(wb,fn+".xlsx");
-  }
-  toast("Exported "+rows.length+" tickets","ok");
-}
-
-// ════════════════════════════════════════════════════════════
-//  END QA REVIEW MODULE
-// ════════════════════════════════════════════════════════════
-
 document.addEventListener("DOMContentLoaded",function(){
   // Auto-init Firebase if saved config exists
   tryAutoInitFirebase();
@@ -4122,10 +3792,493 @@ document.addEventListener("DOMContentLoaded",function(){
   }
   ST.tech=getTech();showPh(1);
   updateSidebarLogo();
-  setupQASidebar();
 });
-}
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+//  QA REVIEW MODULE — visible only to revanth.abbati@dispatchtrack.com
+// ═══════════════════════════════════════════════════════════════
+
+var QA = { rows:[], headers:[], colIdx:{}, refs:[], results:[], stop:false };
+
+// PST helpers
+function toPSTStr(d){ try{ return new Date(d).toLocaleString("en-US",{timeZone:"America/Los_Angeles"}); }catch(e){ return String(d); } }
+function pstDayStr(d){ try{ return new Date(d).toLocaleDateString("en-US",{timeZone:"America/Los_Angeles"}); }catch(e){ return ""; } }
+function diffMinsPST(d1,d2){ try{ return Math.round((new Date(d2)-new Date(d1))/60000); }catch(e){ return 9999; } }
+function sameDayPST(d1,d2){ return pstDayStr(d1)===pstDayStr(d2) && pstDayStr(d1)!==""; }
+
+function isQAUser(){
+  var s=getSess();
+  return s && s.email && s.email.toLowerCase()==="revanth.abbati@dispatchtrack.com";
+}
+
+function setupQASidebar(){
+  var el=document.getElementById("sb-qa");
+  if(el) el.style.display = isQAUser() ? "flex" : "none";
+}
+
+function initQAFileInputs(){
+  var fi=document.getElementById("fi-qa-main");
+  var rf=document.getElementById("fi-qa-ref");
+  if(fi && !fi._qabound){
+    fi._qabound=true;
+    fi.addEventListener("change",function(){ if(this.files&&this.files[0]) parseQAMain(this.files[0]); this.value=""; });
+  }
+  if(rf && !rf._qabound){
+    rf._qabound=true;
+    rf.addEventListener("change",function(){ Array.from(this.files||[]).forEach(function(f){ parseQARef(f); }); this.value=""; });
+  }
+}
+
+function renderQAPage(){
+  if(!isQAUser()){ goPage("dashboard"); return; }
+  initQAFileInputs();
+}
+
+function qaLog(msg,type){
+  var log=document.getElementById("qa-log"); if(!log) return;
+  var c=type==="ok"?"#16A34A":type==="err"?"#DC2626":type==="warn"?"#D97706":"#94A3B8";
+  var ts=new Date().toLocaleTimeString();
+  log.innerHTML+='<div style="color:'+c+'"><span style="opacity:.5">['+ts+']</span> '+esc(msg)+'</div>';
+  log.scrollTop=log.scrollHeight;
+}
+
+function parseQAMain(file){
+  if(!file){toast("No file selected","err");return;}
+  if(!/\.(xlsx|xls|csv)$/i.test(file.name)){toast("Please upload Excel or CSV","err");return;}
+  toast("Reading: "+file.name,"ok");
+  var reader=new FileReader();
+  reader.onerror=function(){toast("Error reading file","err");};
+  reader.onload=function(e){
+    var data=e.target.result, rows=[], headers=[];
+    try{
+      if(/\.(xlsx|xls)$/i.test(file.name)){
+        var wb=XLSX.read(data,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        var hi=0;
+        for(var i=0;i<Math.min(arr.length,10);i++){
+          if(arr[i].some(function(c){return String(c).toLowerCase().indexOf("ticket")>=0;})){hi=i;break;}
+        }
+        headers=arr[hi].map(function(h){return String(h||"").trim();});
+        for(var r=hi+1;r<arr.length;r++){
+          if(arr[r].some(function(c){return c!==""})){
+            var obj={}; headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");}); rows.push(obj);
+          }
+        }
+      } else {
+        var parsed=Papa.parse(data,{header:false,skipEmptyLines:true});
+        var hi2=0;
+        for(var i=0;i<Math.min(parsed.data.length,10);i++){
+          if(parsed.data[i].some(function(c){return String(c).toLowerCase().indexOf("ticket")>=0;})){hi2=i;break;}
+        }
+        headers=parsed.data[hi2].map(function(h){return String(h||"").trim();});
+        for(var r=hi2+1;r<parsed.data.length;r++){
+          var row=parsed.data[r];
+          if(!row.some(function(c){return c!==""})) continue;
+          var obj2={}; headers.forEach(function(h,idx){obj2[h]=String(row[idx]||"");}); rows.push(obj2);
+        }
+      }
+      QA.rows=rows; QA.headers=headers;
+      var ci={};
+      headers.forEach(function(h,i){
+        var lh=h.toLowerCase();
+        if(lh.indexOf("ticket id")>=0||lh==="id") ci.ticket_id=i;
+        if(lh.indexOf("assignee")>=0) ci.assignee=i;
+        if(lh.indexOf("type")>=0) ci.ticket_type=i;
+        if(lh.indexOf("subject")>=0||lh.indexOf("title")>=0) ci.subject=i;
+        if(lh.indexOf("status")>=0) ci.status=i;
+        if(lh.indexOf("category")>=0) ci.category=i;
+        if(lh.indexOf("jira")>=0) ci.jira=i;
+      });
+      QA.colIdx=ci;
+      var info=document.getElementById("qa-sheet-info");
+      var nm=document.getElementById("qa-sheet-name");
+      var rw=document.getElementById("qa-sheet-rows");
+      var sb=document.getElementById("qa-start-btn");
+      var cb=document.getElementById("qa-clear-btn");
+      if(info) info.style.display="block";
+      if(nm) nm.textContent=file.name;
+      if(rw) rw.textContent=rows.length+" tickets"+(ci.ticket_id===undefined?" (no Ticket ID column found!)":" ✓");
+      if(sb) sb.disabled=(rows.length===0||ci.ticket_id===undefined);
+      if(cb) cb.style.display="inline-flex";
+      toast(rows.length+" tickets loaded","ok");
+    }catch(err){toast("Error reading file: "+err.message,"err");}
+  };
+  if(/\.(xlsx|xls)$/i.test(file.name)) reader.readAsBinaryString(file); else reader.readAsText(file);
+}
+
+function parseQARef(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=e.target.result, rows=[], headers=[];
+      if(/\.(xlsx|xls)$/i.test(file.name)){
+        var wb=XLSX.read(data,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        headers=arr[0].map(function(h){return String(h||"").trim();});
+        for(var r=1;r<arr.length;r++){
+          if(arr[r].some(function(c){return c!==""})){
+            var obj={}; headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");}); rows.push(obj);
+          }
+        }
+      } else {
+        var p=Papa.parse(data,{header:true,skipEmptyLines:true}); rows=p.data; headers=p.meta.fields||[];
+      }
+      QA.refs.push({name:file.name,rows:rows});
+      renderQARefList();
+      toast("Reference added: "+file.name+" ("+rows.length+" rows)","ok");
+    }catch(err){toast("Error reading reference: "+err.message,"err");}
+  };
+  if(/\.(xlsx|xls)$/i.test(file.name)) reader.readAsBinaryString(file); else reader.readAsText(file);
+}
+
+function renderQARefList(){
+  var list=document.getElementById("qa-ref-list");
+  var cnt=document.getElementById("qa-ref-count");
+  if(!list) return;
+  if(cnt) cnt.textContent=QA.refs.length;
+  if(!QA.refs.length){
+    list.innerHTML='<div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added.</div>';
+    return;
+  }
+  list.innerHTML=QA.refs.map(function(r,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px">'+
+      '<span style="flex:1;font-size:12.5px">'+esc(r.name)+'</span>'+
+      '<span style="font-size:11px;color:var(--tx3)">'+r.rows.length+' rows</span>'+
+      '<button onclick="removeQARef('+i+')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:16px;padding:0">&times;</button></div>';
+  }).join('');
+}
+
+function removeQARef(idx){ QA.refs.splice(idx,1); renderQARefList(); }
+
+function clearQA(){
+  QA.rows=[]; QA.headers=[]; QA.colIdx={}; QA.results=[]; QA.stop=false;
+  var fi=document.getElementById("fi-qa-main"); if(fi) fi.value="";
+  ["qa-sheet-info","qa-log-card","qa-results-card","qa-progress-bar"].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display="none";
+  });
+  var sb=document.getElementById("qa-start-btn"); if(sb) sb.disabled=true;
+  var cb=document.getElementById("qa-clear-btn"); if(cb) cb.style.display="none";
+  toast("Cleared","ok");
+}
+
+function buildQARefExamples(){
+  if(!QA.refs.length) return "";
+  var ex="=== REFERENCE EXAMPLES (previously reviewed tickets) ===\n";
+  QA.refs.forEach(function(ref){
+    ref.rows.slice(0,3).forEach(function(row){
+      var id=row["Ticket ID"]||row["ticket id"]||"?";
+      var sir=row["Initial Response (SIR)"]||row["SIR"]||row["Initial Response"]||"";
+      var doc=row["Ticket internal documentation"]||row["Documentation"]||"";
+      var fu=row["Follow up accuracy"]||row["Followup"]||"";
+      var on=row["Ongoing Response"]||"";
+      var cl=row["Closing Response"]||"";
+      var esc2=row["In time escaltion of issues"]||row["Escalation"]||"";
+      if(sir||doc) ex+="Ticket "+id+": SIR="+sir+", Docs="+doc+", FU="+fu+", Ongoing="+on+", Closing="+cl+", Esc="+esc2+"\n";
+    });
+  });
+  return ex+"\n";
+}
+
+async function fetchQATicketData(ticketId){
+  var base=zdBase();
+  var td=await zdGet(base+"/tickets/"+ticketId+".json");
+  var t=td.ticket||{};
+  var cd=await zdGetComments(ticketId);
+  var audits=[]; try{ var ad=await zdGetAudits(ticketId); audits=ad; }catch(e){}
+
+  var ticketCreated=t.created_at?new Date(t.created_at):null;
+  var publicComments=cd.filter(function(c){return c.public;});
+  var irTime=null, irText="", irMins=9999;
+  for(var i=0;i<publicComments.length;i++){
+    var c=publicComments[i];
+    if(c.author_id!==t.requester_id){
+      irTime=new Date(c.created_at); irText=String(c.body||"").substring(0,400);
+      if(ticketCreated) irMins=diffMinsPST(ticketCreated,irTime);
+      break;
+    }
+  }
+
+  var supportCCed=false;
+  try{
+    var collabs=await zdGet(base+"/tickets/"+ticketId+"/collaborators.json");
+    (collabs.collaborators||collabs.users||[]).forEach(function(u){
+      if((u.email||"").toLowerCase().indexOf("support@dispatchtrack")>=0) supportCCed=true;
+    });
+  }catch(e){}
+
+  var jiraLinked=false, jiraStatusUpdated=false;
+  audits.forEach(function(a){
+    (a.events||[]).forEach(function(ev){
+      if(ev.field_name&&ev.field_name.toLowerCase().indexOf("jira")>=0&&ev.value&&ev.value!=="no") jiraStatusUpdated=true;
+      if(ev.body&&(String(ev.body).indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(String(ev.body)))) jiraLinked=true;
+    });
+  });
+  (t.custom_fields||[]).forEach(function(f){
+    var v=String(f.value||"");
+    if(v.indexOf("atlassian")>=0||/[A-Z]+-\d+/.test(v)) jiraLinked=true;
+  });
+
+  var conversation=[], internalNotes=[];
+  cd.forEach(function(c){
+    var ts=toPSTStr(c.created_at);
+    var body=String(c.body||"").substring(0,600);
+    var role=c.author_id===t.requester_id?"CUSTOMER":"AGENT";
+    if(c.public) conversation.push("["+ts+" PST] "+role+": "+body);
+    else internalNotes.push("["+ts+" PST] INTERNAL: "+body);
+  });
+
+  var ongoingAnalysis="=== ONGOING RESPONSE (PST) ===\n";
+  var customerMsgs=publicComments.filter(function(c){return c.author_id===t.requester_id;});
+  var agentReplies=publicComments.filter(function(c){return c.author_id!==t.requester_id;});
+  customerMsgs.forEach(function(cm,idx){
+    if(idx===0) return;
+    var replied=agentReplies.some(function(ar){
+      return new Date(ar.created_at)>new Date(cm.created_at) && sameDayPST(cm.created_at,ar.created_at);
+    });
+    ongoingAnalysis+="Customer msg "+toPSTStr(cm.created_at)+": same-day reply="+(replied?"YES":"NO")+"\n";
+  });
+
+  var timingSummary=
+    "Ticket created: "+(ticketCreated?toPSTStr(ticketCreated):"?")+"\n"+
+    "First agent reply: "+(irTime?toPSTStr(irTime):"none")+"\n"+
+    "Minutes to first reply: "+irMins+"\n"+
+    "Within 30 min: "+(irMins<=30?"YES":"NO")+"\n"+
+    "IR snippet: "+irText.substring(0,200)+"\n"+
+    "support@dispatchtrack.com in CC: "+(supportCCed?"YES":"NO")+"\n"+
+    "Jira linked: "+(jiraLinked?"YES":"NO")+"\n"+
+    "Jira status updated: "+(jiraStatusUpdated?"YES":"NO")+"\n";
+
+  return {
+    ticket:t, conversation:conversation.join("\n\n"),
+    internalNotes:internalNotes.join("\n\n"),
+    created:ticketCreated?toPSTStr(ticketCreated):"",
+    timingSummary:timingSummary, ongoingAnalysis:ongoingAnalysis,
+    irMins:irMins, irText:irText,
+    supportCCed:supportCCed, jiraLinked:jiraLinked, jiraStatusUpdated:jiraStatusUpdated
+  };
+}
+
+async function rateQATicketWithGemini(ticketId,subject,ticketType,agent,status,created,conversation,internalNotes,timingSummary,ongoingAnalysis,irMins,irText,supportCCed,jiraLinked,jiraStatusUpdated){
+  var key=cfg("GEM_KEY"), mod=cfg("GEM_MOD")||"gemini-1.5-flash";
+  var refEx=buildQARefExamples();
+  var prompt=
+    "You are a professional DispatchTrack support quality reviewer. All times are in PST.\n\n"+
+    "TICKET: #"+ticketId+" | "+subject+" | Agent: "+(agent||"")+"\n\n"+
+    timingSummary+"\n"+ongoingAnalysis+"\n"+
+    refEx+
+    "FULL CONVERSATION:\n"+String(conversation).substring(0,3000)+"\n\n"+
+    "INTERNAL NOTES:\n"+String(internalNotes).substring(0,1500)+"\n\n"+
+    "RATE (1=Poor,3=Average,5=Excellent) — only use 1, 3, or 5:\n\n"+
+    "1. SIR (Smart Initial Reply):\n"+
+    "   5=within 30min AND substantive reply (not just 'looking into it')\n"+
+    "   3=>30min but <3hr AND response is good quality\n"+
+    "   1=>3hr OR generic reply regardless of timing\n"+
+    "   [IR time: "+irMins+"min, snippet: "+irText.substring(0,100)+"]\n\n"+
+    "2. Ticket Internal Documentation:\n"+
+    "   5=detailed internal notes+testing documented+handoff notes if multi-agent\n"+
+    "   3=some notes but incomplete\n"+
+    "   1=no notes. support@dispatchtrack CC="+supportCCed+", Jira="+jiraLinked+", JiraStatus="+jiraStatusUpdated+"\n\n"+
+    "3. Follow-up Response:\n"+
+    "   5=daily follow-up even if customer silent\n   3=2-3 day gaps\n   1=no followup or 4+ day gaps\n\n"+
+    "4. Ongoing Response (see analysis above):\n"+
+    "   5=same-day reply with CORRECT info\n   3=same-day but incorrect/incomplete\n   1=NOT same day\n\n"+
+    "5. Closing Response:\n"+
+    "   5=professional close, closed after 2 unanswered FU\n   3=basic close\n   1=poor close\n\n"+
+    "6. In-time Escalation:\n"+
+    "   5=escalated promptly when needed (or no escalation needed)\n   3=some delay\n   1=not escalated when needed\n\n"+
+    "Respond ONLY with JSON, no markdown:\n"+
+    '{"sir":{"rating":5,"reason":"..."},"documentation":{"rating":5,"reason":"..."},"followup":{"rating":5,"reason":"..."},"ongoing":{"rating":5,"reason":"..."},"closing":{"rating":5,"reason":"..."},"escalation":{"rating":5,"reason":"..."},"overall":"..."}';
+
+  async function callGemini(mime){
+    var body={contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200}};
+    if(mime) body.generationConfig.responseMimeType="application/json";
+    var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    return r;
+  }
+  var resp=await callGemini(true);
+  if(!resp.ok) resp=await callGemini(false);
+  if(!resp.ok) throw new Error("Gemini error "+resp.status);
+  var d=await resp.json();
+  var txt=""; try{txt=d.candidates[0].content.parts[0].text||"";}catch(e){throw new Error("Gemini format error");}
+  txt=txt.trim().replace(/```json|```/gi,"").trim();
+  var result=JSON.parse(txt);
+  ["sir","documentation","followup","ongoing","closing","escalation"].forEach(function(k){
+    if(result[k]){var r=parseInt(result[k].rating)||3;result[k].rating=r<=1?1:r<=3?3:5;}
+    else{result[k]={rating:3,reason:"No data"};}
+  });
+  return result;
+}
+
+async function startQAReview(){
+  if(!QA.rows.length){toast("Upload an agent sheet first","err");return;}
+  var ci=QA.colIdx;
+  if(ci.ticket_id===undefined){toast("No Ticket ID column found","err");return;}
+  var agentFilter=(document.getElementById("qa-agent-filter")||{value:""}).value.trim().toLowerCase();
+  var headers=QA.headers;
+
+  var toProcess=QA.rows.filter(function(r){
+    var tid=r[headers[ci.ticket_id]]||r["Ticket ID"]||"";
+    if(!tid||isNaN(+String(tid).trim())) return false;
+    if(agentFilter){var ag=(r[headers[ci.assignee]]||r["Assignee name"]||"").toLowerCase();if(ag.indexOf(agentFilter)<0) return false;}
+    return true;
+  });
+
+  if(!toProcess.length){toast("No tickets to process","err");return;}
+  QA.results=[]; QA.stop=false;
+  var logCard=document.getElementById("qa-log-card");
+  var pb=document.getElementById("qa-progress-bar");
+  var rc=document.getElementById("qa-results-card");
+  var logDiv=document.getElementById("qa-log");
+  var sb=document.getElementById("qa-start-btn");
+  if(logCard) logCard.style.display="block";
+  if(pb) pb.style.display="block";
+  if(rc) rc.style.display="none";
+  if(logDiv) logDiv.innerHTML="";
+  if(sb){sb.disabled=true;sb.textContent="Processing...";}
+  qaLog("Starting QA Review for "+toProcess.length+" tickets","ok");
+  if(agentFilter) qaLog("Agent filter: "+agentFilter,"");
+  if(QA.refs.length) qaLog("Using "+QA.refs.length+" reference sheet(s)","");
+
+  for(var i=0;i<toProcess.length;i++){
+    if(QA.stop){qaLog("Stopped by user","warn");break;}
+    var row=toProcess[i];
+    var tid=String(row[headers[ci.ticket_id]]||row["Ticket ID"]||"").trim();
+    var agent=row[headers[ci.assignee]]||row["Assignee name"]||"";
+    var subject=row[headers[ci.subject]]||row["Ticket subject"]||"";
+    var ticketType=row[headers[ci.ticket_type]]||row["Ticket Type"]||"";
+    var status=row[headers[ci.status]]||row["Ticket status"]||"";
+
+    var pct=Math.round((i/toProcess.length)*100);
+    var fill=document.getElementById("qa-pb-fill"); if(fill) fill.style.width=pct+"%";
+    var lbl=document.getElementById("qa-pb-label"); if(lbl) lbl.textContent="Ticket "+(i+1)+" of "+toProcess.length+" ("+pct+"%)";
+    qaLog("["+(i+1)+"/"+toProcess.length+"] #"+tid+" — "+subject.substring(0,50),"");
+
+    var result={ticket_id:tid,subject:subject,agent:agent,ticket_type:ticketType,status:status,row:row,
+      sir:{rating:0,reason:""},documentation:{rating:0,reason:""},followup:{rating:0,reason:""},
+      ongoing:{rating:0,reason:""},closing:{rating:0,reason:""},escalation:{rating:0,reason:""},
+      overall:"",error:""};
+    try{
+      var td=await fetchQATicketData(tid);
+      result.status=td.ticket.status||status;
+      qaLog("  IR: "+td.irMins+"min | CC: "+(td.supportCCed?"YES":"NO")+" | Jira: "+(td.jiraLinked?"YES":"NO"),"");
+      var rating=await rateQATicketWithGemini(tid,subject,ticketType,agent,td.ticket.status,td.created,td.conversation,td.internalNotes,td.timingSummary,td.ongoingAnalysis,td.irMins,td.irText,td.supportCCed,td.jiraLinked,td.jiraStatusUpdated);
+      result.sir=rating.sir; result.documentation=rating.documentation; result.followup=rating.followup;
+      result.ongoing=rating.ongoing; result.closing=rating.closing; result.escalation=rating.escalation;
+      result.overall=rating.overall||"";
+      qaLog("  Rated: SIR="+result.sir.rating+" Docs="+result.documentation.rating+" FU="+result.followup.rating+" Ongoing="+result.ongoing.rating+" Closing="+result.closing.rating+" Esc="+result.escalation.rating,"ok");
+    }catch(e){
+      result.error=e.message||"Error"; result.sir={rating:0,reason:result.error};
+      result.documentation={rating:0,reason:"Error"}; result.followup={rating:0,reason:"Error"};
+      result.ongoing={rating:0,reason:"Error"}; result.closing={rating:0,reason:"Error"}; result.escalation={rating:0,reason:"Error"};
+      qaLog("  Error: "+result.error,"err");
+    }
+    QA.results.push(result);
+    renderQAResultsTable();
+    await new Promise(function(res){setTimeout(res,800);});
+  }
+
+  var fill2=document.getElementById("qa-pb-fill"); if(fill2) fill2.style.width="100%";
+  var lbl2=document.getElementById("qa-pb-label"); if(lbl2) lbl2.textContent="Done! "+QA.results.length+" tickets rated.";
+  if(sb){sb.disabled=false;sb.textContent="\u25b6 Start QA Review";}
+  if(rc) rc.style.display="block";
+  qaLog("QA Review complete — "+QA.results.length+" tickets processed","ok");
+  toast("QA Review done — "+QA.results.length+" rated","ok");
+}
+
+function qaRatingCell(r){
+  if(!r||r.rating===0) return "<td style='text-align:center;color:var(--tx3)'>--</td>";
+  var c=r.rating===5?"#16A34A":r.rating===3?"#D97706":"#DC2626";
+  var bg=r.rating===5?"rgba(22,163,74,.12)":r.rating===3?"rgba(217,119,6,.12)":"rgba(220,38,38,.12)";
+  var label=r.rating===5?"Excellent":r.rating===3?"Average":"Poor";
+  var reason=String(r.reason||"").replace(/"/g,"&quot;");
+  return "<td style='text-align:center;vertical-align:top;padding:6px'>"+
+    "<div style='display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:"+bg+";color:"+c+";font-weight:700;font-size:14px' title='"+reason+"'>"+r.rating+"</div>"+
+    "<div style='font-size:9px;color:"+c+";font-weight:600;margin-top:2px'>"+label+"</div>"+
+    "<div style='font-size:9px;color:var(--tx3);max-width:80px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical' title='"+reason+"'>"+esc(reason.substring(0,60))+"</div></td>";
+}
+
+function renderQAResultsTable(){
+  var tb=document.getElementById("qa-results-tb");
+  var cnt=document.getElementById("qa-results-count");
+  if(!tb||!QA.results.length) return;
+  if(cnt) cnt.textContent=QA.results.length+" tickets";
+  var h="";
+  QA.results.forEach(function(r){
+    h+="<tr>";
+    h+="<td><a href='https://dispatchtrack.zendesk.com/agent/tickets/"+esc(r.ticket_id)+"' target='_blank' style='color:#4F6EF7;font-family:monospace'>#"+esc(r.ticket_id)+"</a></td>";
+    h+="<td style='max-width:160px;font-size:12px' title='"+esc(r.subject||"")+"'>"+esc((r.subject||"--").substring(0,35))+"</td>";
+    h+="<td style='font-size:12px'>"+esc(r.agent||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx3)'>"+esc(r.status||"--")+"</td>";
+    h+=qaRatingCell(r.sir);
+    h+=qaRatingCell(r.documentation);
+    h+=qaRatingCell(r.followup);
+    h+=qaRatingCell(r.ongoing);
+    h+=qaRatingCell(r.closing);
+    h+=qaRatingCell(r.escalation);
+    h+="<td style='font-size:11px;color:var(--tx2);max-width:180px'>"+esc((r.overall||r.error||"").substring(0,100))+"</td>";
+    h+="</tr>";
+  });
+  tb.innerHTML=h;
+}
+
+function exportQA(fmt){
+  if(!QA.results.length){toast("No results to export","err");return;}
+  var q=(document.getElementById("qa-quarter")||{value:"Q3 2026"}).value||"Q3 2026";
+  var rows=QA.results.map(function(r){
+    var obj={};
+    if(r.row) Object.assign(obj,r.row);
+    obj["Initial Response (SIR)"]=r.sir?r.sir.rating:"";
+    obj["SIR Reason"]=r.sir?r.sir.reason:"";
+    obj["Ticket internal documentation"]=r.documentation?r.documentation.rating:"";
+    obj["Documentation Reason"]=r.documentation?r.documentation.reason:"";
+    obj["Follow up accuracy"]=r.followup?r.followup.rating:"";
+    obj["Followup Reason"]=r.followup?r.followup.reason:"";
+    obj["Ongoing Response"]=r.ongoing?r.ongoing.rating:"";
+    obj["Ongoing Reason"]=r.ongoing?r.ongoing.reason:"";
+    obj["Closing Response"]=r.closing?r.closing.rating:"";
+    obj["Closing Reason"]=r.closing?r.closing.reason:"";
+    obj["In time escaltion of issues"]=r.escalation?r.escalation.rating:"";
+    obj["Escalation Reason"]=r.escalation?r.escalation.reason:"";
+    obj["Overall Comment"]=r.overall||"";
+    obj["QA Quarter"]=q;
+    return obj;
+  });
+  var fn="QA-Review-"+q.replace(/\s/g,"-")+"-"+stamp();
+  if(fmt==="csv") dlBlob(new Blob([Papa.unparse(rows)],{type:"text/csv;charset=utf-8;"}),fn+".csv");
+  else { var ws=XLSX.utils.json_to_sheet(rows); var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"QA Review"); XLSX.writeFile(wb,fn+".xlsx"); }
+  toast("Exported "+rows.length+" tickets","ok");
+}
+// ═══════════════════════════════════════════════════════════════
+//  END QA REVIEW MODULE
+// ═══════════════════════════════════════════════════════════════
+
+
+// QA navigation hook — wraps goPage to handle qa-review page
+(function(){
+  var _orig = goPage;
+  goPage = function(pg){
+    if(pg === "qa-review"){
+      if(!isQAUser()){toast("Access denied","err");return;}
+      document.querySelectorAll(".sbi").forEach(function(x){x.classList.remove("active");});
+      var nav=document.querySelector('.sbi[data-pg="qa-review"]'); if(nav)nav.classList.add("active");
+      document.querySelectorAll(".page").forEach(function(x){x.classList.remove("active");});
+      var pe=document.getElementById("pg-qa-review"); if(pe)pe.classList.add("active");
+      renderQAPage();
+      return;
+    }
+    _orig(pg);
+  };
+})();
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(function(){ setupQASidebar(); initQAFileInputs(); }, 300);
+});
+
+</script>
 </body>
 </html>
