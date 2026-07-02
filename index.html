@@ -1116,7 +1116,7 @@ service cloud.firestore {
 <div id="mov"><div class="modal" id="mbox" style="max-width:500px"><div class="mhd"><div class="mtt" id="mtit">Modal</div><button class="mcl" id="mcl">&#215;</button></div><div class="mbd" id="mbd"></div><div class="mft" id="mft"></div></div></div>
 <div id="tw"></div>
 <script>
-"use strict";
+// strict mode removed — prevents block-scoped function declarations
 // ─── MASTER CONFIG (hardcoded, always works) ──────────────────
 var MASTER = {email:"revanth.abbati@dispatchtrack.com",pass:"Test@12322",role:"master",name:"Revanth Abbati",id:"__master__"};
 var HC = {ZD_SUB:"dispatchtrack",ZD_EM:"",ZD_TOK:"",GEM_KEY:"",GEM_MOD:"gemini-3.1-flash-lite",ZD_PROXY:""};
@@ -1423,7 +1423,7 @@ async function doLogin(){
     // Set session and boot IMMEDIATELY — no waiting for Firebase
     setSess(MASTER);
     restoreBtn();
-    bootApp();
+    (typeof bootApp!=="undefined"?bootApp:window.bootApp)();
 
     // Firebase auth runs in background (NEVER blocks login)
     if(FB.enabled&&FB.auth){
@@ -4280,6 +4280,17 @@ function exportQA(fmt){
 // ════════════════════════════════════════════════════════════
 //  END QA REVIEW MODULE
 // ════════════════════════════════════════════════════════════
+
+// ─── GLOBAL EXPORTS (ensures all critical functions accessible everywhere) ──
+window.bootApp = bootApp;
+window.doLogin = doLogin;
+window.goPage = goPage;
+window.setSess = setSess;
+window.getSess = getSess;
+window.toast = toast;
+window.closeModal = closeModal;
+window.openModal = openModal;
+
 
 document.addEventListener("DOMContentLoaded",function(){
   // Auto-init Firebase if saved config exists
