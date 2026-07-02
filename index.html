@@ -532,6 +532,7 @@ select.fin{cursor:pointer}
       <div class="sbi" data-pg="training"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>AI Training<span class="sbbd" id="bd-trn" style="background:#7C3AED">0</span></div>
       <div class="sbsc" id="sb-adm" style="display:none">Admin</div>
       <div class="sbi" id="sb-usr" data-pg="users" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>User Management</div>
+      <div class="sbi" id="sb-qa" data-pg="qa-review" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>QA Review</div>
       <div class="sbi" id="sb-set" data-pg="settings" style="display:none"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>API Settings</div>
     </div>
     <div class="sbusr"><div class="sbav" id="sbav">?</div><div><div class="sbun" id="sbun">--</div><div class="sbur" id="sbur">--</div></div><button class="sbout" id="sblo" title="Sign out"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
@@ -986,6 +987,103 @@ service cloud.firestore {
         </div>
 
         <div class="card"><div class="chd"><span class="ct">Data Management</span></div><div class="cbd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn bdan" id="clr-res">Clear All Results</button><button class="btn bdan" id="clr-lrn">Clear AI Corrections</button><button class="btn bout" id="clr-smb">Clear SMB Data</button><span style="font-size:12px;color:var(--tx-3)" id="dt-stats"></span></div></div>
+      </div>
+
+
+      <!-- QA REVIEW MODULE — Master only -->
+      <div class="page" id="pg-qa-review">
+        <div class="pghd"><div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div><div class="pgs">Ticket quality review — rate tickets on a 1/3/5 scale</div></div>
+
+        <!-- Progress bar -->
+        <div id="qa-progress-bar" style="display:none;margin-bottom:10px">
+          <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
+            <div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div>
+          </div>
+          <div id="qa-pb-label" style="font-size:12px;color:var(--tx3);margin-top:4px;text-align:center"></div>
+        </div>
+
+        <div class="g2" style="margin-bottom:14px">
+          <!-- Upload Panel -->
+          <div class="card">
+            <div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div>
+            <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
+              <div class="dz" id="dz-qa-main"><div class="dzi">&#128203;</div><div class="dzt">Drop agent inflow sheet here or click</div><div class="dzs">Excel or CSV with Ticket ID column</div><input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="display:none"></div>
+              <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px">
+                <div style="font-weight:600;margin-bottom:4px" id="qa-sheet-name"></div>
+                <div style="color:var(--tx2)" id="qa-sheet-rows"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Reference Sheets Panel -->
+          <div class="card">
+            <div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span><button class="btn bout bsm" id="qa-add-ref-btn">+ Add Reference</button></div>
+            <div class="cbd">
+              <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="display:none" multiple>
+              <div id="qa-ref-list" style="display:flex;flex-direction:column;gap:8px;min-height:60px">
+                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added yet. Add previously reviewed sheets for better AI accuracy.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent Selection + Processing Controls -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="chd"><span class="ct">&#9654; Process Configuration</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn bgst bsm" id="qa-clear-btn" style="display:none">&#215; Clear</button>
+              <button class="btn bpri" id="qa-start-btn" disabled>&#9654; Start QA Review</button>
+            </div>
+          </div>
+          <div class="cbd">
+            <div class="g2" style="gap:10px;margin-bottom:12px">
+              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(optional — leave blank to process all)</span></label>
+                <input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div>
+              <div><label class="flb">Quarter</label>
+                <input id="qa-quarter" class="fin" placeholder="e.g. Q3 2026" value="Q3 2026"></div>
+            </div>
+            <div style="font-size:12px;color:var(--tx3);display:flex;gap:16px;flex-wrap:wrap">
+              <span>&#9432; Each ticket will be fetched from Zendesk and rated using Gemini AI</span>
+              <span>&#9432; Rating scale: <strong style="color:#DC2626">1</strong> = Poor &nbsp; <strong style="color:#D97706">3</strong> = Average &nbsp; <strong style="color:#16A34A">5</strong> = Excellent</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Log -->
+        <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px">
+          <div class="chd"><span class="ct">&#128260; Processing Log</span><button class="btn bdan bsm" id="qa-stop-btn">&#9632; Stop</button></div>
+          <div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:200px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div>
+        </div>
+
+        <!-- Results -->
+        <div id="qa-results-card" class="card" style="display:none">
+          <div class="chd">
+            <span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span>
+            <div style="display:flex;gap:8px">
+              <button class="btn bout bsm" id="qa-exp-csv">&#8595; CSV</button>
+              <button class="btn bok2 bsm" id="qa-exp-xl">&#8595; Excel</button>
+            </div>
+          </div>
+          <div class="tw" style="max-height:600px">
+            <table class="tbl" id="qa-results-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:80px">Ticket ID</th>
+                  <th style="min-width:130px">Subject</th>
+                  <th style="min-width:100px">Assignee</th>
+                  <th style="min-width:80px">Type</th>
+                  <th style="min-width:70px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
+                  <th style="min-width:70px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
+                  <th style="min-width:70px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
+                  <th style="min-width:70px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
+                  <th style="min-width:70px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
+                  <th style="min-width:70px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
+                  <th style="min-width:140px">Overall Comment</th>
+                </tr>
+              </thead>
+              <tbody id="qa-results-tb"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </div><!-- /pgwrap -->
@@ -3538,6 +3636,497 @@ function updateLoginUI(){
 }
 
 // ─── INIT ────────────────────────────────────────────────────
+
+
+// ════════════════════════════════════════════════════════════
+//  QA REVIEW MODULE  (visible only to revanth.abbati@dispatchtrack.com)
+// ════════════════════════════════════════════════════════════
+var QA={
+  rows:[],headers:[],colIdx:{},
+  refs:[],          // reference sheet data
+  results:[],
+  stop:false,
+  paused:false
+};
+
+function isQAUser(){
+  var s=getSess();
+  return s&&s.email&&s.email.toLowerCase()==="revanth.abbati@dispatchtrack.com";
+}
+
+// ── Show/hide QA sidebar ──────────────────────────────────
+function setupQASidebar(){
+  var el=G("sb-qa");
+  if(el)el.style.display=isQAUser()?"flex":"none";
+}
+
+// ── QA logger ────────────────────────────────────────────
+function qaLog(msg,type){
+  var log=G("qa-log");if(!log)return;
+  var color=type==="ok"?"#16A34A":type==="err"?"#DC2626":type==="warn"?"#D97706":"#94A3B8";
+  var ts=new Date().toLocaleTimeString();
+  log.innerHTML+='<div style="color:'+color+'"><span style="opacity:.5">['+ts+']</span> '+esc(msg)+'</div>';
+  log.scrollTop=log.scrollHeight;
+}
+
+// ── Render QA page ───────────────────────────────────────
+function renderQAPage(){
+  if(!isQAUser()){showPg("dashboard");return;}
+  setupQAPageListeners();
+}
+
+function setupQAPageListeners(){
+  // Main file drop zone
+  var dz=G("dz-qa-main"),fi=G("fi-qa-main");
+  if(dz&&fi&&!dz._bound){
+    dz._bound=true;
+    dz.onclick=function(){fi.click();};
+    dz.ondragover=function(e){e.preventDefault();dz.classList.add("dzdrag");};
+    dz.ondragleave=function(){dz.classList.remove("dzdrag");};
+    dz.ondrop=function(e){e.preventDefault();dz.classList.remove("dzdrag");if(e.dataTransfer.files[0])parseQAMain(e.dataTransfer.files[0]);};
+    fi.onchange=function(){if(this.files[0])parseQAMain(this.files[0]);};
+  }
+  // Reference file
+  var rb=G("qa-add-ref-btn"),rfi=G("fi-qa-ref");
+  if(rb&&rfi&&!rb._bound){
+    rb._bound=true;
+    rb.onclick=function(){rfi.click();};
+    rfi.onchange=function(){Array.from(this.files).forEach(parseQARef);};
+  }
+  // Start / Stop / Clear buttons
+  var sb=G("qa-start-btn"),stb=G("qa-stop-btn"),cb=G("qa-clear-btn");
+  if(sb&&!sb._bound){sb._bound=true;sb.onclick=startQAReview;}
+  if(stb&&!stb._bound){stb._bound=true;stb.onclick=function(){QA.stop=true;toast("Stopping after current ticket...","warn");};}
+  if(cb&&!cb._bound){cb._bound=true;cb.onclick=clearQA;}
+  // Export buttons
+  var ec=G("qa-exp-csv"),ex=G("qa-exp-xl");
+  if(ec&&!ec._bound){ec._bound=true;ec.onclick=function(){exportQA("csv");};}
+  if(ex&&!ex._bound){ex._bound=true;ex.onclick=function(){exportQA("xlsx");};}
+}
+
+// ── Parse inflow sheet ────────────────────────────────────
+function parseQAMain(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var data=e.target.result,rows=[],headers=[];
+    try{
+      if(file.name.match(/\.(xlsx|xls)$/i)){
+        var wb=XLSX.read(data,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        // Skip rows until we find the header (row with "Ticket ID")
+        var hdrIdx=0;
+        for(var i=0;i<Math.min(arr.length,10);i++){
+          if(arr[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket id")>=0||String(c||"").toLowerCase().indexOf("ticket_id")>=0;})){hdrIdx=i;break;}
+        }
+        headers=arr[hdrIdx].map(function(h){return String(h||"").trim();});
+        for(var r=hdrIdx+1;r<arr.length;r++){
+          if(arr[r].some(function(c){return c!==null&&c!==""})){
+            var obj={};headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");});
+            rows.push(obj);
+          }
+        }
+      }else{
+        var parsed=Papa.parse(data,{header:false,skipEmptyLines:true});
+        var hdrIdx=0;
+        for(var i=0;i<Math.min(parsed.data.length,10);i++){
+          if(parsed.data[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket id")>=0;})){hdrIdx=i;break;}
+        }
+        headers=parsed.data[hdrIdx].map(function(h){return String(h||"").trim();});
+        for(var r=hdrIdx+1;r<parsed.data.length;r++){
+          var row=parsed.data[r];if(!row.some(function(c){return c!==""}))continue;
+          var obj={};headers.forEach(function(h,idx){obj[h]=String(row[idx]||"");});
+          rows.push(obj);
+        }
+      }
+      QA.rows=rows;QA.headers=headers;
+      // Build column index
+      var ci={};
+      headers.forEach(function(h,i){
+        var lh=h.toLowerCase();
+        if(lh.indexOf("ticket id")>=0||lh==="id")ci.ticket_id=i;
+        if(lh.indexOf("assignee")>=0)ci.assignee=i;
+        if(lh.indexOf("type")>=0)ci.ticket_type=i;
+        if(lh.indexOf("subject")>=0||lh.indexOf("title")>=0)ci.subject=i;
+        if(lh.indexOf("status")>=0)ci.status=i;
+        if(lh.indexOf("priority")>=0)ci.priority=i;
+        if(lh.indexOf("category")>=0)ci.category=i;
+        if(lh.indexOf("jira")>=0)ci.jira=i;
+        if(lh.indexOf("activation")>=0)ci.activation=i;
+      });
+      QA.colIdx=ci;
+      var info=G("qa-sheet-info"),nm=G("qa-sheet-name"),rw=G("qa-sheet-rows");
+      if(info){info.style.display="block";}
+      if(nm)nm.textContent=file.name;
+      if(rw)rw.textContent=rows.length+" tickets found"+( ci.ticket_id===undefined?" (no Ticket ID column found — check format!)":" ✓");
+      var sb=G("qa-start-btn");if(sb)sb.disabled=rows.length===0||ci.ticket_id===undefined;
+      var cb=G("qa-clear-btn");if(cb)cb.style.display="inline-flex";
+      toast(rows.length+" tickets loaded from "+file.name,"ok");
+    }catch(err){toast("Error reading file: "+err.message,"err");}
+  };
+  if(file.name.match(/\.(xlsx|xls)$/i))reader.readAsBinaryString(file);
+  else reader.readAsText(file);
+}
+
+// ── Parse reference sheet ─────────────────────────────────
+function parseQARef(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var data=e.target.result;
+    try{
+      var rows=[],headers=[];
+      if(file.name.match(/\.(xlsx|xls)$/i)){
+        var wb=XLSX.read(data,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        var hdrIdx=0;
+        for(var i=0;i<Math.min(arr.length,10);i++){
+          if(arr[i].some(function(c){return String(c||"").toLowerCase().indexOf("ticket")>=0;})){hdrIdx=i;break;}
+        }
+        headers=arr[hdrIdx].map(function(h){return String(h||"").trim();});
+        for(var r=hdrIdx+1;r<arr.length;r++){
+          if(arr[r].some(function(c){return c!==""})){var obj={};headers.forEach(function(h,idx){obj[h]=String(arr[r][idx]||"");});rows.push(obj);}
+        }
+      }else{
+        var parsed=Papa.parse(data,{header:true,skipEmptyLines:true});rows=parsed.data;headers=parsed.meta.fields||[];
+      }
+      QA.refs.push({name:file.name,rows:rows,headers:headers});
+      renderQARefList();
+      toast("Reference sheet added: "+file.name+" ("+rows.length+" rows)","ok");
+    }catch(err){toast("Error reading reference: "+err.message,"err");}
+  };
+  if(file.name.match(/\.(xlsx|xls)$/i))reader.readAsBinaryString(file);
+  else reader.readAsText(file);
+}
+
+function renderQARefList(){
+  var list=G("qa-ref-list"),cnt=G("qa-ref-count");
+  if(!list)return;
+  if(cnt)cnt.textContent=QA.refs.length;
+  if(!QA.refs.length){list.innerHTML='<div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added.</div>';return;}
+  list.innerHTML=QA.refs.map(function(r,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px">'+
+      '<svg width="13" height="13" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+
+      '<span style="flex:1;font-size:12.5px">'+esc(r.name)+'</span>'+
+      '<span style="font-size:11px;color:var(--tx3)">'+r.rows.length+' rows</span>'+
+      '<button onclick="removeQARef('+i+')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:0;line-height:1">&times;</button>'+
+      '</div>';
+  }).join('');
+}
+
+function removeQARef(idx){QA.refs.splice(idx,1);renderQARefList();}
+
+function clearQA(){
+  QA.rows=[];QA.headers=[];QA.colIdx={};QA.results=[];QA.stop=false;
+  var fi=G("fi-qa-main");if(fi)fi.value="";
+  var info=G("qa-sheet-info");if(info)info.style.display="none";
+  var sb=G("qa-start-btn");if(sb)sb.disabled=true;
+  var cb=G("qa-clear-btn");if(cb)cb.style.display="none";
+  var log=G("qa-log-card");if(log)log.style.display="none";
+  var rc=G("qa-results-card");if(rc)rc.style.display="none";
+  var pb=G("qa-progress-bar");if(pb)pb.style.display="none";
+  toast("Cleared","ok");
+}
+
+// ── Build reference examples for Gemini ──────────────────
+function buildQARefExamples(){
+  if(!QA.refs.length)return"";
+  var ex="=== REFERENCE EXAMPLES (previously reviewed tickets) ===\n";
+  QA.refs.forEach(function(ref){
+    var sample=ref.rows.slice(0,3);
+    sample.forEach(function(row){
+      var id=row["Ticket ID"]||row["ticket id"]||row["ID"]||"?";
+      var sir=row["Initial Response"]||row["SIR"]||"";
+      var doc=row["Ticket internal documentation"]||row["Documentation"]||"";
+      var fu=row["Follow up accuracy"]||row["Followup"]||"";
+      var on=row["Ongoing Response"]||"";
+      var cl=row["Closing Response"]||"";
+      var esc2=row["In time escaltion of issues"]||row["Escalation"]||"";
+      if(sir||doc||fu)ex+="Ticket "+id+": SIR="+sir+", Docs="+doc+", FU="+fu+", Ongoing="+on+", Closing="+cl+", Escalation="+esc2+"\n";
+    });
+  });
+  return ex+"\n";
+}
+
+// ── Rate ticket with Gemini ───────────────────────────────
+async function rateQATicketWithGemini(ticketId,subject,ticketType,agent,status,created,conversation,internalNotes){
+  var key=cfg("GEM_KEY"),mod=cfg("GEM_MOD")||"gemini-1.5-flash";
+  var refEx=buildQARefExamples();
+  var prompt=
+    "You are a professional DispatchTrack support quality reviewer with 10+ years of experience.\n"+
+    "Carefully read this COMPLETE ticket and rate the agent's performance.\n\n"+
+    "=== TICKET INFO ===\n"+
+    "Ticket ID: "+ticketId+"\n"+
+    "Subject: "+subject+"\n"+
+    "Type: "+(ticketType||"")+"\n"+
+    "Agent: "+(agent||"")+"\n"+
+    "Status: "+(status||"")+"\n"+
+    "Created: "+(created||"")+"\n\n"+
+    "=== FULL TICKET CONVERSATION (chronological) ===\n"+
+    String(conversation||"No conversation data").substring(0,3000)+"\n\n"+
+    "=== INTERNAL NOTES (private agent notes) ===\n"+
+    String(internalNotes||"No internal notes").substring(0,1500)+"\n\n"+
+    refEx+
+    "=== RATING CRITERIA (1=Poor, 3=Average, 5=Excellent) ===\n\n"+
+    "1. SIR (Smart Initial Reply):\n"+
+    "   5: First agent reply within 30 minutes AND reply is substantive (not just 'looking into it', 'checking', etc.) AND addresses the issue properly\n"+
+    "   3: Reply within 1-2 hours OR reply is timely but generic/not very helpful\n"+
+    "   1: Reply after 2+ hours OR reply is just 'looking into it'/'will check' with no substance\n\n"+
+    "2. Ticket Internal Documentation:\n"+
+    "   5: Detailed internal notes about what was tested and what action was taken. If multiple agents handled it, clear handoff notes explain what was done and what remains. Single agent with full documentation = 5\n"+
+    "   3: Some notes but incomplete or missing context for handoff\n"+
+    "   1: No internal notes, poor/no documentation of actions taken\n\n"+
+    "3. Follow-up Response (Followup accuracy):\n"+
+    "   5: Agent followed up with customer every day (or within 24hrs) even when customer did not respond\n"+
+    "   3: Agent followed up but with 2-3 day gaps between follow-ups\n"+
+    "   1: No follow-up sent OR very late follow-up (4+ days without contact)\n\n"+
+    "4. Ongoing Response:\n"+
+    "   5: When customer replied/emailed, agent responded on the SAME DAY with correct and complete information\n"+
+    "   3: Agent responded next day or response was partially correct\n"+
+    "   1: Agent took multiple days to respond to customer OR provided incorrect information\n\n"+
+    "5. Closing Response:\n"+
+    "   5: Clear professional closing message, ticket closed promptly. If customer did not respond to 2 follow-ups, ticket was closed appropriately\n"+
+    "   3: Basic closing message, somewhat timely but could be better\n"+
+    "   1: Poor/no closing message, ticket dragged on or closed without proper resolution message\n\n"+
+    "6. In-time Escalation of Issues:\n"+
+    "   5: When issue required engineering/product team, it was escalated promptly with Jira created, OR no escalation was needed (in which case mark 5)\n"+
+    "   3: Escalation happened but with some delay\n"+
+    "   1: Issue required escalation but was NOT escalated, or escalated very late\n\n"+
+    "IMPORTANT: Base ratings ONLY on evidence from the ticket. If you cannot determine something, rate 3 (average) and explain.\n"+
+    "Return ONLY this JSON (no markdown, no explanation outside JSON):\n"+
+    "{\"sir\":{\"rating\":1,\"reason\":\"...\"},\"documentation\":{\"rating\":1,\"reason\":\"...\"},\"followup\":{\"rating\":1,\"reason\":\"...\"},\"ongoing\":{\"rating\":1,\"reason\":\"...\"},\"closing\":{\"rating\":1,\"reason\":\"...\"},\"escalation\":{\"rating\":1,\"reason\":\"...\"},\"overall\":\"...\"}";
+
+  var resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json"}})
+  });
+  if(!resp.ok){
+    // Retry without responseMimeType
+    var r2=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+mod+":generateContent?key="+key,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200}})
+    });
+    if(!r2.ok)throw new Error("Gemini error "+resp.status);
+    resp=r2;
+  }
+  var d=await resp.json();
+  var txt="";try{txt=d.candidates[0].content.parts[0].text||"";}catch(e){throw new Error("Gemini format error");}
+  txt=txt.trim().replace(/```json|```/gi,"").trim();
+  var result=JSON.parse(txt);
+  // Validate ratings are 1, 3, or 5
+  ["sir","documentation","followup","ongoing","closing","escalation"].forEach(function(k){
+    if(result[k]){
+      var r=parseInt(result[k].rating)||3;
+      if(r<2)r=1;else if(r<4)r=3;else r=5;
+      result[k].rating=r;
+    }else{result[k]={rating:3,reason:"No data available"};}
+  });
+  return result;
+}
+
+// ── Fetch complete ticket from Zendesk ───────────────────
+async function fetchQATicketData(ticketId){
+  var base=zdBase();
+  // Fetch ticket
+  var td=await zdGet(base+"/tickets/"+ticketId+".json");
+  var t=td.ticket||{};
+  // Fetch comments (public + private)
+  var cd=await zdGetComments(ticketId);
+  // Fetch audits for timing
+  var audits=[];try{var ad=await zdGetAudits(ticketId);audits=ad;}catch(e){}
+  // Build conversation timeline
+  var conversation=[],internalNotes=[];
+  var auditMap={};
+  audits.forEach(function(a){auditMap[a.id]=a.created_at;});
+  cd.forEach(function(c){
+    var author=c.author_id||"?";
+    var ts=c.created_at?new Date(c.created_at).toLocaleString():"?";
+    var body=String(c.body||"").substring(0,800);
+    if(c.public){
+      conversation.push("["+ts+"] "+(c.author_id===t.requester_id?"CUSTOMER":"AGENT")+": "+body);
+    }else{
+      internalNotes.push("["+ts+"] INTERNAL NOTE: "+body);
+    }
+  });
+  return{
+    ticket:t,
+    conversation:conversation.join("\n\n"),
+    internalNotes:internalNotes.join("\n\n"),
+    created:t.created_at?new Date(t.created_at).toLocaleString():""
+  };
+}
+
+// ── Main QA processing loop ───────────────────────────────
+async function startQAReview(){
+  if(!QA.rows.length){toast("Upload an agent sheet first","err");return;}
+  var ci=QA.colIdx;
+  if(ci.ticket_id===undefined){toast("No Ticket ID column found in sheet","err");return;}
+  var agentFilter=(gv("qa-agent-filter")||"").trim().toLowerCase();
+
+  // Filter rows
+  var toProcess=QA.rows.filter(function(r){
+    var vals=Object.values(r);
+    if(!vals.some(function(v){return v!==""}))return false;
+    var headers=Object.keys(r);
+    var tid=r[headers[ci.ticket_id]]||r["Ticket ID"]||r["ticket id"]||r["ID"]||"";
+    if(!tid)return false;
+    if(agentFilter){var ag=(r[headers[ci.assignee]]||r["Assignee name"]||r["Assignee"]||"").toLowerCase();if(ag.indexOf(agentFilter)<0)return false;}
+    return true;
+  });
+
+  if(!toProcess.length){toast("No tickets to process (check agent filter)","err");return;}
+
+  QA.results=[];QA.stop=false;
+  var log=G("qa-log-card"),pb=G("qa-progress-bar"),rc=G("qa-results-card");
+  if(log)log.style.display="block";
+  if(pb)pb.style.display="block";
+  if(rc)rc.style.display="none";
+  var logDiv=G("qa-log");if(logDiv)logDiv.innerHTML="";
+
+  var sb=G("qa-start-btn");if(sb){sb.disabled=true;sb.textContent="Processing...";}
+
+  qaLog("Starting QA Review for "+toProcess.length+" tickets","ok");
+  if(agentFilter)qaLog("Agent filter: "+agentFilter,"");
+  if(QA.refs.length)qaLog("Using "+QA.refs.length+" reference sheet(s) for context","");
+
+  for(var i=0;i<toProcess.length;i++){
+    if(QA.stop){qaLog("Stopped by user","warn");break;}
+    var row=toProcess[i];
+    var headers=Object.keys(row);
+    var tid=row[headers[ci.ticket_id]]||row["Ticket ID"]||row["ticket id"]||row["ID"]||"";
+    var agent=row[headers[ci.assignee]]||row["Assignee name"]||row["Assignee"]||"";
+    var subject=row[headers[ci.subject]]||row["Ticket subject"]||row["Subject"]||"";
+    var ticketType=row[headers[ci.ticket_type]]||row["Ticket Type"]||"";
+    var status=row[headers[ci.status]]||row["Ticket status"]||"";
+    var jira=row[headers[ci.jira]]||row["link the Jira to"]||"";
+
+    tid=tid.toString().trim();
+    if(!tid||isNaN(+tid)){qaLog("Skipping row "+(i+1)+": invalid ticket ID '"+tid+"'","warn");continue;}
+
+    // Update progress
+    var pct=Math.round((i/toProcess.length)*100);
+    var fill=G("qa-pb-fill"),lbl=G("qa-pb-label");
+    if(fill)fill.style.width=pct+"%";
+    if(lbl)lbl.textContent="Processing ticket "+(i+1)+" of "+toProcess.length+" ("+pct+"%)";
+    qaLog("["+(i+1)+"/"+toProcess.length+"] Processing #"+tid+" — "+subject.substring(0,50),"");
+
+    var result={
+      ticket_id:tid,subject:subject,agent:agent,ticket_type:ticketType,status:status,
+      jira:jira,row:row,
+      sir:{rating:0,reason:""},documentation:{rating:0,reason:""},
+      followup:{rating:0,reason:""},ongoing:{rating:0,reason:""},
+      closing:{rating:0,reason:""},escalation:{rating:0,reason:""},
+      overall:"",error:""
+    };
+
+    try{
+      // Fetch from Zendesk
+      var td=await fetchQATicketData(tid);
+      result.status=td.ticket.status||status;
+      // Rate with Gemini
+      var rating=await rateQATicketWithGemini(tid,subject,ticketType,agent,td.ticket.status,td.created,td.conversation,td.internalNotes);
+      result.sir=rating.sir||{rating:3,reason:""};
+      result.documentation=rating.documentation||{rating:3,reason:""};
+      result.followup=rating.followup||{rating:3,reason:""};
+      result.ongoing=rating.ongoing||{rating:3,reason:""};
+      result.closing=rating.closing||{rating:3,reason:""};
+      result.escalation=rating.escalation||{rating:3,reason:""};
+      result.overall=rating.overall||"";
+      qaLog("  ✓ Rated: SIR="+result.sir.rating+" Docs="+result.documentation.rating+" FU="+result.followup.rating+" Ongoing="+result.ongoing.rating+" Closing="+result.closing.rating+" Esc="+result.escalation.rating,"ok");
+    }catch(e){
+      result.error=e.message||"Error";
+      result.sir={rating:0,reason:"Error: "+result.error};
+      result.documentation={rating:0,reason:"Error"};result.followup={rating:0,reason:"Error"};
+      result.ongoing={rating:0,reason:"Error"};result.closing={rating:0,reason:"Error"};result.escalation={rating:0,reason:"Error"};
+      qaLog("  ✗ Error: "+result.error,"err");
+    }
+    QA.results.push(result);
+    renderQAResultsTable();
+    // Small delay to avoid rate limits
+    await new Promise(function(res){setTimeout(res,800);});
+  }
+
+  // Complete
+  var fill2=G("qa-pb-fill"),lbl2=G("qa-pb-label");
+  if(fill2)fill2.style.width="100%";
+  if(lbl2)lbl2.textContent="Complete! "+QA.results.length+" tickets reviewed.";
+  if(sb){sb.disabled=false;sb.textContent="⏵ Start QA Review";}
+  qaLog("QA Review complete. "+QA.results.length+" tickets processed.","ok");
+  if(rc)rc.style.display="block";
+  toast("QA Review complete — "+QA.results.length+" tickets rated","ok");
+}
+
+// ── Render results table ──────────────────────────────────
+function qaRatingBadge(r){
+  if(!r||r.rating===0)return'<span style="color:var(--tx3)">--</span>';
+  var c=r.rating===5?"#16A34A":r.rating===3?"#D97706":"#DC2626";
+  var bg=r.rating===5?"rgba(22,163,74,.12)":r.rating===3?"rgba(217,119,6,.12)":"rgba(220,38,38,.12)";
+  return'<span title="'+esc(r.reason||"")+'" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+c+';font-weight:700;font-size:14px;cursor:help">'+r.rating+'</span>';
+}
+
+function renderQAResultsTable(){
+  var tb=G("qa-results-tb"),rc=G("qa-results-card"),cnt=G("qa-results-count");
+  if(!tb||!QA.results.length)return;
+  if(rc)rc.style.display="block";
+  if(cnt)cnt.textContent=QA.results.length+" tickets";
+  var h="";
+  QA.results.forEach(function(r){
+    var rowErr=r.error?"style='background:rgba(220,38,38,.05)'":"";
+    h+="<tr "+rowErr+">";
+    h+="<td style='font-family:monospace;font-size:12px'><a href='https://dispatchtrack.zendesk.com/agent/tickets/"+esc(r.ticket_id)+"' target='_blank' style='color:#4F6EF7'>#"+esc(r.ticket_id)+"</a></td>";
+    h+="<td class='tr' style='max-width:180px;font-size:12px' title='"+esc(r.subject||"")+"'>"+esc((r.subject||"--").substring(0,40)+(r.subject&&r.subject.length>40?"...":""))+"</td>";
+    h+="<td style='font-size:12px;color:var(--tx2)'>"+esc(r.agent||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx3)'>"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.sir)+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.documentation)+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.followup)+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.ongoing)+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.closing)+"</td>";
+    h+="<td style='text-align:center'>"+qaRatingBadge(r.escalation)+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx2);max-width:180px' title='"+esc(r.overall||"")+"'>"+esc((r.overall||r.error||"").substring(0,80))+"</td>";
+    h+="</tr>";
+  });
+  tb.innerHTML=h;
+}
+
+// ── Export QA results ─────────────────────────────────────
+function exportQA(fmt){
+  if(!QA.results.length){toast("No results to export","err");return;}
+  var q=(gv("qa-quarter")||"Q3 2026").trim();
+  var rows=QA.results.map(function(r){
+    var row={};
+    // Copy original sheet data
+    if(r.row)Object.assign(row,r.row);
+    // Add ratings and reasons
+    row["Initial Response (SIR)"]=r.sir?r.sir.rating:"";
+    row["SIR Reason"]=r.sir?r.sir.reason:"";
+    row["Ticket internal documentation"]=r.documentation?r.documentation.rating:"";
+    row["Documentation Reason"]=r.documentation?r.documentation.reason:"";
+    row["Follow up accuracy"]=r.followup?r.followup.rating:"";
+    row["Followup Reason"]=r.followup?r.followup.reason:"";
+    row["Ongoing Response"]=r.ongoing?r.ongoing.rating:"";
+    row["Ongoing Reason"]=r.ongoing?r.ongoing.reason:"";
+    row["Closing Response"]=r.closing?r.closing.rating:"";
+    row["Closing Reason"]=r.closing?r.closing.reason:"";
+    row["In time escaltion of issues"]=r.escalation?r.escalation.rating:"";
+    row["Escalation Reason"]=r.escalation?r.escalation.reason:"";
+    row["Overall Comment"]=r.overall||"";
+    row["QA Quarter"]=q;
+    row["QA Reviewed At"]=new Date().toLocaleString();
+    return row;
+  });
+  var fn="QA-Review-"+q.replace(/\s/g,"-")+"-"+stamp();
+  if(fmt==="csv"){
+    dlBlob(new Blob([Papa.unparse(rows)],{type:"text/csv;charset=utf-8;"}),fn+".csv");
+  }else{
+    var ws=XLSX.utils.json_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"QA Review");XLSX.writeFile(wb,fn+".xlsx");
+  }
+  toast("QA results exported ("+rows.length+" tickets)","ok");
+}
+// ════════════════════════════════════════════════════════════
+//  END QA REVIEW MODULE
+// ════════════════════════════════════════════════════════════
+
 document.addEventListener("DOMContentLoaded",function(){
   // Auto-init Firebase if saved config exists
   tryAutoInitFirebase();
@@ -3776,6 +4365,7 @@ document.addEventListener("DOMContentLoaded",function(){
   }
   ST.tech=getTech();showPh(1);
   updateSidebarLogo();
+  setupQASidebar();
 });
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
