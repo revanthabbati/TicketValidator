@@ -1712,6 +1712,7 @@ async function saveSMBToFirestore(){
 var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
+  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is restricted","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
@@ -1721,6 +1722,7 @@ function goPage(pg){
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
   if(pg==="training")renderTrainingPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
+  if(pg==="qa-review"){if(!isQAUser()){toast("Access denied","err");return;}renderQAPage();}
 }
 
 // ─── BADGES ──────────────────────────────────────────────────
@@ -3725,7 +3727,7 @@ function qaLog(msg,type){
 
 // ── Render QA page ───────────────────────────────────────
 function renderQAPage(){
-  if(!isQAUser()){showPg("dashboard");return;}
+  if(!isQAUser()){goPage("dashboard");return;}
   setupQAPageListeners();
   // Re-bind file inputs every time page renders (they may have been reset)
   setTimeout(initQAFileInputs, 50);
@@ -4515,7 +4517,7 @@ document.addEventListener("DOMContentLoaded",function(){
   setupQASidebar();
   initQAFileInputs(); // Bind QA file inputs at startup
 });
-} // close QA module scope
+} // balance
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 </body>
