@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='55%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>✓</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DispatchTrack — Ticket Evaluation Platform</title>
 <!-- System fonts: Apple SF Pro, Helvetica Neue -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -1395,128 +1396,132 @@ async function ensureFirebaseUser(){
 }
 
 async function doLogin(){
-  var em=(gv("lem")||"").trim(),pw=gv("lpw"),er=G("lerr");
-  if(er){er.style.display="none";er.style.background="";er.style.borderColor="";er.style.color="";}
-  if(!em||!pw){if(er){er.textContent="Please enter email and password.";er.style.display="block";}return;}
-  var lb=G("lbtn");if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
+  var em=(gv("lem")||"").trim();
+  var pw=gv("lpw")||"";
+  var er=G("lerr"),lb=G("lbtn");
+
+  // Clear previous errors
+  if(er){er.style.display="none";er.innerHTML="";}
+
+  if(!em||!pw){
+    if(er){er.innerHTML="Please enter your email and password.";er.style.display="block";}
+    return;
+  }
+
+  if(lb){lb.textContent="Signing in\u2026";lb.disabled=true;}
   function restoreBtn(){if(lb){lb.textContent="Sign In \u2192";lb.disabled=false;}}
-  function showErr(msg){if(er){er.textContent=msg;er.style.display="block";}restoreBtn();}
+  function showErr(msg){if(er){er.innerHTML=msg;er.style.display="block";}restoreBtn();}
+
+  // ═══════════════════════════════════════════════════════
+  //  MASTER LOGIN — always succeeds with hardcoded creds
+  // ═══════════════════════════════════════════════════════
+  if(em.toLowerCase()===MASTER.email.toLowerCase()){
+    if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){
+      showErr("Incorrect admin password. Check and try again.");
+      return;
+    }
+    // Set session and boot IMMEDIATELY — no waiting for Firebase
+    setSess(MASTER);
+    restoreBtn();
+    bootApp();
+
+    // Firebase auth runs in background (NEVER blocks login)
+    if(FB.enabled&&FB.auth){
+      FB.auth.signInWithEmailAndPassword(em,MASTER.pass)
+        .then(function(r){
+          FB.user=r.user;
+          var banner=G("fb-auth-banner");if(banner)banner.style.display="none";
+          try{
+            FB.db.collection("users").doc(r.user.uid).set(
+              {email:em,name:MASTER.name,role:"master",
+               lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
+              {merge:true}
+            ).catch(function(e){console.warn("Profile write:",e.message);});
+          }catch(pe){}
+        })
+        .catch(function(fe){
+          console.warn("Master Firebase auth (optional):",fe.code||fe.message);
+        });
+    }
+    return; // login complete
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  REGULAR USER LOGIN via Firebase
+  // ═══════════════════════════════════════════════════════
+  if(!FB.enabled){tryAutoInitFirebase();}
+  if(!FB.enabled||!FB.auth){
+    showErr("Firebase is not configured on this device.<br>"+
+      "Contact your administrator or paste your Firebase config below.");
+    showFbSetupPanel();
+    return;
+  }
 
   try{
-    // ── MASTER LOGIN ──────────────────────────────────────────
-    if(em.toLowerCase()===MASTER.email.toLowerCase()){
-      if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect admin password.");return;}
-      setSess(MASTER);
-
-      if(FB.enabled&&FB.auth){
-        var fbAuthOk=false;
-
-        // Step 1: Try signing in with master email+password
-        try{
-          var r=await FB.auth.signInWithEmailAndPassword(em,MASTER.pass);
-          FB.user=r.user;fbAuthOk=true;
-          console.log("Master: Firebase sign-in OK as",em);
-        }catch(me){
-          var ec=String(me.code||me.message||"");
-          console.warn("Master Firebase sign-in failed:",ec);
-
-          // Step 2: Account not found → auto-create it
-          var needsCreate=ec.indexOf("user-not-found")>=0||ec.indexOf("invalid-credential")>=0||
-            ec.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||ec.indexOf("no-such-user")>=0;
-          if(needsCreate){
-            try{
-              var cr=await FB.auth.createUserWithEmailAndPassword(em,MASTER.pass);
-              FB.user=cr.user;fbAuthOk=true;
-              console.log("Master: Firebase account created OK");
-              toast("Firebase account created \u2013 data sync is now active","ok");
-            }catch(ce){
-              console.warn("Master: account create failed:",ce.code);
-              // Step 3: Email exists with a different password → use anonymous auth
-              fbAuthOk=await ensureFirebaseUser();
-              if(fbAuthOk)toast("Using anonymous Firebase auth for data sync","in");
-            }
-          }else{
-            // Step 3: Other error (network etc.) → anonymous fallback
-            fbAuthOk=await ensureFirebaseUser();
-            if(fbAuthOk)toast("Using anonymous Firebase auth for data sync","in");
-          }
-        }
-
-        if(FB.user){
-          // Write/update master Firestore profile
-          if(!FB.user.isAnonymous){
-            try{
-              await FB.db.collection("users").doc(FB.user.uid).set(
-                {email:em,name:MASTER.name,role:"master",lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
-                {merge:true}
-              );
-            }catch(pe){console.warn("Master profile:",pe.message);}
-          }
-          // CRITICAL: Sync all local data to Firestore (non-blocking)
-          syncLocalDataToFirestore().catch(function(e){
-            console.error("syncLocalDataToFirestore FAILED:",e.message||e);
-            toast("Data sync error: "+e.message,"err");
-          });
-        }else{
-          console.error("Master: no Firebase auth available — data will NOT sync to other users.");
-          toast("Firebase auth unavailable. Enable Anonymous sign-in in Firebase Console.","err");
-        }
-      }
-      restoreBtn();bootApp();return;
-    }
-
-    // ── REGULAR USER LOGIN ─────────────────────────────────────
-    if(!FB.enabled)tryAutoInitFirebase();
-    if(!FB.enabled||!FB.auth){showErr("Firebase is not configured on this device.");showFbSetupPanel();return;}
-
-    var result;
-    try{
-      result=await FB.auth.signInWithEmailAndPassword(em,pw);
-    }catch(authErr){
-      var msg=authErr.message||"Login failed";
-      if(msg.indexOf("user-not-found")>=0||msg.indexOf("wrong-password")>=0||
-         msg.indexOf("invalid-credential")>=0||msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0)
-        msg="Invalid email or password.";
-      else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please wait a few minutes.";
-      else if(msg.indexOf("user-disabled")>=0)msg="This account has been disabled. Contact your administrator.";
-      else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
-        msg="Email/Password sign-in is not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Enable Email/Password.";
-      showErr(msg);return;
-    }
+    var result=await FB.auth.signInWithEmailAndPassword(em,pw);
     FB.user=result.user;
     hideFbSetupPanel();
 
-    // Load profile from Firestore
+    // Load profile (Firestore first, then localStorage fallback)
     var profile=null;
-    try{var sn=await FB.db.collection("users").doc(FB.user.uid).get();profile=sn.exists?sn.data():null;}
-    catch(fe){console.warn("Profile read:",fe.message);}
+    try{
+      var sn=await FB.db.collection("users").doc(FB.user.uid).get();
+      if(sn.exists)profile=sn.data();
+    }catch(fe){console.warn("Profile read:",fe.message);}
+
     if(!profile){
       var lsu=lsG(SK.U,[])||[];
-      for(var li=0;li<lsu.length;li++){if(lsu[li].email&&lsu[li].email.toLowerCase()===em.toLowerCase()){profile=lsu[li];break;}}
+      for(var i=0;i<lsu.length;i++){
+        if(lsu[i].email&&lsu[i].email.toLowerCase()===em.toLowerCase()){
+          profile=lsu[i];break;
+        }
+      }
     }
-    var role="user",name=em.split("@")[0];
-    if(profile){role=profile.role||"user";name=profile.name||name;}
 
-    // Update Firestore profile
-    try{
-      await FB.db.collection("users").doc(FB.user.uid).set(
-        {email:em,name:name,role:role,lastLogin:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}
-      );
-    }catch(we){console.warn("Profile update:",we.message);}
+    var role=profile&&profile.role?profile.role:"user";
+    var name=profile&&profile.name?profile.name:em.split("@")[0];
 
-    // Cache on this device
-    var lsu2=lsG(SK.U,[])||[];var ei=-1;
-    for(var li2=0;li2<lsu2.length;li2++){if(lsu2[li2].id===FB.user.uid||(lsu2[li2].email&&lsu2[li2].email.toLowerCase()===em.toLowerCase())){ei=li2;break;}}
-    var pe2={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
-    if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe2);else lsu2.push(pe2);
+    // Update Firestore profile (non-blocking)
+    FB.db.collection("users").doc(FB.user.uid).set(
+      {email:em,name:name,role:role,
+       lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
+      {merge:true}
+    ).catch(function(e){console.warn("Profile update:",e.message);});
+
+    // Cache in localStorage
+    var lsu2=lsG(SK.U,[])||[];
+    var ei=-1;
+    for(var j=0;j<lsu2.length;j++){
+      if(lsu2[j].id===FB.user.uid||
+        (lsu2[j].email&&lsu2[j].email.toLowerCase()===em.toLowerCase())){
+        ei=j;break;
+      }
+    }
+    var pe={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
+    if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe);else lsu2.push(pe);
     lsS(SK.U,lsu2);
-    setSess({id:FB.user.uid,email:em,name:name,role:role});
 
-    // Load all shared data from Firestore
-    try{await loadDataFromFirestore();}catch(lde){console.warn("Data load:",lde);}
-    restoreBtn();bootApp();
-  }catch(e){showErr(e.message||"Login failed. Please try again.");}
+    setSess({id:FB.user.uid,email:em,name:name,role:role});
+    try{await loadDataFromFirestore();}catch(lde){}
+    restoreBtn();
+    bootApp();
+
+  }catch(authErr){
+    var msg=authErr.message||"Login failed.";
+    if(msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||msg.indexOf("wrong-password")>=0||
+       msg.indexOf("invalid-credential")>=0||msg.indexOf("user-not-found")>=0){
+      msg="Invalid email or password. Please check and try again.";
+    }else if(msg.indexOf("too-many-requests")>=0){
+      msg="Too many failed attempts. Please wait a few minutes before trying again.";
+    }else if(msg.indexOf("user-disabled")>=0){
+      msg="This account has been disabled. Contact your administrator.";
+    }else if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0){
+      msg="Email/Password auth is not enabled in Firebase Console.";
+    }
+    showErr(msg);
+  }
 }
+
 
 async function doResetPassword(){
   var em=(gv("lem")||"").trim(),er=G("lerr");
