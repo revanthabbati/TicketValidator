@@ -491,8 +491,8 @@ select.fin{cursor:pointer}
   <div class="llogo"><div class="lic" id="login-logo-ic"><svg id="login-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div style="display:flex;flex-direction:column;align-items:flex-start"><img id="login-logo-img" src="" alt="DispatchTrack" style="max-height:30px;max-width:200px;object-fit:contain;display:none"><div class="lbr" id="login-brand-name">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
   <div class="ltit">Welcome back</div><div class="lsub">Evaluate, classify and measure support tickets</div>
   <div class="lf"><label class="ll">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
-  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-  <button class="lbtn" id="lbtn">Sign In &#8594;</button>
+  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" onkeydown="if(event.key==='Enter')doLogin()" placeholder="••••••••" autocomplete="current-password"></div>
+  <button class="lbtn" id="lbtn" onclick="doLogin()">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
   <div style="text-align:center;margin-top:14px">
     <button onclick="doResetPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:12px;text-decoration:underline;padding:0">Forgot password?</button>
@@ -4522,7 +4522,7 @@ document.addEventListener("DOMContentLoaded",function(){
   setupQASidebar();
   initQAFileInputs(); // Bind QA file inputs at startup
 });
-} // balance
+} // close outer scope
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 </body>
