@@ -991,100 +991,24 @@ service cloud.firestore {
       </div>
 
     
-      <!-- QA REVIEW — Master only (revanth.abbati@dispatchtrack.com) -->
       <div class="page" id="pg-qa-review">
-        <div class="pghd">
-          <div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div>
-          <div class="pgs">Ticket quality review — rate agent tickets on a 1/3/5 scale (all times in PST)</div>
-        </div>
-
-        <!-- Hidden file inputs — placed outside all click handlers -->
+        <div class="pghd"><div class="pgti">QA Review <span class="bdg" style="background:#7C3AED;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px">Master Only</span></div><div class="pgs">Ticket quality review — 1/3/5 ratings (PST timezone)</div></div>
         <input type="file" id="fi-qa-main" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px">
         <input type="file" id="fi-qa-ref" accept=".xlsx,.xls,.csv" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
-
-        <div id="qa-progress-bar" style="display:none;margin-bottom:12px">
-          <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div></div>
-          <div id="qa-pb-label" style="font-size:12px;color:var(--tx3);margin-top:4px;text-align:center"></div>
-        </div>
-
+        <div id="qa-progress-bar" style="display:none;margin-bottom:12px"><div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div id="qa-pb-fill" style="height:100%;background:linear-gradient(90deg,#7C3AED,#4F6EF7);border-radius:3px;width:0%;transition:width .4s"></div></div><div id="qa-pb-label" style="font-size:12px;color:var(--tx3);margin-top:4px;text-align:center"></div></div>
         <div class="g2" style="margin-bottom:14px">
-          <div class="card">
-            <div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div>
-            <div class="cbd">
-              <div class="dz" id="dz-qa-main" style="cursor:pointer"
-                ondragover="event.preventDefault();this.classList.add('dzdrag')"
-                ondragleave="this.classList.remove('dzdrag')"
-                ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])parseQAMain(event.dataTransfer.files[0])"
-                onclick="document.getElementById('fi-qa-main').click()">
-                <div class="dzi">&#128203;</div>
-                <div class="dzt">Drop agent inflow sheet here or click to browse</div>
-                <div class="dzs">Excel (.xlsx/.xls) or CSV — must have a Ticket ID column</div>
-              </div>
-              <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:8px">
-                <span style="font-weight:600" id="qa-sheet-name"></span> — <span style="color:var(--tx2)" id="qa-sheet-rows"></span>
-              </div>
+          <div class="card"><div class="chd"><span class="ct">&#128196; Agent Sheet (Inflow)</span></div><div class="cbd">
+            <div class="dz" id="dz-qa-main" style="cursor:pointer" ondragover="event.preventDefault();this.classList.add('dzdrag')" ondragleave="this.classList.remove('dzdrag')" ondrop="event.preventDefault();this.classList.remove('dzdrag');if(event.dataTransfer.files[0])parseQAMain(event.dataTransfer.files[0])" onclick="document.getElementById('fi-qa-main').click()">
+              <div class="dzi">&#128203;</div><div class="dzt">Drop agent inflow sheet here or click</div><div class="dzs">Excel (.xlsx/.xls) or CSV — needs Ticket ID column</div>
             </div>
-          </div>
-          <div class="card">
-            <div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span>
-              <button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button></div>
-            <div class="cbd">
-              <div id="qa-ref-list">
-                <div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added. Add previously reviewed sheets for better AI accuracy.</div>
-              </div>
-            </div>
-          </div>
+            <div id="qa-sheet-info" style="display:none;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:8px"><span style="font-weight:600" id="qa-sheet-name"></span> — <span style="color:var(--tx2)" id="qa-sheet-rows"></span></div>
+          </div></div>
+          <div class="card"><div class="chd"><span class="ct">&#128218; Reference Sheets <span class="bdg bgr" id="qa-ref-count">0</span></span><button type="button" class="btn bout bsm" onclick="document.getElementById('fi-qa-ref').click()">+ Add Reference</button></div><div class="cbd"><div id="qa-ref-list"><div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:20px">No reference sheets added.</div></div></div></div>
         </div>
-
-        <div class="card" style="margin-bottom:14px">
-          <div class="chd"><span class="ct">&#9654; Process Configuration</span>
-            <div style="display:flex;gap:8px">
-              <button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button>
-              <button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button>
-            </div>
-          </div>
-          <div class="cbd">
-            <div class="g2" style="gap:10px;margin-bottom:12px">
-              <div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(blank = all)</span></label><input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div>
-              <div><label class="flb">Quarter / Period</label><input id="qa-quarter" class="fin" placeholder="e.g. Q3 2026" value="Q3 2026"></div>
-            </div>
-            <div style="font-size:12px;color:var(--tx3);display:flex;gap:20px;flex-wrap:wrap">
-              <span>&#9432; Each ticket fetched from Zendesk &amp; rated by Gemini AI</span>
-              <span>&#9432; Scale: <strong style="color:#DC2626">1</strong>=Poor &nbsp;<strong style="color:#D97706">3</strong>=Average &nbsp;<strong style="color:#16A34A">5</strong>=Excellent &nbsp;&#8226; All times PST</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px">
-          <div class="chd"><span class="ct">&#128260; Processing Log</span>
-            <button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping after current ticket...','warn')">&#9632; Stop</button></div>
-          <div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:220px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div>
-        </div>
-
-        <div id="qa-results-card" class="card" style="display:none">
-          <div class="chd">
-            <span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span>
-            <div style="display:flex;gap:8px">
-              <button type="button" class="btn bout bsm" onclick="exportQA('csv')">&#8595; CSV</button>
-              <button type="button" class="btn bok2 bsm" onclick="exportQA('xlsx')">&#8595; Excel</button>
-            </div>
-          </div>
-          <div class="tw" style="max-height:600px">
-            <table class="tbl" id="qa-results-tbl">
-              <thead><tr>
-                <th style="min-width:80px">Ticket ID</th><th style="min-width:150px">Subject</th><th style="min-width:110px">Assignee</th><th style="min-width:65px">Status</th>
-                <th style="min-width:75px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th>
-                <th style="min-width:75px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal Notes</div></th>
-                <th style="min-width:75px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th>
-                <th style="min-width:75px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th>
-                <th style="min-width:75px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th>
-                <th style="min-width:75px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th>
-                <th style="min-width:170px">Overall Comment</th>
-              </tr></thead>
-              <tbody id="qa-results-tb"></tbody>
-            </table>
-          </div>
-        </div>
+        <div class="card" style="margin-bottom:14px"><div class="chd"><span class="ct">&#9654; Configuration</span><div style="display:flex;gap:8px"><button type="button" class="btn bgst bsm" id="qa-clear-btn" style="display:none" onclick="clearQA()">&#215; Clear</button><button type="button" class="btn bpri" id="qa-start-btn" disabled onclick="startQAReview()">&#9654; Start QA Review</button></div></div><div class="cbd"><div class="g2" style="gap:10px;margin-bottom:10px"><div><label class="flb">Agent Name Filter <span style="font-weight:400;color:var(--tx3)">(blank=all)</span></label><input id="qa-agent-filter" class="fin" placeholder="e.g. Ganesh Thota"></div><div><label class="flb">Quarter</label><input id="qa-quarter" class="fin" value="Q3 2026"></div></div><div style="font-size:12px;color:var(--tx3);display:flex;gap:16px;flex-wrap:wrap"><span>&#9432; Fetches from Zendesk &amp; rates via Gemini AI</span><span>&#9432; <strong style="color:#DC2626">1</strong>=Poor &nbsp;<strong style="color:#D97706">3</strong>=Average &nbsp;<strong style="color:#16A34A">5</strong>=Excellent &nbsp;| PST</span></div></div></div>
+        <div id="qa-log-card" class="card" style="display:none;margin-bottom:14px"><div class="chd"><span class="ct">&#128260; Processing Log</span><button type="button" class="btn bdan bsm" onclick="QA.stop=true;toast('Stopping...','warn')">&#9632; Stop</button></div><div class="cbd"><div id="qa-log" style="font-family:JetBrains Mono,monospace;font-size:11px;max-height:220px;overflow-y:auto;line-height:1.8;color:var(--tx2)"></div></div></div>
+        <div id="qa-results-card" class="card" style="display:none"><div class="chd"><span class="ct">&#127919; QA Results <span class="bdg bgr" id="qa-results-count"></span></span><div style="display:flex;gap:8px"><button type="button" class="btn bout bsm" onclick="exportQA('csv')">&#8595; CSV</button><button type="button" class="btn bok2 bsm" onclick="exportQA('xlsx')">&#8595; Excel</button></div></div>
+          <div class="tw" style="max-height:600px"><table class="tbl" id="qa-results-tbl"><thead><tr><th style="min-width:80px">Ticket ID</th><th style="min-width:150px">Subject</th><th style="min-width:110px">Assignee</th><th style="min-width:65px">Status</th><th style="min-width:75px">SIR<div style="font-weight:400;font-size:9px;color:var(--tx3)">Initial Reply</div></th><th style="min-width:75px">Docs<div style="font-weight:400;font-size:9px;color:var(--tx3)">Internal</div></th><th style="min-width:75px">Follow-up<div style="font-weight:400;font-size:9px;color:var(--tx3)">Daily FU</div></th><th style="min-width:75px">Ongoing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Same-day</div></th><th style="min-width:75px">Closing<div style="font-weight:400;font-size:9px;color:var(--tx3)">Response</div></th><th style="min-width:75px">Escalation<div style="font-weight:400;font-size:9px;color:var(--tx3)">In-time</div></th><th style="min-width:170px">Overall</th></tr></thead><tbody id="qa-results-tb"></tbody></table></div></div>
       </div>
 
 </div><!-- /pgwrap -->
@@ -1382,33 +1306,19 @@ async function doLogin(){
   if(lb){lb.textContent="Signing in…";lb.disabled=true;}
   function restoreBtn(){if(lb){lb.textContent="Sign In →";lb.disabled=false;}}
   function showErr(msg){if(er){er.innerHTML=msg;er.style.display="block";}restoreBtn();}
-
-  // ── MASTER LOGIN (hardcoded — never needs Firebase) ──
+  // ── MASTER: always works, no Firebase needed ──
   if(em.toLowerCase()===MASTER.email.toLowerCase()){
     if(pw!==MASTER.pass&&pw.trim()!==MASTER.pass){showErr("Incorrect password. Please try again.");return;}
-    setSess(MASTER);
-    restoreBtn();
-    bootApp();
-    // Try Firebase in background (never blocks login)
-    if(FB.enabled&&FB.auth){
-      FB.auth.signInWithEmailAndPassword(em,MASTER.pass)
-        .then(function(r){FB.user=r.user;})
-        .catch(function(e){console.warn("Master FB auth (optional):",e.code);});
-    }
+    setSess(MASTER);restoreBtn();bootApp();
+    if(FB.enabled&&FB.auth)FB.auth.signInWithEmailAndPassword(em,MASTER.pass).then(function(r){FB.user=r.user;}).catch(function(e){console.warn("Master FB auth:",e.code);});
     return;
   }
-
-  // ── REGULAR USER — requires Firebase ──
+  // ── REGULAR USER: requires Firebase ──
   if(!FB.enabled)tryAutoInitFirebase();
-  if(!FB.enabled||!FB.auth){
-    showErr("Firebase not configured on this device. Contact your admin.");
-    var fbs=G("fb-login-setup");if(fbs)fbs.style.display="block";
-    return;
-  }
+  if(!FB.enabled||!FB.auth){showErr("Firebase not configured on this device. Contact admin.");return;}
   try{
     var result=await FB.auth.signInWithEmailAndPassword(em,pw);
     FB.user=result.user;
-    var fbs2=G("fb-login-setup");if(fbs2)fbs2.style.display="none";
     var profile=null;
     try{var sn=await FB.db.collection("users").doc(FB.user.uid).get();if(sn.exists)profile=sn.data();}catch(fe){}
     if(!profile){var lsu=lsG(SK.U,[])||[];for(var i=0;i<lsu.length;i++){if(lsu[i].email&&lsu[i].email.toLowerCase()===em.toLowerCase()){profile=lsu[i];break;}}}
@@ -1419,16 +1329,14 @@ async function doLogin(){
     for(var j=0;j<lsu2.length;j++){if(lsu2[j].email&&lsu2[j].email.toLowerCase()===em.toLowerCase()){ei=j;break;}}
     var pe={id:FB.user.uid,email:em,name:name,role:role,created:Date.now()};
     if(ei>=0)lsu2[ei]=Object.assign({},lsu2[ei],pe);else lsu2.push(pe);
-    lsS(SK.U,lsu2);
-    setSess({id:FB.user.uid,email:em,name:name,role:role});
+    lsS(SK.U,lsu2);setSess({id:FB.user.uid,email:em,name:name,role:role});
     try{await loadDataFromFirestore();}catch(lde){}
     restoreBtn();bootApp();
-  }catch(authErr){
-    var msg=authErr.message||"Login failed.";
-    if(msg.indexOf("INVALID_LOGIN_CREDENTIALS")>=0||msg.indexOf("wrong-password")>=0||msg.indexOf("invalid-credential")>=0||msg.indexOf("user-not-found")>=0)
-      msg="Invalid email or password.";
-    else if(msg.indexOf("too-many-requests")>=0)msg="Too many failed attempts. Please wait.";
-    else if(msg.indexOf("user-disabled")>=0)msg="Account disabled. Contact administrator.";
+  }catch(ae){
+    var msg=ae.message||"Login failed.";
+    if(/INVALID_LOGIN_CREDENTIALS|wrong-password|invalid-credential|user-not-found/.test(msg))msg="Invalid email or password.";
+    else if(/too-many-requests/.test(msg))msg="Too many attempts. Please wait a few minutes.";
+    else if(/user-disabled/.test(msg))msg="Account disabled. Contact administrator.";
     showErr(msg);
   }
 }
@@ -1628,7 +1536,7 @@ async function saveSMBToFirestore(){
 var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
-  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is restricted to master account","err");return;}
+  if(pg==="qa-review"&&!isQAUser()){toast("QA Review is master-only","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
@@ -1814,7 +1722,7 @@ async function loadTrainingFromFirestore(){
         saveTrainingData(arr2);
       }
     }
-  }catch(e){// Could not load training from Firestore (permissions not yet configured)}
+  }catch(e){// Training load skipped (Firestore permissions)}
 }
 
 function upBadges(){
@@ -4216,6 +4124,7 @@ document.addEventListener("DOMContentLoaded",function(){
   updateSidebarLogo();
   setupQASidebar();
 });
+}
 </script>
 <div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 </body>
