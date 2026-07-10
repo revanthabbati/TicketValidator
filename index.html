@@ -621,6 +621,9 @@ select.fin{cursor:pointer}
         <div id="dash-charts" style="display:none">
           <!-- Date filter for charts -->
           <div class="card cbd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span style="font-weight:600;font-size:13px;color:var(--tx)">Review Session:</span>
+            <select id="chart-session" class="fsel" style="padding:5px 8px"><option value="">All Reviews</option></select>
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span style="font-weight:600;font-size:13px;color:var(--tx)">Chart Period:</span>
             <label style="font-size:12px;color:var(--tx-2)">From</label>
@@ -667,7 +670,7 @@ select.fin{cursor:pointer}
               <div class="cbd" style="height:320px;position:relative"><canvas id="chart-smb" style="cursor:pointer"></canvas></div>
             </div>
             <div class="card">
-              <div class="chd"><span class="ct">Top Sub Categories</span>
+              <div class="chd"><span class="ct" id="chart-sub-title">Top Sub Categories</span>
                 <button class="btn bgst bsm" onclick="downloadChart('chart-sub','sub-categories')">&#x2B07; PNG</button>
               </div>
               <div class="cbd" style="height:320px;position:relative"><canvas id="chart-sub" style="cursor:pointer"></canvas></div>
@@ -747,6 +750,7 @@ select.fin{cursor:pointer}
             <div style="font-family:var(--font-heading);font-size:22px;font-weight:700;margin-bottom:6px">Evaluation Complete!</div>
             <div style="font-size:14px;color:var(--tx-2);margin-bottom:24px" id="done-sum"></div>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="btn bpri bxl" id="fin-csv">&#8595; Download CSV</button><button class="btn bok bxl" id="fin-xl">&#8595; Download Excel</button><button class="btn bout bxl" data-pg="results">View Results &#8594;</button></div>
+            <div style="margin-top:14px"><button class="btn bpri" id="save-review-session">&#128190; Save Review Session</button></div>
           </div></div>
           <button class="btn bout" id="new-ev" style="align-self:flex-start">+ New Evaluation</button>
         </div>
@@ -764,7 +768,7 @@ select.fin{cursor:pointer}
               <div style="flex:1"><label class="flb">Customer Type</label><select id="smb-add-type" class="fin"><option value="SMB">SMB</option><option value="Mega">Mega</option><option value="Micro">Micro</option></select></div>
               <button class="btn bpri" id="smb-add-single" style="white-space:nowrap;padding:9px 16px">+ Add</button>
             </div>
-            <div id="smb-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="smb-cc" class="fin"></select></div><div><label class="flb">Customer Type column</label><select id="smb-tc" class="fin"></select></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="smb-save">&#10003; Save SMB Database</button></div>
+            <div id="smb-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="smb-cc" class="fin"></select></div><div><label class="flb">Customer Type column</label><select id="smb-tc" class="fin"></select></div></div><div style="margin-top:12px"><label class="flb">Import Mode</label><div style="display:flex;flex-direction:column;gap:6px"><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="replace" checked> Replace Existing Database</label><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="append"> Append to Existing Database</label></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="smb-save">&#10003; Save SMB Database</button></div>
             <div id="smb-pg-msg"></div>
           </div></div>
           <div class="card" id="smb-stats"><div class="chd"><span class="ct">SMB Data</span><div style="display:flex;gap:6px"><button class="btn bout bsm" id="smb-export-btn">&#8595; Export CSV</button><button class="btn bdan bsm" id="smb-clear-stat">Clear All</button></div></div><div class="cbd" id="smb-stats-inner"><div style="text-align:center;color:var(--tx-3);padding:24px 0">No SMB data loaded.</div></div></div>
@@ -777,6 +781,7 @@ select.fin{cursor:pointer}
         <div class="card">
           <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx-3);font-family:var(--font-mono)" id="res-lbl">0 records</span><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
           <div class="fb">
+            <select class="fsel" id="f-session"><option value="">All Reviews</option></select>
             <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
             <div style="display:flex;align-items:center;gap:4px">
               <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">From</label>
@@ -1026,7 +1031,7 @@ var DT = ["Technical"];
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1251,8 +1256,34 @@ var ST={
   delay:1500,paused:false,stop:false,
   tech:[],revChg:{},
   sortK:null,sortD:"asc",pg:0,pgSz:30,
-  pendSMB:null
+  pendSMB:null,
+  reviewSessions:[],reviewFilter:""
 };
+
+// ─── REVIEW SESSIONS ─────────────────────────────────────────
+// A review session tags a batch of evaluated tickets with a custom name (e.g. "June Week 1")
+// so the dashboard/results/charts can be scoped to just that batch. reviewFilter=="" means "All Reviews".
+function getBaseResults(){
+  return ST.reviewFilter?ST.results.filter(function(r){return r.reviewSessionId===ST.reviewFilter;}):ST.results;
+}
+function fillReviewSessionDropdowns(){
+  var sessions=(ST.reviewSessions||[]).slice().sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0);});
+  var opts="<option value=\"\">All Reviews</option>";
+  sessions.forEach(function(s){opts+="<option value=\""+esc(s.id)+"\">"+esc(s.name)+" ("+(s.ticketCount||0)+")</option>";});
+  ["chart-session","f-session"].forEach(function(id){
+    var el=G(id);if(!el)return;
+    var cur=ST.reviewFilter||"";
+    el.innerHTML=opts;
+    el.value=cur;
+    if(el.value!==cur)el.value=""; // previously selected session no longer exists — fall back to All Reviews
+  });
+}
+function onReviewSessionChange(val){
+  ST.reviewFilter=val||"";
+  fillReviewSessionDropdowns();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  var rpg=G("pg-results");if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
+}
 
 // ─── AUTH ────────────────────────────────────────────────────
 // ─── First-time device Firebase setup (login page) ──────────
@@ -1548,6 +1579,19 @@ async function loadDataFromFirestore(){
       ST.results=lsG(SK.RE,[])||[];
     }
   }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];}
+  // ── Load shared review sessions ──
+  try{
+    var rsSnap=await FB.db.collection("shared").doc("org").collection("reviewSessions").orderBy("createdAt","desc").limit(200).get();
+    if(rsSnap.docs.length>0){
+      ST.reviewSessions=rsSnap.docs.map(function(d){
+        var r=d.data();
+        return{id:d.id,name:r.name||"",createdAt:(r.createdAt&&r.createdAt.toDate)?r.createdAt.toDate().getTime():(r.createdAt||Date.now()),ticketCount:r.ticketCount||0};
+      });
+      lsS(SK.RS,ST.reviewSessions);
+    }else{
+      ST.reviewSessions=lsG(SK.RS,[])||[];
+    }
+  }catch(e){console.warn("loadDataFromFirestore reviewSessions:",e);ST.reviewSessions=lsG(SK.RS,[])||[];}
   // ── Load shared SMB data ──
   try{
     var smb=await fsGet("shared/smbdata");
@@ -1563,10 +1607,39 @@ async function loadDataFromFirestore(){
 
 async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),savedAt:fsTs()};
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,savedAt:fsTs()};
   try{
     await FB.db.collection("shared").doc("org").collection("results").add(toSave);
   }catch(e){console.warn("saveResultToFirestore error:",e);}
+}
+
+async function saveReviewSessionToFirestore(session){
+  if(!FB.enabled||!FB.db)return;
+  try{
+    await FB.db.collection("shared").doc("org").collection("reviewSessions").doc(session.id)
+      .set({name:session.name,createdAt:fsTs(),ticketCount:session.ticketCount},{merge:true});
+  }catch(e){console.warn("saveReviewSessionToFirestore error:",e);}
+}
+
+// Tags every existing "shared/org/results" doc whose ticket id is in `ids` with the review session.
+// Looked up by the "id" field (not Firestore doc id) since docs may have been written before the
+// session existed and their _fid may not yet be reflected in local state.
+async function tagResultsWithSessionInFirestore(ids,sessionId,name,createdAt){
+  if(!FB.enabled||!FB.db||!ids||!ids.length)return;
+  var coll=FB.db.collection("shared").doc("org").collection("results");
+  var chunks=[];
+  for(var i=0;i<ids.length;i+=10)chunks.push(ids.slice(i,i+10));
+  for(var c=0;c<chunks.length;c++){
+    try{
+      var snap=await coll.where("id","in",chunks[c]).get();
+      if(snap.empty)continue;
+      var batch=FB.db.batch();
+      snap.docs.forEach(function(d){
+        batch.set(d.ref,{reviewSessionId:sessionId,reviewSessionName:name,reviewDate:createdAt},{merge:true});
+      });
+      await batch.commit();
+    }catch(e){console.warn("tagResultsWithSessionInFirestore chunk error:",e);}
+  }
 }
 
 async function saveCorrectionsToFirestore(corrections){
@@ -1804,15 +1877,25 @@ function upBadges(){
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────────
+function getFilteredCorrectionsCount(){
+  var corr=lsG(SK.CO,[])||[];
+  if(!ST.reviewFilter)return corr.length;
+  // Corrections aren't tagged with a review session directly (they're generic
+  // subject+ticket_type records shared across the whole learning pipeline), so
+  // correlate them back to tickets in the selected session the same way buildLrnEx() does.
+  var keys={};
+  getBaseResults().forEach(function(r){keys[String(r.subject||"").substring(0,80)+"|"+(r.ticket_type||"")]=1;});
+  return corr.filter(function(c){return keys[String(c.subject||"").substring(0,80)+"|"+(c.ticket_type||"")];}).length;
+}
 function renderDash(){
   try{
-    upBadges();var r=ST.results;
+    upBadges();fillReviewSessionDropdowns();var r=getBaseResults();
     if(G("s-tot"))G("s-tot").textContent=r.length;
     var ok=r.filter(function(x){return x._ok;});
     if(G("s-rat"))G("s-rat").textContent=r.length?Math.round(ok.length/r.length*100)+"%":"--";
     var fv=ok.filter(function(x){return x.frr>0;}).map(function(x){return x.frr;});
     if(G("s-frr"))G("s-frr").textContent=fv.length?Math.round(fv.reduce(function(a,b){return a+b;},0)/fv.length)+"m":"--";
-    var corr=lsG(SK.CO,[])||[];if(G("s-lrn"))G("s-lrn").textContent=corr.length;
+    if(G("s-lrn"))G("s-lrn").textContent=getFilteredCorrectionsCount();
     var dr=G("dash-rec");if(!dr)return;
     if(!r.length){dr.innerHTML='<div class="te">No evaluations yet.</div>';return;}
     var rc=r.slice().reverse().slice(0,8),rows="";
@@ -1846,22 +1929,38 @@ function parseSMBFile(file,ctx){
   if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
 }
 function mkOpts(hdrs,sel){var h="";for(var i=0;i<hdrs.length;i++)h+="<option value=\""+i+"\""+(i===sel?" selected":"")+">"+esc(hdrs[i]||"Col "+i)+"</option>";return h;}
-function showSMBModal(hdrs,ci,ti){openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select Activation Code and Customer Type columns.</div><div><label class=\"flb\">Activation Code</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">Customer Type</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){applySMB(+gv("mc"),+gv("mt"));closeModal();};}
-function showSMBMapper(hdrs,ci,ti){var cc=G("smb-cc"),tc=G("smb-tc");if(!cc||!tc)return;cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);G("smb-mapper").style.display="block";var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready.";}}
-async function applySMB(ci,ti){
+function showSMBModal(hdrs,ci,ti){openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select Activation Code and Customer Type columns.</div><div><label class=\"flb\">Activation Code</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">Customer Type</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div><div><label class=\"flb\">Import Mode</label><div style=\"display:flex;flex-direction:column;gap:6px\"><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"replace\" checked> Replace Existing Database</label><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"append\"> Append to Existing Database</label></div></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){var m=document.querySelector('input[name=\"smb-mode-modal\"]:checked');applySMB(+gv("mc"),+gv("mt"),m?m.value:"replace");closeModal();};}
+function showSMBMapper(hdrs,ci,ti){var cc=G("smb-cc"),tc=G("smb-tc");if(!cc||!tc)return;cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);G("smb-mapper").style.display="block";var mr=document.querySelector('input[name="smb-mode-inline"][value="replace"]');if(mr)mr.checked=true;var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready.";}}
+async function applySMB(ci,ti,mode){
   if(!ST.pendSMB)return;
-  var rows=ST.pendSMB.rows,data={},raw=[];
-  for(var i=0;i<rows.length;i++){var code=String(rows[i][ci]||"").trim(),type=normSMB(String(rows[i][ti]||"").trim())||"Unknown";if(code){data[code.toLowerCase()]=type;raw.push({code:code,type:type});}}
+  var append=mode==="append";
+  var rows=ST.pendSMB.rows;
+  // Append mode starts from the existing database so all existing SMB records are preserved;
+  // replace mode (default, same as prior behavior) starts empty.
+  var data=append?Object.assign({},ST.smbData):{};
+  var raw=append?ST.smbRaw.slice():[];
+  var added=0,skipped=0;
+  for(var i=0;i<rows.length;i++){
+    var code=String(rows[i][ci]||"").trim(),type=normSMB(String(rows[i][ti]||"").trim())||"Unknown";
+    if(!code)continue;
+    var key=code.toLowerCase();
+    // Duplicate detection uses the same unique key (lowercased Activation Code) as lookupSMB().
+    if(append&&Object.prototype.hasOwnProperty.call(data,key)){skipped++;continue;}
+    data[key]=type;raw.push({code:code,type:type});added++;
+  }
   ST.smbData=data;ST.smbRaw=raw;
   lsS(SK.SM,{data:data,raw:raw});
   await saveSMBToFirestore();
-  toast("SMB saved: "+Object.keys(data).length+" records","ok");upBadges();
+  var msg=append
+    ?("SMB appended: "+added+" new record"+(added!==1?"s":"")+(skipped?", "+skipped+" duplicate"+(skipped!==1?"s":"")+" skipped":"")+" ("+Object.keys(data).length+" total)")
+    :("SMB saved: "+Object.keys(data).length+" records");
+  toast(msg,"ok");upBadges();
   var ep=G("smb-ph1-st");if(ep)ep.innerHTML='<div class="al ao"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+Object.keys(data).length+" SMB records loaded</div>";
   var tg=G("smb-tg");if(tg)tg.innerHTML='<span class="bdg bok2">'+Object.keys(data).length+" records</span>";
   // Auto-refresh dashboard charts with new SMB data
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
-function lookupSMB(code){return code?ST.smbData[String(code).trim().toLowerCase()]||"Unknown":"Unknown";}
+function lookupSMB(code){if(!code)return"Unknown";var c=String(code).trim().toLowerCase();if(c.indexOf("trial")>=0||c.indexOf("uat")>=0)return"Micro";return ST.smbData[c]||"Unknown";}
 async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
 function renderSMBPage(){
   var ks=Object.keys(ST.smbData),pc=G("smb-prev"),si=G("smb-stats-inner");
@@ -2146,14 +2245,15 @@ if(typeof ChartDataLabels!=="undefined")Chart.register(ChartDataLabels);
 function destroyCharts(){Object.keys(_dashCharts).forEach(function(k){if(_dashCharts[k])try{_dashCharts[k].destroy();}catch(e){}});_dashCharts={};}
 
 function getChartData(){
+  var base=getBaseResults();
   var dateFrom=gv("chart-date-from"),dateTo=gv("chart-date-to");
   var fromTs=dateFrom?new Date(dateFrom).getTime():0;
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
-  // Default: show ALL results (most useful for shared dashboard)
+  // Default: show ALL results within the selected review session (most useful for shared dashboard)
   if(!fromTs&&toTs===Infinity){
-    return ST.results.length?ST.results:(ST.curEval.length?ST.curEval:[]);
+    return base.length?base:(ST.curEval.length?ST.curEval:[]);
   }
-  return ST.results.filter(function(r){
+  return base.filter(function(r){
     var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
     return !ts||(ts>=fromTs&&ts<=toTs);
   });
@@ -2344,9 +2444,13 @@ function renderDashboardCharts(){
     });
   }
 
-  // ── Sub Category Chart Top 12 (replaces FRR, uses CHART_PAL for theme) ──
+  // ── Sub Category Chart (uses CHART_PAL for theme) ──
+  // Top 12 when viewing "All Reviews" (unchanged default behavior); when a specific
+  // review session is selected, show every sub category present in that session.
   var subCnt={};r.forEach(function(x){var s=x.sub_category||"Unclassified";subCnt[s]=(subCnt[s]||0)+1;});
-  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,12);
+  var subKeysAll=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];});
+  var subKeys=ST.reviewFilter?subKeysAll:subKeysAll.slice(0,12);
+  var subTitle=G("chart-sub-title");if(subTitle)subTitle.textContent=ST.reviewFilter?"All Sub Categories":"Top Sub Categories";
   var c4=G("chart-sub");
   if(c4){
     c4.height=Math.max(260,subKeys.length*38);
@@ -2484,6 +2588,8 @@ async function gemCls(subject,description,ticketType,tags,existCat,jiraLinked,ji
     "FULL CONVERSATION (read all replies carefully):\n"+String(description||"").substring(0,2500)+"\n\n"+
     (ex?ex+"\n":"")+
     "=== CLASSIFICATION RULES (STRICTLY FOLLOW) ===\n"+
+    "TOP-PRIORITY OVERRIDE — check this FIRST, before any other rule:\n"+
+    "  If the ticket requests creation of a NEW instance/environment/tenant (e.g. 'create new DispatchTrack instance', 'new customer instance', 'new environment', 'new tenant', 'new production instance', 'new sandbox instance') → category MUST be Provisioning, regardless of any other rule below.\n\n"+
     "CRITICAL — Bug / Regression / Product Issue ONLY when ONE of these is TRUE:\n"+
     "  a) A Jira ticket URL is present in the ticket description or Jira field shows Yes with a link, OR\n"+
     "  b) Agent explicitly says: 'escalated to engineering team', 'escalated to product team', 'raised a Jira', 'Jira has been created', 'engineering is investigating', 'product team is aware'\n"+
@@ -2494,8 +2600,9 @@ async function gemCls(subject,description,ticketType,tags,existCat,jiraLinked,ji
     "  • Agent says: 'working as expected', 'by design', 'expected', 'intentional change', 'new enhancement'\n"+
     "  • Customer stopped responding, issue unclear or unconfirmed\n"+
     "  • No Jira created, no escalation to engineering/product team\n\n"+
-    "How to Question — when customer asks HOW TO use, configure, or set up a feature\n"+
-    "Provisioning — account setup, credentials, access, license, trial related, AND any payment/billing issues (credit card, invoice, subscription)\n"+
+    "LOGIN / AUTHENTICATION ISSUES — NEVER classify as Provisioning. This includes: unable to login, cannot login, login failed, invalid credentials, password reset, forgot password, authentication issues, MFA issues, session expired, unable to access account, login timeout, sign-in problems. These must be classified as How to Question (if the customer is asking how to log in, reset a password, or configure access) or WAE (if a login/auth problem is reported but not confirmed as a bug/escalation per the rule above) — never Provisioning.\n\n"+
+    "How to Question — when customer asks HOW TO use, configure, or set up a feature (includes how to log in, reset password, or regain account access)\n"+
+    "Provisioning — ONLY administrative account/configuration actions performed by an admin: enabling or disabling a feature, feature flag changes, license assignment or removal, billing updates, subscription changes, marking an invoice as paid, payment/credit-card updates, account or user provisioning, entitlement updates. Also ALWAYS use Provisioning for new instance/tenant/environment creation (see top-priority override above). Do NOT use Provisioning for login, credential, password, authentication, MFA, or session issues.\n"+
     "End Customer / Junk — from end user (not the account holder), spam, or unrelated\n"+
     "User Transfer — agent transfers to another team/org (Ferguson, SiteOne, etc.) and closes ticket\n"+
     "Regression — set ONLY if agent confirms recent code/product change caused the issue\n"+
@@ -2618,7 +2725,7 @@ async function startEval(){
     if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:""};
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
@@ -2818,6 +2925,53 @@ async function saveCorr(){
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
 
+// === SAVE REVIEW SESSION =======================================
+function openSaveReviewSessionModal(){
+  if(!ST.curEval.length){toast("No tickets in the current evaluation to save.","in");return;}
+  openModal("Save Review Session",
+    "<div class='al ai' style='font-size:12.5px'><svg width='14' height='14' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg><div>Name this batch of "+ST.curEval.length+" ticket"+(ST.curEval.length!==1?"s":"")+" so you can filter the Dashboard and Results page by it later &mdash; e.g. \"June Week 1\".</div></div>"+
+    "<div><label class='flb'>Session Name <span style='color:var(--danger)'>*</span></label><input class='fin' id='rs-name' placeholder='e.g. June Week 1'></div>",
+    "<button class='btn bgst' id='rs-cancel'>Cancel</button><button class='btn bpri' id='rs-save'>Save Session</button>"
+  );
+  var rn=G("rs-name");if(rn)rn.addEventListener("keydown",function(e){if(e.key==="Enter")saveReviewSession();});
+  G("rs-cancel").onclick=closeModal;
+  G("rs-save").onclick=saveReviewSession;
+}
+async function saveReviewSession(){
+  var name=(gv("rs-name")||"").trim();
+  if(!name){toast("Enter a session name","err");return;}
+  if(!ST.curEval.length){toast("No tickets in the current evaluation to save.","err");closeModal();return;}
+  var btn=G("rs-save");if(btn){btn.disabled=true;btn.textContent="Saving\u2026";}
+  try{
+    var sessionId="rs_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+    var createdAt=Date.now();
+    var ids=[];
+    for(var i=0;i<ST.curEval.length;i++){
+      var res=ST.curEval[i];
+      res.reviewSessionId=sessionId;res.reviewSessionName=name;res.reviewDate=createdAt;
+      ids.push(String(res.id));
+    }
+    // Also tag matching entries in ST.results by ticket id, in case a Firestore
+    // snapshot refresh already replaced ST.results with different object references.
+    var idSet={};ids.forEach(function(x){idSet[x]=1;});
+    ST.results.forEach(function(r){
+      if(idSet[String(r.id)]){r.reviewSessionId=sessionId;r.reviewSessionName=name;r.reviewDate=createdAt;}
+    });
+    var session={id:sessionId,name:name,createdAt:createdAt,ticketCount:ids.length};
+    ST.reviewSessions.push(session);
+    lsS(SK.RS,ST.reviewSessions);
+    lsS(SK.RE,ST.results.slice(-200));
+    if(FB.enabled&&FB.db){
+      await saveReviewSessionToFirestore(session);
+      await tagResultsWithSessionInFirestore(ids,sessionId,name,createdAt);
+    }
+    fillReviewSessionDropdowns();
+    closeModal();
+    toast("Review session \u201c"+name+"\u201d saved ("+ids.length+" tickets)","ok");
+  }catch(e){toast("Error saving session: "+(e.message||e),"err");}
+  if(btn){btn.disabled=false;btn.textContent="Save Session";}
+}
+
 // ─── CATEGORIES ──────────────────────────────────────────────
 function renderCatPanels(){
   var wrap=G("cat-panels");if(!wrap)return;
@@ -2927,17 +3081,20 @@ function openEditResultModal(r){
 
 // ─── RESULTS ─────────────────────────────────────────────────
 function fillFilters(){
-  function fill(id,key,lbl){var s=G(id);if(!s)return;var vals=[],cur=s.value;ST.results.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";}
+  fillReviewSessionDropdowns();
+  var base=getBaseResults();
+  function fill(id,key,lbl){var s=G(id);if(!s)return;var vals=[],cur=s.value;base.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";}
   fill("f-env","environment","Environments");fill("f-cat","category","Categories");fill("f-sub","sub_category","Sub Categories");fill("f-smb","smb_type","SMB Types");
-  var rl=G("res-lbl");if(rl)rl.textContent=ST.results.length+" records";
+  var rl=G("res-lbl");if(rl)rl.textContent=base.length+" records";
 }
-function getFiltered(){return ST.filtered.length?ST.filtered:ST.results;}
+function getFiltered(){return ST.filtered.length?ST.filtered:getBaseResults();}
 function applyF(){
+  var base=getBaseResults();
   var q=(gv("f-q")||"").toLowerCase(),env=gv("f-env"),cat=gv("f-cat"),sub=gv("f-sub"),smb=gv("f-smb"),st=gv("f-st");
   var dateFrom=gv("f-date-from"),dateTo=gv("f-date-to");
   var fromTs=dateFrom?new Date(dateFrom).getTime():0;
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
-  ST.filtered=ST.results.filter(function(r){
+  ST.filtered=base.filter(function(r){
     if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
     if(env&&r.environment!==env)return false;
     if(cat&&r.category!==cat)return false;
@@ -2951,7 +3108,7 @@ function applyF(){
     return true;
   });
   ST.pg=0;
-  var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<ST.results.length?ST.filtered.length+" of "+ST.results.length+" shown":"";
+  var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<base.length?ST.filtered.length+" of "+base.length+" shown":"";
   renderResTable();
 }
 function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
@@ -3035,6 +3192,7 @@ function exportR(rows,fmt){
     obj["Category"]=r.category||"";
     obj["Sub Category"]=r.sub_category||"";
     obj["Comments(AB)"]=r.ab_comment||"";
+    obj["Review Session"]=r.reviewSessionName||"";
     obj["AI Confidence"]=r.confidence?r.confidence+"%":"";
     obj["Evaluated At"]=r.evaluatedAt?new Date(r.evaluatedAt).toLocaleString():"";
     obj["Ticket URL"]=r.zd_url||"";
@@ -3526,6 +3684,7 @@ function bootApp(){
   if(G("sbun"))G("sbun").textContent=s.name||s.email;if(G("sbur"))G("sbur").textContent=s.role;
   if(isAdmin()){var sa=G("sb-adm"),su=G("sb-usr"),ss=G("sb-set");if(sa)sa.style.display="block";if(su)su.style.display="flex";if(ss)ss.style.display="flex";}
   ST.results=lsG(SK.RE,[])||[];
+  ST.reviewSessions=lsG(SK.RS,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
@@ -3574,7 +3733,7 @@ document.addEventListener("DOMContentLoaded",function(){
   setupDZ("dz-in","fi-in",parseInflow);setupDZ("dz-smb1","fi-smb1",function(f){parseSMBFile(f,"ph1");});setupDZ("dz-smb2","fi-smb2",function(f){parseSMBFile(f,"smb-pg");});
 
   var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;};
-  var ss=G("smb-save");if(ss)ss.onclick=function(){applySMB(+gv("smb-cc"),+gv("smb-tc"));renderSMBPage();};
+  var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-tc"),m?m.value:"replace");renderSMBPage();};
   var sas=G("smb-add-single");if(sas)sas.onclick=addSingleSMB;
   var smc=G("smb-add-code");if(smc)smc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleSMB();});
   var seb=G("smb-export-btn");if(seb)seb.onclick=exportSMBCsv;
@@ -3591,6 +3750,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var expMap={"live-csv":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"csv");},"live-xl":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"xlsx");},"rev-csv":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"csv");},"rev-xl":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"xlsx");},"fin-csv":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"csv");},"fin-xl":function(){exportR(ST.curEval.length?ST.curEval:ST.results,"xlsx");}};
   for(var bid in expMap){(function(id,fn){var be=G(id);if(be)be.onclick=fn;})(bid,expMap[bid]);}
   var sco=G("save-corr");if(sco)sco.onclick=saveCorr;
+  var srs=G("save-review-session");if(srs)srs.onclick=openSaveReviewSessionModal;
   var nev=G("new-ev");if(nev)nev.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn=G("btn-n1"),pl=G("proc-log"),lt=G("live-tb");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn)bn.disabled=true;if(pl)pl.innerHTML="";if(lt)lt.innerHTML='<tr><td class="te" colspan="9">Waiting...</td></tr>';showPh(1);};
   var fnres=G("fin-res");if(fnres)fnres.onclick=function(){goPage("results");};
 
@@ -3599,6 +3759,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
   ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
+  var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
@@ -3640,6 +3801,7 @@ document.addEventListener("DOMContentLoaded",function(){
     }else if(prev)prev.style.display="none";
   });
   // Chart filter buttons
+  var csess=G("chart-session");if(csess)csess.onchange=function(){onReviewSessionChange(this.value);};
   var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn"),drefresh=G("dash-refresh-btn");
   if(capply)capply.onclick=function(){renderDashboardCharts();};
   if(creset)creset.onclick=function(){
@@ -3680,7 +3842,7 @@ document.addEventListener("DOMContentLoaded",function(){
   setTimeout(function(){
     if(!FB.enabled||!FB.auth)return;
 
-    var _resultsUnsub=null,_smbUnsub=null;
+    var _resultsUnsub=null,_smbUnsub=null,_rsUnsub=null;
 
     function startResultsListener(){
       if(!FB.enabled||!FB.db||!FB.user||_resultsUnsub)return;
@@ -3727,12 +3889,30 @@ document.addEventListener("DOMContentLoaded",function(){
       }catch(le){console.warn("startSMBListener:",le);}
     }
 
+    function startReviewSessionsListener(){
+      if(!FB.enabled||!FB.db||!FB.user||_rsUnsub)return;
+      try{
+        _rsUnsub=FB.db.collection("shared").doc("org").collection("reviewSessions")
+          .orderBy("createdAt","desc").limit(200)
+          .onSnapshot(function(snap){
+            if(!snap)return;
+            ST.reviewSessions=snap.docs.map(function(d){
+              var r=d.data();
+              return{id:d.id,name:r.name||"",createdAt:(r.createdAt&&r.createdAt.toDate)?r.createdAt.toDate().getTime():(r.createdAt||Date.now()),ticketCount:r.ticketCount||0};
+            });
+            lsS(SK.RS,ST.reviewSessions);
+            fillReviewSessionDropdowns();
+          },function(err){console.warn("Review sessions listener error:",err.code);_rsUnsub=null;});
+      }catch(le){console.warn("startReviewSessionsListener:",le);}
+    }
+
     // Retry starting listeners until FB.user is set (up to 12s for master async auth)
     var _retries=0;
     function tryStartListeners(){
       if(FB.user){
         startResultsListener();
         startSMBListener();
+        startReviewSessionsListener();
       }else if(_retries<24){
         _retries++;
         setTimeout(tryStartListeners,500);
