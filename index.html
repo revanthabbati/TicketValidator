@@ -699,7 +699,7 @@ select.fin{cursor:pointer}
             </div></div>
             <div class="card"><div class="chd"><span class="ct">SMB Reference Sheet</span><span id="smb-tg"></span></div><div class="cbd" style="display:flex;flex-direction:column;gap:12px">
               <div id="smb-ph1-st"></div>
-              <div class="dz" id="dz-smb1" style="padding:20px"><div class="dzi" style="font-size:22px">&#x1F3E2;</div><div class="dzt" style="font-size:14px">Drop SMB reference sheet</div><div class="dzs">Activation Code &#8594; SMB / Mega / Micro</div><input type="file" id="fi-smb1" accept=".xlsx,.xls,.csv" style="display:none"></div>
+              <div class="dz" id="dz-smb1" style="padding:20px"><div class="dzi" style="font-size:22px">&#x1F3E2;</div><div class="dzt" style="font-size:14px">Drop SMB reference sheet</div><div class="dzs">Activation Code + License Count &#8594; auto-classified</div><input type="file" id="fi-smb1" accept=".xlsx,.xls,.csv" style="display:none"></div>
             </div></div>
           </div>
           <div style="display:flex;justify-content:flex-end"><button class="btn bpri blg" id="btn-n1" disabled>Configure Options &#8594;</button></div>
@@ -758,22 +758,34 @@ select.fin{cursor:pointer}
 
       <!-- SMB -->
       <div class="page" id="pg-smb">
+        <div class="card" id="smb-ranges-card"><div class="chd"><span class="ct">License Count Ranges</span></div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
+            <div class="al ai" style="font-size:12.5px">Set the license-count range for each customer type. When a sheet with Activation Code + License Count is imported (or a code is added manually), its type is computed automatically from these ranges &mdash; changing a range instantly reclassifies every existing license-based record too. Leave a Max blank for &ldquo;and above&rdquo;. If ranges overlap, Micro is checked first, then SMB, then Mega.</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-micro" style="min-width:64px;text-align:center">Micro</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-micro-min" style="width:100px" placeholder="1"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-micro-max" style="width:100px" placeholder="20"></div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-smb" style="min-width:64px;text-align:center">SMB</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-smb-min" style="width:100px" placeholder="21"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-smb-max" style="width:100px" placeholder="50"></div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-mega" style="min-width:64px;text-align:center">Mega</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-mega-min" style="width:100px" placeholder="51"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-mega-max" style="width:100px" placeholder="No limit"></div>
+            </div>
+            <div style="display:flex;gap:8px"><button class="btn bpri bsm" id="smb-rng-save">&#10003; Save Ranges</button><button class="btn bgst bsm" id="smb-rng-reset">Reset to Defaults</button></div>
+            <div id="smb-rng-msg"></div>
+          </div>
+        </div>
         <div class="g2">
           <div class="card"><div class="chd"><span class="ct">Upload SMB Reference Sheet</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
-            <div class="dz" id="dz-smb2"><div class="dzi">&#x1F3E2;</div><div class="dzt">Drop SMB sheet here or click to browse</div><div class="dzs">Excel or CSV: Activation Code + Customer Type columns</div><input type="file" id="fi-smb2" accept=".xlsx,.xls,.csv" style="display:none"></div>
+            <div class="dz" id="dz-smb2"><div class="dzi">&#x1F3E2;</div><div class="dzt">Drop SMB sheet here or click to browse</div><div class="dzs">Excel or CSV: Activation Code + License Count columns</div><input type="file" id="fi-smb2" accept=".xlsx,.xls,.csv" style="display:none"></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
             <div style="font-size:13px;font-weight:600;margin-bottom:8px">Add single entry manually:</div>
             <div style="display:flex;gap:8px;align-items:flex-end">
               <div style="flex:1"><label class="flb">Activation Code</label><input id="smb-add-code" class="fin" placeholder="e.g. ACT12345"></div>
-              <div style="flex:1"><label class="flb">Customer Type</label><select id="smb-add-type" class="fin"><option value="SMB">SMB</option><option value="Mega">Mega</option><option value="Micro">Micro</option></select></div>
+              <div style="flex:1"><label class="flb">License Count</label><input id="smb-add-lic" class="fin" type="number" min="0" placeholder="e.g. 15"></div>
               <button class="btn bpri" id="smb-add-single" style="white-space:nowrap;padding:9px 16px">+ Add</button>
             </div>
-            <div id="smb-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="smb-cc" class="fin"></select></div><div><label class="flb">Customer Type column</label><select id="smb-tc" class="fin"></select></div></div><div style="margin-top:12px"><label class="flb">Import Mode</label><div style="display:flex;flex-direction:column;gap:6px"><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="replace" checked> Replace Existing Database</label><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="append"> Append to Existing Database</label></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="smb-save">&#10003; Save SMB Database</button></div>
+            <div id="smb-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="smb-cc" class="fin"></select></div><div><label class="flb">License Count column</label><select id="smb-lc" class="fin"></select></div></div><div style="margin-top:12px"><label class="flb">Import Mode</label><div style="display:flex;flex-direction:column;gap:6px"><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="replace" checked> Replace Existing Database</label><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="smb-mode-inline" value="append"> Append to Existing Database</label></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="smb-save">&#10003; Save SMB Database</button></div>
             <div id="smb-pg-msg"></div>
           </div></div>
           <div class="card" id="smb-stats"><div class="chd"><span class="ct">SMB Data</span><div style="display:flex;gap:6px"><button class="btn bout bsm" id="smb-export-btn">&#8595; Export CSV</button><button class="btn bdan bsm" id="smb-clear-stat">Clear All</button></div></div><div class="cbd" id="smb-stats-inner"><div style="text-align:center;color:var(--tx-3);padding:24px 0">No SMB data loaded.</div></div></div>
         </div>
-        <div class="card" id="smb-prev" style="display:none"><div class="chd"><span class="ct">SMB Data Preview</span><span class="bdg bok2" id="smb-prev-cnt"></span></div><div class="tw" style="max-height:320px"><table class="tbl"><thead><tr><th>Activation Code</th><th>Customer Type</th><th style="width:50px"></th></tr></thead><tbody id="smb-prev-tb"></tbody></table></div></div>
+        <div class="card" id="smb-prev" style="display:none"><div class="chd"><span class="ct">SMB Data Preview</span><span class="bdg bok2" id="smb-prev-cnt"></span></div><div class="tw" style="max-height:320px"><table class="tbl"><thead><tr><th>Activation Code</th><th>License Count</th><th>Customer Type</th><th style="width:50px"></th></tr></thead><tbody id="smb-prev-tb"></tbody></table></div></div>
       </div>
 
       <!-- RESULTS -->
@@ -1031,7 +1043,7 @@ var DT = ["Technical"];
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1598,6 +1610,9 @@ async function loadDataFromFirestore(){
     if(smb&&smb.map){ST.smbData=smb.map;ST.smbRaw=smb.raw||[];}
     else{var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
+  migrateSMBState();
+  // ── Load shared SMB license ranges ──
+  await loadSMBRangesFromFirestore();
   // ── Load shared labels ──
   await loadLabelsFromFirestore();
   // ── Load shared training ──
@@ -1614,7 +1629,7 @@ async function saveResultToFirestore(res){
 }
 
 async function saveReviewSessionToFirestore(session){
-  if(!FB.enabled||!FB.db)return;
+  if(!FB.enabled||!FB.db||!FB.user)return; // skip silently until a Firebase user is actually signed in — avoids noisy permission-denied errors
   try{
     await FB.db.collection("shared").doc("org").collection("reviewSessions").doc(session.id)
       .set({name:session.name,createdAt:fsTs(),ticketCount:session.ticketCount},{merge:true});
@@ -1625,7 +1640,7 @@ async function saveReviewSessionToFirestore(session){
 // Looked up by the "id" field (not Firestore doc id) since docs may have been written before the
 // session existed and their _fid may not yet be reflected in local state.
 async function tagResultsWithSessionInFirestore(ids,sessionId,name,createdAt){
-  if(!FB.enabled||!FB.db||!ids||!ids.length)return;
+  if(!FB.enabled||!FB.db||!FB.user||!ids||!ids.length)return; // skip silently until a Firebase user is actually signed in — avoids noisy permission-denied errors
   var coll=FB.db.collection("shared").doc("org").collection("results");
   var chunks=[];
   for(var i=0;i<ids.length;i+=10)chunks.push(ids.slice(i,i+10));
@@ -1672,7 +1687,7 @@ async function loadCorrectionsFromFirestore(){
 }
 
 async function saveSMBToFirestore(){
-  if(!FB.enabled||!FB.db)return;
+  if(!FB.enabled||!FB.db||!FB.user)return; // skip silently until a Firebase user is actually signed in — avoids noisy permission-denied errors
   // Save to SHARED SMB path so all users share the same SMB data
   await fsSet("shared/smbdata",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
 }
@@ -1902,11 +1917,121 @@ function renderDash(){
     for(var i=0;i<rc.length;i++){var v=rc[i];var fc2=v.frr>60?"var(--danger)":v.frr>0?"var(--success)":"var(--tx-3)";rows+="<tr><td style=\"font-family:var(--font-mono)\"><a href=\""+esc(v.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(v.id)+"</a></td><td class=\"tr\" style=\"max-width:200px\" title=\""+esc(v.subject||"")+"\">"+esc(v.subject||"--")+"</td><td>"+smbBdg(v.smb_type)+"</td><td style=\"font-size:11.5px\">"+esc(v.environment||"--")+"</td><td>"+catBdg(v.category)+"</td><td style=\"font-size:11px;color:var(--tx-2)\">"+esc(v.sub_category||"--")+"</td><td style=\"font-family:var(--font-mono);font-weight:500;color:"+fc2+"\">"+(v.frr>0?v.frr+"m":"--")+"</td></tr>";}
     dr.innerHTML='<div class="tw" style="max-height:260px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th></tr></thead><tbody>'+rows+"</tbody></table></div>";
     var ks=Object.keys(ST.smbData),ds=G("dash-smb");if(!ds)return;
-    if(ks.length){var t={};ks.forEach(function(k){var v2=ST.smbData[k];t[v2]=(t[v2]||0)+1;});var h2="";for(var k2 in t)h2+="<div style=\"display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px\"><span>"+esc(k2)+"</span><span style=\"font-family:var(--font-mono)\">"+t[k2]+"</span></div>";ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;}
+    if(ks.length){var t={};ks.forEach(function(k){var v2=effSMBType(ST.smbData[k]);t[v2]=(t[v2]||0)+1;});var h2="";for(var k2 in t)h2+="<div style=\"display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px\"><span>"+esc(k2)+"</span><span style=\"font-family:var(--font-mono)\">"+t[k2]+"</span></div>";ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;}
     else ds.innerHTML='<div style="font-size:12.5px;color:var(--tx-3)">No SMB data loaded.</div>';
   }catch(e){console.error("renderDash:",e);}
   // Render charts
   try{renderDashboardCharts();}catch(ce){console.warn("Chart error:",ce);}
+}
+
+// === SMB LICENSE RANGES ========================================
+// Each SMB record is either:
+//   - license-based: {code, licenseCount:<number>} — its type is ALWAYS computed live from
+//     the current range configuration below, so editing ranges instantly re-classifies every
+//     such record without needing to re-import or rewrite stored data.
+//   - legacy/manual: {code, type:"SMB"|"Mega"|"Micro"} — a fixed type with no licenseCount,
+//     preserved exactly as imported before this feature existed (or added by hand).
+// effSMBType() is the one place that resolves a record to its effective type string.
+var SMB_RANGE_DEFAULTS={Micro:{min:1,max:20},SMB:{min:21,max:50},Mega:{min:51,max:null}};
+function getSMBRanges(){
+  var r=lsG(SK.SMR,null);
+  if(!r||!r.Micro||!r.SMB||!r.Mega)return JSON.parse(JSON.stringify(SMB_RANGE_DEFAULTS));
+  return r;
+}
+function setSMBRanges(r){lsS(SK.SMR,r);}
+function typeFromLicenseCount(n){
+  if(n==null||n===""||isNaN(n))return"Unknown";
+  n=Number(n);
+  var r=getSMBRanges(),order=["Micro","SMB","Mega"];
+  for(var i=0;i<order.length;i++){
+    var rg=r[order[i]];if(!rg)continue;
+    var min=(rg.min!=null&&rg.min!=="")?Number(rg.min):-Infinity;
+    var max=(rg.max!=null&&rg.max!=="")?Number(rg.max):Infinity;
+    if(n>=min&&n<=max)return order[i];
+  }
+  return"Unknown";
+}
+function effSMBType(rec){
+  if(!rec)return"Unknown";
+  if(rec.licenseCount!=null&&rec.licenseCount!==""&&!isNaN(rec.licenseCount))return typeFromLicenseCount(rec.licenseCount);
+  return rec.type||"Unknown";
+}
+// Normalizes one raw stored value (legacy plain string, or an object in either old/new shape)
+// into the current {code,type,licenseCount} record shape. Never drops data.
+function normalizeSMBRecord(code,rec){
+  if(rec==null)return{code:code,type:"",licenseCount:null};
+  if(typeof rec==="string")return{code:code,type:rec,licenseCount:null}; // oldest format: ST.smbData[code] was a bare type string
+  var lc=(rec.licenseCount!=null&&rec.licenseCount!=="")?Number(rec.licenseCount):null;
+  return{code:rec.code||code,type:rec.type||"",licenseCount:(lc!=null&&!isNaN(lc))?lc:null};
+}
+// Rebuilds ST.smbData/ST.smbRaw into the unified record shape, whatever shape they were loaded in.
+// Safe to call repeatedly — a no-op once data is already normalized.
+function migrateSMBState(){
+  var data={},raw=[];
+  var srcRaw=Array.isArray(ST.smbRaw)?ST.smbRaw:[];
+  if(srcRaw.length){
+    srcRaw.forEach(function(r){
+      if(!r||!r.code)return;
+      var rec=normalizeSMBRecord(r.code,r);
+      raw.push(rec);data[String(r.code).toLowerCase()]=rec;
+    });
+  }else{
+    Object.keys(ST.smbData||{}).forEach(function(k){
+      var rec=normalizeSMBRecord(k,ST.smbData[k]);
+      raw.push(rec);data[k]=rec;
+    });
+  }
+  ST.smbData=data;ST.smbRaw=raw;
+}
+async function loadSMBRangesFromFirestore(){
+  if(!FB.enabled||!FB.db)return;
+  try{
+    var d=await fsGet("shared/smbranges");
+    if(d&&d.ranges)lsS(SK.SMR,d.ranges);
+  }catch(e){console.warn("loadSMBRangesFromFirestore:",e);}
+}
+async function saveSMBRangesToFirestore(ranges){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{await fsSet("shared/smbranges",{ranges:ranges,savedAt:fsTs()});}
+  catch(e){console.warn("saveSMBRangesToFirestore error:",e);}
+}
+function renderSMBRangeInputs(){
+  var r=getSMBRanges();
+  var set=function(id,val){var el=G(id);if(el)el.value=(val==null||val==="")?"":val;};
+  set("rng-micro-min",r.Micro.min);set("rng-micro-max",r.Micro.max);
+  set("rng-smb-min",r.SMB.min);set("rng-smb-max",r.SMB.max);
+  set("rng-mega-min",r.Mega.min);set("rng-mega-max",r.Mega.max);
+}
+function saveSMBRangesFromUI(){
+  var num=function(id){var v=gv(id);return(v===""||v==null)?null:Number(v);};
+  var ranges={
+    Micro:{min:num("rng-micro-min"),max:num("rng-micro-max")},
+    SMB:{min:num("rng-smb-min"),max:num("rng-smb-max")},
+    Mega:{min:num("rng-mega-min"),max:num("rng-mega-max")}
+  };
+  var keys=["Micro","SMB","Mega"];
+  for(var i=0;i<keys.length;i++){
+    var rg=ranges[keys[i]];
+    if(rg.min!=null&&isNaN(rg.min)){toast(keys[i]+": Min must be a number","err");return;}
+    if(rg.max!=null&&isNaN(rg.max)){toast(keys[i]+": Max must be a number","err");return;}
+    if(rg.min!=null&&rg.max!=null&&rg.min>rg.max){toast(keys[i]+" range: Min cannot be greater than Max","err");return;}
+  }
+  setSMBRanges(ranges);
+  saveSMBRangesToFirestore(ranges).catch(function(){});
+  var msg=G("smb-rng-msg");if(msg){msg.className="al ao";msg.style.display="block";msg.textContent="Ranges saved — every license-based record is reclassified automatically.";}
+  renderSMBPage();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  toast("License ranges saved","ok");
+}
+function resetSMBRangesToDefaults(){
+  if(!confirm("Reset ranges to defaults (Micro 1–20, SMB 21–50, Mega 51+)?"))return;
+  var d=JSON.parse(JSON.stringify(SMB_RANGE_DEFAULTS));
+  setSMBRanges(d);
+  saveSMBRangesToFirestore(d).catch(function(){});
+  renderSMBRangeInputs();
+  renderSMBPage();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  toast("Ranges reset to defaults","ok");
 }
 
 // ─── SMB ─────────────────────────────────────────────────────
@@ -1919,19 +2044,20 @@ function parseSMBFile(file,ctx){
       if(ext==="csv")raw=Papa.parse(ev.target.result,{header:false,skipEmptyLines:true}).data;
       else{var wb=XLSX.read(ev.target.result,{type:"array"});raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});}
       if(!raw||raw.length<2){toast("SMB file appears empty","err");return;}
-      var hdrs=raw[0].map(function(c){return String(c||"").trim();}),ci=-1,ti=-1;
+      var hdrs=raw[0].map(function(c){return String(c||"").trim();}),ci=-1,li=-1;
       for(var i=0;i<hdrs.length;i++){if(/activ|code/i.test(hdrs[i])&&ci<0)ci=i;}
-      for(var i=0;i<hdrs.length;i++){if(/type|segment|smb|tier|size|customer/i.test(hdrs[i])&&ti<0)ti=i;}
+      for(var i=0;i<hdrs.length;i++){if(/licen[sc]e|seats?|quantity|qty/i.test(hdrs[i])&&li<0)li=i;}
+      if(li<0)for(var i=0;i<hdrs.length;i++){if(/count/i.test(hdrs[i])&&li<0)li=i;}
       ST.pendSMB={hdrs:hdrs,rows:raw.slice(1),ctx:ctx};
-      if(ctx==="ph1")showSMBModal(hdrs,ci,ti);else showSMBMapper(hdrs,ci,ti);
+      if(ctx==="ph1")showSMBModal(hdrs,ci,li);else showSMBMapper(hdrs,ci,li);
     }catch(e){toast("Error: "+e.message,"err");}
   };
   if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
 }
 function mkOpts(hdrs,sel){var h="";for(var i=0;i<hdrs.length;i++)h+="<option value=\""+i+"\""+(i===sel?" selected":"")+">"+esc(hdrs[i]||"Col "+i)+"</option>";return h;}
-function showSMBModal(hdrs,ci,ti){openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select Activation Code and Customer Type columns.</div><div><label class=\"flb\">Activation Code</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">Customer Type</label><select class=\"fin\" id=\"mt\">"+mkOpts(hdrs,ti)+"</select></div><div><label class=\"flb\">Import Mode</label><div style=\"display:flex;flex-direction:column;gap:6px\"><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"replace\" checked> Replace Existing Database</label><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"append\"> Append to Existing Database</label></div></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){var m=document.querySelector('input[name=\"smb-mode-modal\"]:checked');applySMB(+gv("mc"),+gv("mt"),m?m.value:"replace");closeModal();};}
-function showSMBMapper(hdrs,ci,ti){var cc=G("smb-cc"),tc=G("smb-tc");if(!cc||!tc)return;cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);tc.innerHTML=mkOpts(hdrs,ti>=0?ti:0);G("smb-mapper").style.display="block";var mr=document.querySelector('input[name="smb-mode-inline"][value="replace"]');if(mr)mr.checked=true;var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready.";}}
-async function applySMB(ci,ti,mode){
+function showSMBModal(hdrs,ci,li){openModal("Map SMB Columns","<div style=\"display:flex;flex-direction:column;gap:14px\"><div class=\"al ai\">Select Activation Code and License Count columns. Customer Type (SMB / Mega / Micro) is computed automatically from your configured license ranges.</div><div><label class=\"flb\">Activation Code</label><select class=\"fin\" id=\"mc\">"+mkOpts(hdrs,ci)+"</select></div><div><label class=\"flb\">License Count</label><select class=\"fin\" id=\"ml\">"+mkOpts(hdrs,li)+"</select></div><div><label class=\"flb\">Import Mode</label><div style=\"display:flex;flex-direction:column;gap:6px\"><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"replace\" checked> Replace Existing Database</label><label style=\"display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer\"><input type=\"radio\" name=\"smb-mode-modal\" value=\"append\"> Append to Existing Database</label></div></div></div>","<button class=\"btn bgst\" id=\"smb-mc\">Cancel</button><button class=\"btn bpri\" id=\"smb-mok\">Save SMB Data</button>");G("smb-mc").onclick=closeModal;G("smb-mok").onclick=function(){var m=document.querySelector('input[name=\"smb-mode-modal\"]:checked');applySMB(+gv("mc"),+gv("ml"),m?m.value:"replace");closeModal();};}
+function showSMBMapper(hdrs,ci,li){var cc=G("smb-cc"),lc=G("smb-lc");if(!cc||!lc)return;cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);lc.innerHTML=mkOpts(hdrs,li>=0?li:0);G("smb-mapper").style.display="block";var mr=document.querySelector('input[name="smb-mode-inline"][value="replace"]');if(mr)mr.checked=true;var msg=G("smb-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendSMB.rows.length+" rows ready.";}}
+async function applySMB(ci,li,mode){
   if(!ST.pendSMB)return;
   var append=mode==="append";
   var rows=ST.pendSMB.rows;
@@ -1941,12 +2067,15 @@ async function applySMB(ci,ti,mode){
   var raw=append?ST.smbRaw.slice():[];
   var added=0,skipped=0;
   for(var i=0;i<rows.length;i++){
-    var code=String(rows[i][ci]||"").trim(),type=normSMB(String(rows[i][ti]||"").trim())||"Unknown";
+    var code=String(rows[i][ci]||"").trim();
     if(!code)continue;
+    var lcRaw=rows[i][li],lc=(lcRaw===""||lcRaw==null)?null:Number(lcRaw);
+    if(lc!=null&&isNaN(lc))lc=null;
     var key=code.toLowerCase();
     // Duplicate detection uses the same unique key (lowercased Activation Code) as lookupSMB().
     if(append&&Object.prototype.hasOwnProperty.call(data,key)){skipped++;continue;}
-    data[key]=type;raw.push({code:code,type:type});added++;
+    var rec={code:code,licenseCount:lc,type:""}; // type is derived live from licenseCount via effSMBType()
+    data[key]=rec;raw.push(rec);added++;
   }
   ST.smbData=data;ST.smbRaw=raw;
   lsS(SK.SM,{data:data,raw:raw});
@@ -1960,7 +2089,7 @@ async function applySMB(ci,ti,mode){
   // Auto-refresh dashboard charts with new SMB data
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
-function lookupSMB(code){if(!code)return"Unknown";var c=String(code).trim().toLowerCase();if(c.indexOf("trial")>=0||c.indexOf("uat")>=0)return"Micro";return ST.smbData[c]||"Unknown";}
+function lookupSMB(code){if(!code)return"Unknown";var c=String(code).trim().toLowerCase();if(c.indexOf("trial")>=0||c.indexOf("uat")>=0)return"Micro";return effSMBType(ST.smbData[c]);}
 async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
 function renderSMBPage(){
   var ks=Object.keys(ST.smbData),pc=G("smb-prev"),si=G("smb-stats-inner");
@@ -1970,7 +2099,7 @@ function renderSMBPage(){
     si.innerHTML='<div style="text-align:center;color:var(--tx-3);padding:24px 0">No SMB data loaded.</div>';
     pc.style.display="none";return;
   }
-  var t={};ks.forEach(function(k){var v=ST.smbData[k];t[v]=(t[v]||0)+1;});
+  var t={};ks.forEach(function(k){var v=effSMBType(ST.smbData[k]);t[v]=(t[v]||0)+1;});
   var rows="";for(var k in t)rows+="<div style='display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:7px;margin-bottom:6px'>"+smbBdg(k)+"<span style='font-family:\"JetBrains Mono\",monospace;margin-left:auto'>"+t[k]+"</span></div>";
   si.innerHTML='<span class="bdg bok2" style="margin-bottom:12px;display:inline-block">'+ks.length+" codes</span>"+rows;
   pc.style.display="block";
@@ -1979,9 +2108,9 @@ function renderSMBPage(){
   var h2="";
   for(var i=0;i<ST.smbRaw.length&&i<200;i++){
     var rw=ST.smbRaw[i];
-    h2+="<tr><td style='font-size:12px;font-family:monospace'>"+esc(rw.code)+"</td><td>"+smbBdg(rw.type)+"</td><td><button class='btn bdan bsm' data-sdel='"+i+"'>×</button></td></tr>";
+    h2+="<tr><td style='font-size:12px;font-family:monospace'>"+esc(rw.code)+"</td><td style='font-family:\"JetBrains Mono\",monospace;font-size:12px'>"+(rw.licenseCount!=null?rw.licenseCount:"--")+"</td><td>"+smbBdg(effSMBType(rw))+"</td><td><button class='btn bdan bsm' data-sdel='"+i+"'>×</button></td></tr>";
   }
-  if(ST.smbRaw.length>200)h2+='<tr><td colspan="3" class="te">+ '+(ST.smbRaw.length-200)+" more</td></tr>";
+  if(ST.smbRaw.length>200)h2+='<tr><td colspan="4" class="te">+ '+(ST.smbRaw.length-200)+" more</td></tr>";
   tb.innerHTML=h2;
   tb.querySelectorAll("[data-sdel]").forEach(function(btn){
     btn.onclick=function(){
@@ -1994,23 +2123,29 @@ function renderSMBPage(){
       renderSMBPage();upBadges();toast("Removed "+rw.code,"ok");
     };
   });
+  renderSMBRangeInputs();
 }
 
 function addSingleSMB(){
-  var code=(gv("smb-add-code")||"").trim(),type=gv("smb-add-type")||"SMB";
+  var code=(gv("smb-add-code")||"").trim();
+  var lcRaw=gv("smb-add-lic");
   if(!code){toast("Enter an activation code","err");return;}
+  if(lcRaw===""||isNaN(+lcRaw)){toast("Enter a valid license count","err");return;}
+  var lc=+lcRaw;
   ST.smbRaw=ST.smbRaw.filter(function(r){return r.code.toLowerCase()!==code.toLowerCase();});
-  ST.smbData[code.toLowerCase()]=type;
-  ST.smbRaw.push({code:code,type:type});
+  var rec={code:code,licenseCount:lc,type:""};
+  ST.smbData[code.toLowerCase()]=rec;
+  ST.smbRaw.push(rec);
   lsS(SK.SM,{data:ST.smbData,raw:ST.smbRaw});
   saveSMBToFirestore().catch(function(){});
   var inp=G("smb-add-code");if(inp)inp.value="";
-  renderSMBPage();upBadges();toast("Added: "+code+" → "+type,"ok");
+  var linp=G("smb-add-lic");if(linp)linp.value="";
+  renderSMBPage();upBadges();toast("Added: "+code+" → "+effSMBType(rec)+" ("+lc+" licenses)","ok");
 }
 
 function exportSMBCsv(){
   if(!ST.smbRaw.length){toast("No SMB data to export","err");return;}
-  dlBlob(new Blob([Papa.unparse(ST.smbRaw.map(function(r){return{"Activation Code":r.code,"Customer Type":r.type};}))],{type:"text/csv;charset=utf-8;"}),"smb-database-"+stamp()+".csv");
+  dlBlob(new Blob([Papa.unparse(ST.smbRaw.map(function(r){return{"Activation Code":r.code,"License Count":r.licenseCount!=null?r.licenseCount:"","Customer Type":effSMBType(r)};}))],{type:"text/csv;charset=utf-8;"}),"smb-database-"+stamp()+".csv");
   toast("SMB exported ("+ST.smbRaw.length+" records)","ok");
 }
 
@@ -3686,6 +3821,7 @@ function bootApp(){
   ST.results=lsG(SK.RE,[])||[];
   ST.reviewSessions=lsG(SK.RS,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
+  migrateSMBState();
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
     loadDataFromFirestore().then(function(){
@@ -3733,7 +3869,9 @@ document.addEventListener("DOMContentLoaded",function(){
   setupDZ("dz-in","fi-in",parseInflow);setupDZ("dz-smb1","fi-smb1",function(f){parseSMBFile(f,"ph1");});setupDZ("dz-smb2","fi-smb2",function(f){parseSMBFile(f,"smb-pg");});
 
   var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;};
-  var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-tc"),m?m.value:"replace");renderSMBPage();};
+  var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-lc"),m?m.value:"replace");renderSMBPage();};
+  var srs=G("smb-rng-save");if(srs)srs.onclick=saveSMBRangesFromUI;
+  var srr=G("smb-rng-reset");if(srr)srr.onclick=resetSMBRangesToDefaults;
   var sas=G("smb-add-single");if(sas)sas.onclick=addSingleSMB;
   var smc=G("smb-add-code");if(smc)smc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleSMB();});
   var seb=G("smb-export-btn");if(seb)seb.onclick=exportSMBCsv;
@@ -3880,6 +4018,7 @@ document.addEventListener("DOMContentLoaded",function(){
             var d=snap.data();
             if(d&&d.map){
               ST.smbData=d.map;ST.smbRaw=d.raw||[];
+              migrateSMBState();
               lsS(SK.SM,{data:ST.smbData,raw:ST.smbRaw});
               upBadges();
               var spg=G("pg-smb");if(spg&&spg.classList.contains("active"))renderSMBPage();
