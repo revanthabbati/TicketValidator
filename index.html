@@ -262,6 +262,13 @@ a:hover{text-decoration:underline}
 .slb{font-size:11px;font-weight:600;color:var(--tx-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:var(--font-ui)}
 .sv{font-family:var(--font-heading);font-size:30px;font-weight:800;color:var(--tx);line-height:1;letter-spacing:-.8px}
 .ss{font-size:12px;color:var(--tx-3);margin-top:6px;letter-spacing:-.1px}
+.sv-input{font-family:var(--font-heading);font-size:30px;font-weight:800;color:var(--tx);line-height:1;letter-spacing:-.8px;border:none;background:transparent;width:100%;padding:0;outline:none;border-bottom:1.5px dashed transparent}
+.sv-input:hover,.sv-input:focus{border-bottom-color:var(--brand-border)}
+.ss-input{font-size:12px;color:var(--tx-3);border:none;background:transparent;border-bottom:1px dashed var(--border);width:58px;padding:0 2px;outline:none;font-family:var(--font-ui)}
+.ss-input:focus{border-bottom-color:var(--brand-light);color:var(--tx-2)}
+.chr-dark-input,.chr-dark-select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:5px;padding:5px 7px;font-size:12px;font-family:var(--font-ui);width:100%}
+.chr-dark-input:focus,.chr-dark-select:focus{outline:none;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.14)}
+.chr-dark-select option{background:var(--gray-900);color:#fff}
 
 /* ─── BUTTONS ────────────────────────────────────────────────── */
 .btn{
@@ -484,6 +491,7 @@ select.fin{cursor:pointer}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
 <!-- LOGIN -->
@@ -686,10 +694,10 @@ select.fin{cursor:pointer}
               <span class="ct">Customer Health Indicator</span>
               <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Leading signals for retention risk &middot; auto-generated from evaluated tickets (rolling 7 days) &middot; <span id="chr-asof"></span></div>
             </div>
-            <button class="btn bgst bsm" id="chr-refresh" style="margin-left:auto">&#8635; Refresh</button>
+            <div style="margin-left:auto;display:flex;gap:6px"><button class="btn bgst bsm" id="chr-refresh">&#8635; Refresh</button><button class="btn bpri bsm" id="chr-ppt">&#8595; Download PPT</button></div>
           </div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:16px">
-            <div class="al ai" style="font-size:11.5px">Best-effort defaults used below (tell me if these should be different): SLA target = FRR &le;60 min &middot; Critical/Sev1 = Priority contains &ldquo;urgent/critical/sev1/p0&rdquo; and still open &middot; CSAT/DSAT = Satisfaction Rating column matched against positive/negative keywords.</div>
+            <div class="al ai" style="font-size:11.5px">Ticket Volume, SLA, CSAT/DSAT, Top Accounts, and This Week's Picture are computed automatically from evaluated tickets (SLA = Initial Reply sent within 30 min; CSAT/DSAT = Satisfaction Rating column matched against good/bad keywords). <strong>Critical Open (Sev 1)</strong> and <strong>Product Escalations to Engineering</strong> are entered manually below &mdash; edit them directly, they're saved automatically and shared with your team.</div>
             <div class="g4">
               <div class="stat" style="border-top:3px solid var(--brand-light)">
                 <div class="slb">Ticket Volume (Week)</div><div class="sv" id="chr-vol">0</div>
@@ -700,8 +708,9 @@ select.fin{cursor:pointer}
                 <div class="ss">Target &ge;95% &middot; <span id="chr-sla-sub">4wk avg --</span></div>
               </div>
               <div class="stat" style="border-top:3px solid var(--danger)">
-                <div class="slb">Critical Open (Sev 1)</div><div class="sv" id="chr-sev1">0</div>
-                <div class="ss" id="chr-sev1-sub">Across 0 accounts &middot; ARR at risk --</div>
+                <div class="slb">Critical Open (Sev 1) <span style="font-weight:400;text-transform:none;letter-spacing:0">&middot; manual</span></div>
+                <input type="number" min="0" class="sv-input" id="chr-sev1" value="0" title="Enter manually">
+                <div class="ss" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">Across <input type="number" min="0" class="ss-input" id="chr-sev1-accounts" value="0" style="width:34px"> accounts &middot; ARR at risk <input type="text" class="ss-input" id="chr-arr-risk" placeholder="$XXK"></div>
               </div>
               <div class="stat" style="border-top:3px solid var(--warning)">
                 <div class="slb">CSAT / DSAT (Week)</div><div class="sv" id="chr-csat">0 / 0</div>
@@ -710,7 +719,7 @@ select.fin{cursor:pointer}
             </div>
             <div class="row">
               <div class="col" style="flex:3"><div class="card">
-                <div class="chd"><span class="ct">Top Accounts With Open Issues</span><span style="font-size:11.5px;color:var(--tx-3)">Sorted by ARR, then open ticket count</span></div>
+                <div class="chd"><span class="ct">Top Accounts With Open Issues</span><span style="font-size:11.5px;color:var(--tx-3)">Top 10 accounts by ARR</span></div>
                 <div class="tw" style="max-height:280px"><table class="tbl"><thead><tr><th>Account</th><th>ARR</th><th>Issue Type</th><th>Days</th><th>Owner / Status</th></tr></thead><tbody id="chr-accounts-tb"><tr><td colspan="5" class="te">No open tickets.</td></tr></tbody></table></div>
               </div></div>
               <div class="col" style="flex:1"><div class="card cbd">
@@ -722,12 +731,15 @@ select.fin{cursor:pointer}
               </div></div>
             </div>
             <div style="background:var(--gray-900);border-radius:10px;padding:16px 18px;color:#fff">
-              <div style="margin-bottom:12px">
-                <div style="font-weight:700;color:var(--warning)">Product Escalations to Engineering</div>
-                <div style="font-size:11.5px;color:rgba(255,255,255,.55)">Top ticket volume drivers &middot; Bug / Regression / Product Issue tickets</div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                <div>
+                  <div style="font-weight:700;color:var(--warning)">Product Escalations to Engineering <span style="font-weight:400;font-size:11px;color:rgba(255,255,255,.5)">&middot; manual</span></div>
+                  <div style="font-size:11.5px;color:rgba(255,255,255,.55)">Top ticket volume drivers &middot; engineering priority list</div>
+                </div>
+                <button class="btn bgst bsm" id="chr-esc-add">+ Add Row</button>
               </div>
               <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
-                <thead><tr style="color:rgba(255,255,255,.55);text-align:left"><th style="padding:6px 10px">Issue</th><th style="padding:6px 10px">Impact</th><th style="padding:6px 10px">Priority</th></tr></thead>
+                <thead><tr style="color:rgba(255,255,255,.55);text-align:left"><th style="padding:6px 10px">Issue</th><th style="padding:6px 10px">Impact</th><th style="padding:6px 10px">Eng Owner</th><th style="padding:6px 10px">Priority</th><th style="padding:6px 10px"></th></tr></thead>
                 <tbody id="chr-esc-tb"></tbody>
               </table></div>
             </div>
@@ -1117,7 +1129,7 @@ var DT = ["Technical"];
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1355,7 +1367,8 @@ var ST={
   tech:[],revChg:{},
   sortK:null,sortD:"asc",pg:0,pgSz:30,
   pendSMB:null,
-  reviewSessions:[],reviewFilter:""
+  reviewSessions:[],reviewFilter:"",
+  chrComputed:null
 };
 
 // ─── REVIEW SESSIONS ─────────────────────────────────────────
@@ -1701,6 +1714,7 @@ async function loadDataFromFirestore(){
   await loadSMBRangesFromFirestore();
   await loadARRRangesFromFirestore();
   await loadSMBModeFromFirestore();
+  await loadCHRManualFromFirestore();
   // ── Load shared labels ──
   await loadLabelsFromFirestore();
   // ── Load shared training ──
@@ -2015,19 +2029,178 @@ function renderDash(){
 
 // === WEEKLY CUSTOMER HEALTH REPORT ==============================
 // Auto-generates a "leading signals for retention risk" summary from evaluated tickets,
-// respecting the current review-session filter (getBaseResults()). Several definitions here
-// are best-effort defaults (no confirmed business definition was available when this was built)
-// — documented in the UI note above the tiles, and easy to change here if the real ones differ:
-//   - SLA target: FRR <= 60 minutes
-//   - Critical/Sev1: Priority matches /urgent|critical|sev.?1|p0/i AND ticket still open
-//   - CSAT/DSAT: Satisfaction Rating column matched against positive/negative keyword lists
-var CHR_SLA_TARGET_MIN=60;
-var CHR_SEV1_RE=/urgent|critical|sev.?1|p0/i;
+// respecting the current review-session filter (getBaseResults()). Ticket Volume, SLA,
+// CSAT/DSAT, Top Accounts, and This Week's Picture are computed automatically. Critical Open
+// (Sev 1) and Product Escalations to Engineering are manual — there's no reliable ticket field
+// to source them from — edited directly in the UI and persisted via getCHRManual/setCHRManual.
+//   - SLA target: Initial Reply (FRR) sent within 30 minutes
+//   - CSAT/DSAT: Satisfaction Rating column matched against good/bad keyword lists
+//   - Top Accounts: top 10 accounts (with an open ticket) ranked by ARR
+var CHR_SLA_TARGET_MIN=30;
+var CHR_TOP_ACCOUNTS_N=10;
 var CHR_CSAT_RE=/good|positive|satisf|great|excellent|^[45]$/i;
 var CHR_DSAT_RE=/bad|negative|unsatisf|poor|^[12]$/i;
-var CHR_ESC_CATS=["Bug","Regression","Product Issue"];
 function isOpenStatus(s){s=String(s||"").trim().toLowerCase();return s!=="solved"&&s!=="closed";}
 function daysBetween(a,b){return Math.max(0,Math.round((b.getTime()-a.getTime())/86400000));}
+
+// ── Manual fields (never auto-computed) ──
+var CHR_MANUAL_DEFAULTS={
+  critOpen:0,critOpenAccounts:0,arrAtRisk:"",
+  escalations:[{issue:"",impact:"",engOwner:"",priority:"P0"},{issue:"",impact:"",engOwner:"",priority:"P1"},{issue:"",impact:"",engOwner:"",priority:"P1"}]
+};
+function getCHRManual(){
+  var m=lsG(SK.CHRM,null);
+  var d=JSON.parse(JSON.stringify(CHR_MANUAL_DEFAULTS));
+  if(!m)return d;
+  var merged=Object.assign({},d,m);
+  if(!Array.isArray(merged.escalations)||!merged.escalations.length)merged.escalations=d.escalations;
+  return merged;
+}
+function setCHRManual(m){lsS(SK.CHRM,m);}
+function saveCHRManualField(field,value){
+  var m=getCHRManual();m[field]=value;setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
+}
+async function loadCHRManualFromFirestore(){
+  if(!FB.enabled||!FB.db)return;
+  try{var d=await fsGet("shared/healthreport");if(d&&d.manual)lsS(SK.CHRM,d.manual);}
+  catch(e){console.warn("loadCHRManualFromFirestore:",e);}
+}
+async function saveCHRManualToFirestore(manual){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{await fsSet("shared/healthreport",{manual:manual,savedAt:fsTs()});}
+  catch(e){console.warn("saveCHRManualToFirestore error:",e);}
+}
+var CHR_PRIORITIES=["P0","P1","P2","P3"];
+function renderEscalationsTable(){
+  var chrM=getCHRManual();
+  var escTb=G("chr-esc-tb");if(!escTb)return;
+  if(!chrM.escalations.length){
+    escTb.innerHTML="<tr><td colspan='5' style='padding:10px;color:rgba(255,255,255,.55)'>No engineering escalations. Click + Add Row to add one.</td></tr>";
+    return;
+  }
+  escTb.innerHTML=chrM.escalations.map(function(row,idx){
+    var opts=CHR_PRIORITIES.map(function(p){return"<option value='"+p+"'"+(row.priority===p?" selected":"")+">"+p+"</option>";}).join("");
+    return"<tr>"+
+      "<td style='padding:4px 6px'><input class='chr-dark-input' data-esc-idx='"+idx+"' data-esc-f='issue' value=\""+esc(row.issue||"")+"\" placeholder='e.g. Profit Import'></td>"+
+      "<td style='padding:4px 6px'><input class='chr-dark-input' data-esc-idx='"+idx+"' data-esc-f='impact' value=\""+esc(row.impact||"")+"\" placeholder='e.g. 3 tix'></td>"+
+      "<td style='padding:4px 6px'><input class='chr-dark-input' data-esc-idx='"+idx+"' data-esc-f='engOwner' value=\""+esc(row.engOwner||"")+"\" placeholder='Eng'></td>"+
+      "<td style='padding:4px 6px'><select class='chr-dark-select' data-esc-idx='"+idx+"' data-esc-f='priority'>"+opts+"</select></td>"+
+      "<td style='padding:4px 6px'><button class='btn bdan bsm' data-esc-del='"+idx+"' title='Remove row'>&#215;</button></td>"+
+    "</tr>";
+  }).join("");
+  escTb.querySelectorAll("[data-esc-f]").forEach(function(el){
+    el.onchange=function(){
+      var idx=+this.dataset.escIdx,f=this.dataset.escF;
+      var m=getCHRManual();
+      if(!m.escalations[idx])return;
+      m.escalations[idx][f]=this.value;
+      setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
+    };
+  });
+  escTb.querySelectorAll("[data-esc-del]").forEach(function(btn){
+    btn.onclick=function(){
+      var idx=+this.dataset.escDel;
+      var m=getCHRManual();
+      m.escalations.splice(idx,1);
+      setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
+      renderEscalationsTable();
+    };
+  });
+}
+function addEscalationRow(){
+  var m=getCHRManual();
+  m.escalations.push({issue:"",impact:"",engOwner:"",priority:"P2"});
+  setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
+  renderEscalationsTable();
+}
+// Exports the report as a real, editable .pptx — reads current values straight out of the DOM
+// (including any manual edits you've made) rather than recomputing, so what you see is what
+// you get. Requires PptxGenJS (loaded via CDN in <head>).
+async function exportHealthReportPPT(){
+  if(typeof PptxGenJS==="undefined"){toast("PPT library failed to load — check your internet connection and try again","err");return;}
+  var btn=G("chr-ppt");if(btn){btn.disabled=true;btn.textContent="Generating…";}
+  try{
+    var pptx=new PptxGenJS();
+    pptx.defineLayout({name:"DT_WIDE",width:13.33,height:7.5});
+    pptx.layout="DT_WIDE";
+    var slide=pptx.addSlide();
+    slide.background={color:"FFFFFF"};
+
+    var ORANGE="D9480F",DARK="1C1C1E",GRAY="6B7280",LGRAY="9CA3AF",RED="DC2626",GREEN="16A34A",AMBER="F59E0B",BLUE="4F6EF7",NAVY="111827";
+
+    function val(id){var el=G(id);if(!el)return"";var v=(el.value!=null?el.value:el.textContent)||"";return String(v).trim();}
+    function tdText(tr,i){var tds=tr.querySelectorAll("td");return tds[i]?tds[i].textContent.trim():"";}
+
+    // ── Header ──
+    slide.addText("SUPPORT   ·   CUSTOMER HEALTH INDICATOR",{x:0.4,y:0.2,w:9,h:0.3,fontSize:11,bold:true,color:ORANGE,charSpacing:2});
+    slide.addText(new Date().toLocaleDateString(),{x:10.4,y:0.2,w:2.5,h:0.3,fontSize:11,color:LGRAY,align:"right"});
+    slide.addText("Leading signals for retention risk",{x:0.4,y:0.48,w:10.5,h:0.55,fontSize:26,bold:true,color:DARK});
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:1.1,w:0.55,h:0.045,fill:{color:ORANGE},line:{type:"none"}});
+
+    // ── 4 stat tiles ──
+    var tiles=[
+      {label:"TICKET VOLUME (WEEK)",value:val("chr-vol"),sub:val("chr-vol-sub"),color:BLUE},
+      {label:"1ST RESPONSE SLA",value:val("chr-sla"),sub:"Target ≥95% · "+val("chr-sla-sub"),color:GREEN},
+      {label:"CRITICAL OPEN (SEV 1)",value:val("chr-sev1"),sub:"Across "+val("chr-sev1-accounts")+" accounts · ARR at risk "+(val("chr-arr-risk")||"--"),color:RED},
+      {label:"CSAT / DSAT (WEEK)",value:val("chr-csat"),sub:val("chr-csat-sub"),color:AMBER}
+    ];
+    var tileW=2.98,tileGap=0.14,tileX=0.4,tileY=1.3;
+    tiles.forEach(function(t,i){
+      var x=tileX+i*(tileW+tileGap);
+      slide.addShape(pptx.ShapeType.rect,{x:x,y:tileY,w:tileW,h:1.3,fill:{color:"F9FAFB"},line:{color:"E5E7EB",width:0.75}});
+      slide.addShape(pptx.ShapeType.rect,{x:x,y:tileY,w:tileW,h:0.05,fill:{color:t.color},line:{type:"none"}});
+      slide.addText(t.label,{x:x+0.15,y:tileY+0.12,w:tileW-0.3,h:0.25,fontSize:9,bold:true,color:GRAY});
+      slide.addText(t.value,{x:x+0.15,y:tileY+0.34,w:tileW-0.3,h:0.5,fontSize:24,bold:true,color:NAVY});
+      slide.addText(t.sub,{x:x+0.15,y:tileY+0.92,w:tileW-0.3,h:0.35,fontSize:8,color:GRAY});
+    });
+
+    // ── Top Accounts With Open Issues (read straight from the rendered table) ──
+    var accHeaderStyle={bold:true,color:"FFFFFF",fill:{color:NAVY},fontSize:9};
+    function accHeaderCell(t){return{text:t,options:accHeaderStyle};}
+    var accRows=[["ACCOUNT","ARR","ISSUE TYPE","DAYS","OWNER / STATUS"].map(accHeaderCell)];
+    Q("#chr-accounts-tb tr").forEach(function(tr){
+      var tds=tr.querySelectorAll("td");
+      if(tds.length>=5)accRows.push([tdText(tr,0),tdText(tr,1),tdText(tr,2),tdText(tr,3),tdText(tr,4)]);
+    });
+    slide.addTable(accRows,{x:0.4,y:2.9,w:7.6,colW:[1.8,1.1,1.7,0.8,2.2],fontSize:9,border:{type:"solid",color:"E5E7EB",pt:0.75},autoPage:false});
+
+    // ── This Week's Picture ──
+    slide.addShape(pptx.ShapeType.rect,{x:8.25,y:2.9,w:4.68,h:2.6,fill:{color:"F9FAFB"},line:{color:"E5E7EB",width:0.75}});
+    slide.addText("THIS WEEK'S PICTURE",{x:8.45,y:3.0,w:4.3,h:0.25,fontSize:11,bold:true,color:DARK});
+    slide.addText("Category mix + top themes",{x:8.45,y:3.23,w:4.3,h:0.2,fontSize:8,color:GRAY});
+    var catMix=(ST.chrComputed&&ST.chrComputed.catMix)||[];
+    catMix.slice(0,4).forEach(function(c,i){
+      var y=3.5+i*0.3;
+      slide.addText(c.label,{x:8.45,y:y,w:2.6,h:0.28,fontSize:9,bold:true,color:DARK});
+      slide.addText("["+c.pct+"%] "+c.count,{x:11.1,y:y,w:1.6,h:0.28,fontSize:9,color:GRAY,align:"right"});
+    });
+    slide.addText("TOP THEMES THIS WEEK",{x:8.45,y:4.8,w:4.3,h:0.2,fontSize:9,bold:true,color:ORANGE});
+    var themes=(ST.chrComputed&&ST.chrComputed.themes)||[];
+    var themeText=themes.length?themes.map(function(t,i){return(i+1)+". "+t.label+" ("+t.count+")";}).join("\n"):"No themes yet.";
+    slide.addText(themeText,{x:8.45,y:5.03,w:4.3,h:1.3,fontSize:9,color:DARK,lineSpacingMultiple:1.3});
+
+    // ── Product Escalations to Engineering (read from the editable inputs) ──
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:5.65,w:12.53,h:1.55,fill:{color:NAVY},line:{type:"none"}});
+    slide.addText("PRODUCT ESCALATIONS TO ENGINEERING",{x:0.6,y:5.75,w:8,h:0.25,fontSize:11,bold:true,color:AMBER});
+    slide.addText("Top ticket volume drivers · engineering priority list",{x:0.6,y:5.98,w:8,h:0.2,fontSize:8,color:"D1D5DB"});
+    var escHeaderStyle={bold:true,color:AMBER,fontSize:9};
+    function escHeaderCell(t){return{text:t,options:escHeaderStyle};}
+    var escRows=[["ISSUE","IMPACT","ENG OWNER","P"].map(escHeaderCell)];
+    Q("#chr-esc-tb tr").forEach(function(tr){
+      var issue=tr.querySelector('[data-esc-f="issue"]');
+      if(!issue)return;
+      var impact=tr.querySelector('[data-esc-f="impact"]'),owner=tr.querySelector('[data-esc-f="engOwner"]'),prio=tr.querySelector('[data-esc-f="priority"]');
+      escRows.push([issue.value||"",impact?impact.value||"":"",owner?owner.value||"":"",prio?prio.value||"":""]);
+    });
+    if(escRows.length>1){
+      slide.addTable(escRows,{x:0.6,y:6.25,w:12.1,colW:[6,2.5,2.3,1.3],fontSize:9,color:"FFFFFF",fill:{color:NAVY},border:{type:"none"},autoPage:false});
+    }
+
+    await pptx.writeFile({fileName:"DT-CustomerHealth-"+stamp()+".pptx"});
+    toast("PPT downloaded","ok");
+  }catch(e){toast("PPT export error: "+(e.message||e),"err");}
+  if(btn){btn.disabled=false;btn.innerHTML="&#8595; Download PPT";}
+}
 function renderHealthReport(){
   var card=G("health-report");if(!card)return;
   var all=getBaseResults();
@@ -2059,13 +2232,11 @@ function renderHealthReport(){
   var elS=G("chr-sla");if(elS)elS.textContent=slaPct==null?"--":slaPct+"%";
   var elS2=G("chr-sla-sub");if(elS2)elS2.textContent="4wk avg "+(slaPct4==null?"--":slaPct4+"%");
 
-  // ── Critical Open (Sev 1) ──
-  var sev1=all.filter(function(r){return CHR_SEV1_RE.test(r.priority||"")&&isOpenStatus(r.status);});
-  var sev1Accounts={};sev1.forEach(function(r){if(r.org)sev1Accounts[r.org]=1;});
-  var hasARR=sev1.some(function(r){return typeof r.arr==="number";});
-  var arrAtRisk=sev1.reduce(function(a,r){return a+(typeof r.arr==="number"?r.arr:0);},0);
-  var elC=G("chr-sev1");if(elC)elC.textContent=sev1.length;
-  var elC2=G("chr-sev1-sub");if(elC2){var na=Object.keys(sev1Accounts).length;elC2.textContent="Across "+na+" account"+(na!==1?"s":"")+" · ARR at risk "+(hasARR?("$"+Math.round(arrAtRisk/1000)+"K"):"--");}
+  // ── Critical Open (Sev 1) — manual field, never overwritten while the user is editing it ──
+  var chrM=getCHRManual();
+  var elC=G("chr-sev1");if(elC&&document.activeElement!==elC)elC.value=chrM.critOpen;
+  var elCA=G("chr-sev1-accounts");if(elCA&&document.activeElement!==elCA)elCA.value=chrM.critOpenAccounts;
+  var elCR=G("chr-arr-risk");if(elCR&&document.activeElement!==elCR)elCR.value=chrM.arrAtRisk;
 
   // ── CSAT / DSAT (Week) ──
   var csat=week.filter(function(r){return CHR_CSAT_RE.test(r.satisfaction||"");}).length;
@@ -2084,17 +2255,14 @@ function renderHealthReport(){
     byAcct[acct].tickets.push(r);
     if(typeof r.arr==="number"&&r.arr>byAcct[acct].arr)byAcct[acct].arr=r.arr;
   });
-  var acctKeys=Object.keys(byAcct).sort(function(a,b){
-    var A=byAcct[a],B=byAcct[b];
-    if(A.arr!==B.arr)return B.arr-A.arr;
-    return B.tickets.length-A.tickets.length;
-  });
+  // Ranked purely by ARR (top N accounts by ARR that currently have an open ticket)
+  var acctKeys=Object.keys(byAcct).sort(function(a,b){return byAcct[b].arr-byAcct[a].arr;});
   var accTb=G("chr-accounts-tb");
   if(accTb){
     if(!acctKeys.length)accTb.innerHTML='<tr><td colspan="5" class="te">No open tickets.</td></tr>';
     else{
       var ah="";
-      acctKeys.slice(0,8).forEach(function(acct){
+      acctKeys.slice(0,CHR_TOP_ACCOUNTS_N).forEach(function(acct){
         var info=byAcct[acct];
         var rep=info.tickets[0],repDate=parseFlexDate(rep.created);
         info.tickets.forEach(function(t){
@@ -2104,7 +2272,7 @@ function renderHealthReport(){
         var days=repDate?daysBetween(repDate,now):null;
         ah+="<tr><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
       });
-      if(acctKeys.length>8)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-8)+" more accounts</td></tr>";
+      if(acctKeys.length>CHR_TOP_ACCOUNTS_N)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-CHR_TOP_ACCOUNTS_N)+" more accounts</td></tr>";
       accTb.innerHTML=ah;
     }
   }
@@ -2124,21 +2292,16 @@ function renderHealthReport(){
   // Top themes (sub categories)
   var subCnt={};week.forEach(function(r){var s=r.sub_category;if(s)subCnt[s]=(subCnt[s]||0)+1;});
   var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,3);
+  // Stashed for the PPT export, which needs the plain data (not the rendered badge HTML)
+  ST.chrComputed={
+    catMix:catKeys.map(function(k){return{label:k,count:catCnt[k],pct:week.length?Math.round(catCnt[k]/week.length*100):0};}),
+    themes:subKeys.map(function(k){return{label:k,count:subCnt[k]};})
+  };
   var th=G("chr-themes");
   if(th)th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
 
-  // ── Product Escalations to Engineering ──
-  var escTickets=all.filter(function(r){return CHR_ESC_CATS.indexOf(r.category)>=0;});
-  var escCnt={};escTickets.forEach(function(r){var k=r.sub_category||r.subject||"Unspecified";escCnt[k]=(escCnt[k]||0)+1;});
-  var escKeys=Object.keys(escCnt).sort(function(a,b){return escCnt[b]-escCnt[a];}).slice(0,5);
-  var escTb=G("chr-esc-tb");
-  if(escTb){
-    var prios=["P0","P1","P1","P2","P2"];
-    escTb.innerHTML=escKeys.length?escKeys.map(function(k,idx){
-      var pcls=prios[idx]==="P0"?"berr":prios[idx]==="P1"?"bwrn2":"bgr";
-      return"<tr><td style='padding:6px 10px'>"+esc(k)+"</td><td style='padding:6px 10px'>"+escCnt[k]+" tix</td><td style='padding:6px 10px'><span class='bdg "+pcls+"'>"+prios[idx]+"</span></td></tr>";
-    }).join(""):"<tr><td colspan='3' style='padding:10px;color:rgba(255,255,255,.55)'>No engineering escalations.</td></tr>";
-  }
+  // ── Product Escalations to Engineering — manual, editable table ──
+  renderEscalationsTable();
 
   var asof=G("chr-asof");if(asof)asof.textContent="As of "+now.toLocaleDateString();
 }
@@ -4314,6 +4477,11 @@ document.addEventListener("DOMContentLoaded",function(){
   // Chart filter buttons
   var csess=G("chart-session");if(csess)csess.onchange=function(){onReviewSessionChange(this.value);};
   var chrr=G("chr-refresh");if(chrr)chrr.onclick=function(){try{renderHealthReport();toast("Health report refreshed","ok");}catch(e){}};
+  var cs1=G("chr-sev1");if(cs1)cs1.onchange=function(){saveCHRManualField("critOpen",+this.value||0);};
+  var cs1a=G("chr-sev1-accounts");if(cs1a)cs1a.onchange=function(){saveCHRManualField("critOpenAccounts",+this.value||0);};
+  var car=G("chr-arr-risk");if(car)car.onchange=function(){saveCHRManualField("arrAtRisk",this.value||"");};
+  var cea=G("chr-esc-add");if(cea)cea.onclick=addEscalationRow;
+  var cppt=G("chr-ppt");if(cppt)cppt.onclick=exportHealthReportPPT;
   var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn"),drefresh=G("dash-refresh-btn");
   if(capply)capply.onclick=function(){renderDashboardCharts();};
   if(creset)creset.onclick=function(){
