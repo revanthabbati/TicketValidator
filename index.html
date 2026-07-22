@@ -2027,6 +2027,10 @@ function renderDash(){
   try{renderHealthReport();}catch(he){console.warn("Health report error:",he);}
 }
 
+// Locale-independent "M/D/YY" date, matching the report template's compact date style
+// (avoids the DD/MM/YYYY vs MM/DD/YYYY ambiguity of relying on the browser's locale).
+function chrShortDate(d){return(d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2);}
+
 // === WEEKLY CUSTOMER HEALTH REPORT ==============================
 // Auto-generates a "leading signals for retention risk" summary from evaluated tickets,
 // respecting the current review-session filter (getBaseResults()). Ticket Volume, SLA,
@@ -2133,7 +2137,7 @@ async function exportHealthReportPPT(){
 
     // ── Header ──
     slide.addText("SUPPORT   ·   CUSTOMER HEALTH INDICATOR",{x:0.4,y:0.2,w:9,h:0.3,fontSize:11,bold:true,color:ORANGE,charSpacing:2});
-    slide.addText(new Date().toLocaleDateString(),{x:10.4,y:0.2,w:2.5,h:0.3,fontSize:11,color:LGRAY,align:"right"});
+    slide.addText(chrShortDate(new Date()),{x:10.4,y:0.2,w:2.5,h:0.3,fontSize:11,color:LGRAY,align:"right"});
     slide.addText("Leading signals for retention risk",{x:0.4,y:0.48,w:10.5,h:0.55,fontSize:26,bold:true,color:DARK});
     slide.addShape(pptx.ShapeType.rect,{x:0.4,y:1.1,w:0.55,h:0.045,fill:{color:ORANGE},line:{type:"none"}});
 
@@ -2180,10 +2184,11 @@ async function exportHealthReportPPT(){
     slide.addText(themeText,{x:8.45,y:5.03,w:4.3,h:1.3,fontSize:9,color:DARK,lineSpacingMultiple:1.3});
 
     // ── Product Escalations to Engineering (read from the editable inputs) ──
-    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:5.65,w:12.53,h:1.55,fill:{color:NAVY},line:{type:"none"}});
-    slide.addText("PRODUCT ESCALATIONS TO ENGINEERING",{x:0.6,y:5.75,w:8,h:0.25,fontSize:11,bold:true,color:AMBER});
-    slide.addText("Top ticket volume drivers · engineering priority list",{x:0.6,y:5.98,w:8,h:0.2,fontSize:8,color:"D1D5DB"});
-    var escHeaderStyle={bold:true,color:AMBER,fontSize:9};
+    // Explicit rowH + tight margins keep the table compact so it never spills past the box below.
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:5.6,w:12.53,h:1.85,fill:{color:NAVY},line:{type:"none"}});
+    slide.addText("PRODUCT ESCALATIONS TO ENGINEERING",{x:0.6,y:5.68,w:8,h:0.22,fontSize:11,bold:true,color:AMBER});
+    slide.addText("Top ticket volume drivers · engineering priority list",{x:0.6,y:5.89,w:8,h:0.2,fontSize:8,color:"D1D5DB"});
+    var escHeaderStyle={bold:true,color:AMBER,fontSize:9,margin:[0.02,0.06,0.02,0.06]};
     function escHeaderCell(t){return{text:t,options:escHeaderStyle};}
     var escRows=[["ISSUE","IMPACT","ENG OWNER","P"].map(escHeaderCell)];
     Q("#chr-esc-tb tr").forEach(function(tr){
@@ -2193,7 +2198,7 @@ async function exportHealthReportPPT(){
       escRows.push([issue.value||"",impact?impact.value||"":"",owner?owner.value||"":"",prio?prio.value||"":""]);
     });
     if(escRows.length>1){
-      slide.addTable(escRows,{x:0.6,y:6.25,w:12.1,colW:[6,2.5,2.3,1.3],fontSize:9,color:"FFFFFF",fill:{color:NAVY},border:{type:"none"},autoPage:false});
+      slide.addTable(escRows,{x:0.6,y:6.15,w:12.1,colW:[6,2.5,2.3,1.3],rowH:0.26,fontSize:9,color:"FFFFFF",fill:{color:NAVY},border:{type:"none"},margin:[0.02,0.06,0.02,0.06],valign:"middle",autoPage:false});
     }
 
     await pptx.writeFile({fileName:"DT-CustomerHealth-"+stamp()+".pptx"});
@@ -2303,7 +2308,7 @@ function renderHealthReport(){
   // ── Product Escalations to Engineering — manual, editable table ──
   renderEscalationsTable();
 
-  var asof=G("chr-asof");if(asof)asof.textContent="As of "+now.toLocaleDateString();
+  var asof=G("chr-asof");if(asof)asof.textContent="As of "+chrShortDate(now);
 }
 
 // === SMB LICENSE RANGES ========================================
