@@ -679,6 +679,60 @@ select.fin{cursor:pointer}
           <!-- Drill-down results modal trigger -->
           <div id="drill-results" style="display:none"></div>
         </div>
+        <!-- Weekly Customer Health Report -->
+        <div class="card" id="health-report" style="display:none;margin-top:16px">
+          <div class="chd" style="flex-wrap:wrap;gap:8px">
+            <div>
+              <span class="ct">Customer Health Indicator</span>
+              <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Leading signals for retention risk &middot; auto-generated from evaluated tickets (rolling 7 days) &middot; <span id="chr-asof"></span></div>
+            </div>
+            <button class="btn bgst bsm" id="chr-refresh" style="margin-left:auto">&#8635; Refresh</button>
+          </div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:16px">
+            <div class="al ai" style="font-size:11.5px">Best-effort defaults used below (tell me if these should be different): SLA target = FRR &le;60 min &middot; Critical/Sev1 = Priority contains &ldquo;urgent/critical/sev1/p0&rdquo; and still open &middot; CSAT/DSAT = Satisfaction Rating column matched against positive/negative keywords.</div>
+            <div class="g4">
+              <div class="stat" style="border-top:3px solid var(--brand-light)">
+                <div class="slb">Ticket Volume (Week)</div><div class="sv" id="chr-vol">0</div>
+                <div class="ss" id="chr-vol-sub">WoW -- &middot; 4wk avg --</div>
+              </div>
+              <div class="stat" style="border-top:3px solid var(--success)">
+                <div class="slb">1st Response SLA</div><div class="sv" id="chr-sla">--</div>
+                <div class="ss">Target &ge;95% &middot; <span id="chr-sla-sub">4wk avg --</span></div>
+              </div>
+              <div class="stat" style="border-top:3px solid var(--danger)">
+                <div class="slb">Critical Open (Sev 1)</div><div class="sv" id="chr-sev1">0</div>
+                <div class="ss" id="chr-sev1-sub">Across 0 accounts &middot; ARR at risk --</div>
+              </div>
+              <div class="stat" style="border-top:3px solid var(--warning)">
+                <div class="slb">CSAT / DSAT (Week)</div><div class="sv" id="chr-csat">0 / 0</div>
+                <div class="ss" id="chr-csat-sub">4wk avg --/--</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col" style="flex:3"><div class="card">
+                <div class="chd"><span class="ct">Top Accounts With Open Issues</span><span style="font-size:11.5px;color:var(--tx-3)">Sorted by ARR, then open ticket count</span></div>
+                <div class="tw" style="max-height:280px"><table class="tbl"><thead><tr><th>Account</th><th>ARR</th><th>Issue Type</th><th>Days</th><th>Owner / Status</th></tr></thead><tbody id="chr-accounts-tb"><tr><td colspan="5" class="te">No open tickets.</td></tr></tbody></table></div>
+              </div></div>
+              <div class="col" style="flex:1"><div class="card cbd">
+                <div style="font-weight:700;margin-bottom:2px">This Week's Picture</div>
+                <div style="font-size:11.5px;color:var(--tx-3);margin-bottom:12px">Category mix + top themes</div>
+                <div id="chr-catmix" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+                <div style="font-weight:600;font-size:12.5px;color:var(--tx-2);margin-bottom:6px">Top Themes This Week</div>
+                <ol id="chr-themes" style="padding-left:18px;font-size:12.5px;color:var(--tx-2);margin:0"></ol>
+              </div></div>
+            </div>
+            <div style="background:var(--gray-900);border-radius:10px;padding:16px 18px;color:#fff">
+              <div style="margin-bottom:12px">
+                <div style="font-weight:700;color:var(--warning)">Product Escalations to Engineering</div>
+                <div style="font-size:11.5px;color:rgba(255,255,255,.55)">Top ticket volume drivers &middot; Bug / Regression / Product Issue tickets</div>
+              </div>
+              <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
+                <thead><tr style="color:rgba(255,255,255,.55);text-align:left"><th style="padding:6px 10px">Issue</th><th style="padding:6px 10px">Impact</th><th style="padding:6px 10px">Priority</th></tr></thead>
+                <tbody id="chr-esc-tb"></tbody>
+              </table></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- EVALUATE -->
@@ -709,7 +763,7 @@ select.fin{cursor:pointer}
           <div class="g2">
             <div class="card"><div class="chd"><span class="ct">Fields to Auto-Fill</span><div style="display:flex;gap:6px"><button class="btn bgst bsm" id="all-on">All</button><button class="btn bgst bsm" id="all-off">None</button></div></div><div class="cbd" style="display:flex;flex-direction:column;gap:8px">
               <div class="ckr on" id="cr-frr"><input type="checkbox" id="cb-frr" checked><div><div style="font-weight:500">FRR (First Response Rate)</div><div style="font-size:11.5px;color:var(--tx-3)">Minutes from assignment to first reply &#183; Technical tickets only</div></div></div>
-              <div class="ckr on" id="cr-smb"><input type="checkbox" id="cb-smb" checked><div><div style="font-weight:500">SMB Customer Type</div><div style="font-size:11.5px;color:var(--tx-3)">Activation code lookup &#8594; SMB / Mega / Micro</div></div></div>
+              <div class="ckr on" id="cr-smb"><input type="checkbox" id="cb-smb" checked><div><div style="font-weight:500">SMB Customer Type</div><div style="font-size:11.5px;color:var(--tx-3)">SMB / Mega / Micro &#8594; by License Count or ARR, set on the SMB Database page</div></div></div>
               <div class="ckr on" id="cr-env"><input type="checkbox" id="cb-env" checked><div><div style="font-weight:500">Environment</div><div style="font-size:11.5px;color:var(--tx-3)">Admin, API, Orders, Routing&#8230;</div></div></div>
               <div class="ckr on" id="cr-cat"><input type="checkbox" id="cb-cat" checked><div><div style="font-weight:500">Category</div><div style="font-size:11.5px;color:var(--tx-3)">Bug, WAE, Provisioning, Enhancement&#8230;</div></div></div>
               <div class="ckr on" id="cr-sub"><input type="checkbox" id="cb-sub" checked><div><div style="font-weight:500">Sub Category</div><div style="font-size:11.5px;color:var(--tx-3)">Specific topic from 321 predefined labels</div></div></div>
@@ -758,15 +812,35 @@ select.fin{cursor:pointer}
 
       <!-- SMB -->
       <div class="page" id="pg-smb">
-        <div class="card" id="smb-ranges-card"><div class="chd"><span class="ct">License Count Ranges</span></div>
-          <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
-            <div class="al ai" style="font-size:12.5px">Set the license-count range for each customer type. When a sheet with Activation Code + License Count is imported (or a code is added manually), its type is computed automatically from these ranges &mdash; changing a range instantly reclassifies every existing license-based record too. Leave a Max blank for &ldquo;and above&rdquo;. If ranges overlap, Micro is checked first, then SMB, then Mega.</div>
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-micro" style="min-width:64px;text-align:center">Micro</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-micro-min" style="width:100px" placeholder="1"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-micro-max" style="width:100px" placeholder="20"></div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-smb" style="min-width:64px;text-align:center">SMB</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-smb-min" style="width:100px" placeholder="21"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-smb-max" style="width:100px" placeholder="50"></div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-mega" style="min-width:64px;text-align:center">Mega</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-mega-min" style="width:100px" placeholder="51"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-mega-max" style="width:100px" placeholder="No limit"></div>
+        <div class="card" id="smb-ranges-card"><div class="chd"><span class="ct">SMB Classification</span></div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div class="al ai" style="font-size:12.5px">Choose how every ticket's customer type (SMB / Mega / Micro) is determined during evaluation. <strong>License Count</strong> looks up the Activation Code in the SMB reference database below. <strong>ARR</strong> reads the ARR value directly from each ticket row in the main evaluation sheet instead. Trial/UAT activation codes are always Micro regardless of mode.</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn bsm" id="smb-mode-license">License Count</button>
+              <button class="btn bsm" id="smb-mode-arr">ARR</button>
             </div>
-            <div style="display:flex;gap:8px"><button class="btn bpri bsm" id="smb-rng-save">&#10003; Save Ranges</button><button class="btn bgst bsm" id="smb-rng-reset">Reset to Defaults</button></div>
+            <div id="smb-license-ranges" style="display:flex;flex-direction:column;gap:12px">
+              <hr style="border:none;border-top:1px solid var(--border);margin:0">
+              <div style="font-size:13px;font-weight:600">License Count Ranges</div>
+              <div class="al ai" style="font-size:12.5px">Set the license-count range for each customer type. Changing a range instantly reclassifies every existing license-based record too. Leave a Max blank for &ldquo;and above&rdquo;. If ranges overlap, Micro is checked first, then SMB, then Mega.</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-micro" style="min-width:64px;text-align:center">Micro</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-micro-min" style="width:100px" placeholder="1"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-micro-max" style="width:100px" placeholder="20"></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-smb" style="min-width:64px;text-align:center">SMB</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-smb-min" style="width:100px" placeholder="21"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-smb-max" style="width:100px" placeholder="50"></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-mega" style="min-width:64px;text-align:center">Mega</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="rng-mega-min" style="width:100px" placeholder="51"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="rng-mega-max" style="width:100px" placeholder="No limit"></div>
+              </div>
+              <div style="display:flex;gap:8px"><button class="btn bpri bsm" id="smb-rng-save">&#10003; Save Ranges</button><button class="btn bgst bsm" id="smb-rng-reset">Reset to Defaults</button></div>
+            </div>
+            <div id="smb-arr-ranges" style="display:none;flex-direction:column;gap:12px">
+              <hr style="border:none;border-top:1px solid var(--border);margin:0">
+              <div style="font-size:13px;font-weight:600">ARR Ranges ($)</div>
+              <div class="al ai" style="font-size:12.5px">Set the ARR range for each customer type. Make sure your evaluation sheet has an ARR column (e.g. header &ldquo;ARR&rdquo; or &ldquo;Annual Recurring Revenue&rdquo;) &mdash; it's auto-detected on upload just like the other columns.</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-micro" style="min-width:64px;text-align:center">Micro</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="arng-micro-min" style="width:110px" placeholder="0"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="arng-micro-max" style="width:110px" placeholder="50000"></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-smb" style="min-width:64px;text-align:center">SMB</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="arng-smb-min" style="width:110px" placeholder="50001"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="arng-smb-max" style="width:110px" placeholder="250000"></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bdg smb-mega" style="min-width:64px;text-align:center">Mega</span><label style="font-size:12px;color:var(--tx-2)">Min</label><input type="number" class="fin" id="arng-mega-min" style="width:110px" placeholder="250001"><label style="font-size:12px;color:var(--tx-2)">Max</label><input type="number" class="fin" id="arng-mega-max" style="width:110px" placeholder="No limit"></div>
+              </div>
+              <div style="display:flex;gap:8px"><button class="btn bpri bsm" id="arr-rng-save">&#10003; Save ARR Ranges</button><button class="btn bgst bsm" id="arr-rng-reset">Reset to Defaults</button></div>
+            </div>
             <div id="smb-rng-msg"></div>
           </div>
         </div>
@@ -804,9 +878,9 @@ select.fin{cursor:pointer}
             <button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
             <span style="margin-left:auto;font-size:11.5px;color:var(--tx-3)" id="f-cnt"></span>
           </div>
-          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="evaluatedAt">Date</th><th>Edit</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
-            <button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button>
+            <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
             <div style="display:flex;align-items:center;gap:10px"><button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx-2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button></div>
           </div>
         </div>
@@ -1040,10 +1114,10 @@ var DS = ["API Documentation", "API Export", "API Import", "API Key Request", "A
 var DT = ["Technical"];
 
 // ─── COLUMN MAP ──────────────────────────────────────────────
-var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"]};
+var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1211,6 +1285,18 @@ function gv(id){var e=G(id);return e?e.value:"";}
 function esc(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fmtS(s){return s<60?s+"s":Math.floor(s/60)+"m";}
 function stamp(){return new Date().toISOString().slice(0,10);}
+// Accepts a Date, an Excel serial date number, or a date string (from CSV/XLSX inflow columns) and
+// returns a Date or null. Excel/Sheets serial dates count days since 1899-12-30.
+function parseFlexDate(v){
+  if(v==null||v==="")return null;
+  if(v instanceof Date)return isNaN(v.getTime())?null:v;
+  if(typeof v==="number"&&!isNaN(v)){
+    var d=new Date(Math.round((v-25569)*86400*1000));
+    return isNaN(d.getTime())?null:d;
+  }
+  var d2=new Date(v);
+  return isNaN(d2.getTime())?null:d2;
+}
 function dlBlob(blob,name){var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u);},1000);}
 function lsG(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -1611,8 +1697,10 @@ async function loadDataFromFirestore(){
     else{var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   migrateSMBState();
-  // ── Load shared SMB license ranges ──
+  // ── Load shared SMB license/ARR ranges + classification mode ──
   await loadSMBRangesFromFirestore();
+  await loadARRRangesFromFirestore();
+  await loadSMBModeFromFirestore();
   // ── Load shared labels ──
   await loadLabelsFromFirestore();
   // ── Load shared training ──
@@ -1622,7 +1710,7 @@ async function loadDataFromFirestore(){
 
 async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",activation_code:res.activation_code||"",frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,savedAt:fsTs()};
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,savedAt:fsTs()};
   try{
     await FB.db.collection("shared").doc("org").collection("results").add(toSave);
   }catch(e){console.warn("saveResultToFirestore error:",e);}
@@ -1922,6 +2010,137 @@ function renderDash(){
   }catch(e){console.error("renderDash:",e);}
   // Render charts
   try{renderDashboardCharts();}catch(ce){console.warn("Chart error:",ce);}
+  try{renderHealthReport();}catch(he){console.warn("Health report error:",he);}
+}
+
+// === WEEKLY CUSTOMER HEALTH REPORT ==============================
+// Auto-generates a "leading signals for retention risk" summary from evaluated tickets,
+// respecting the current review-session filter (getBaseResults()). Several definitions here
+// are best-effort defaults (no confirmed business definition was available when this was built)
+// — documented in the UI note above the tiles, and easy to change here if the real ones differ:
+//   - SLA target: FRR <= 60 minutes
+//   - Critical/Sev1: Priority matches /urgent|critical|sev.?1|p0/i AND ticket still open
+//   - CSAT/DSAT: Satisfaction Rating column matched against positive/negative keyword lists
+var CHR_SLA_TARGET_MIN=60;
+var CHR_SEV1_RE=/urgent|critical|sev.?1|p0/i;
+var CHR_CSAT_RE=/good|positive|satisf|great|excellent|^[45]$/i;
+var CHR_DSAT_RE=/bad|negative|unsatisf|poor|^[12]$/i;
+var CHR_ESC_CATS=["Bug","Regression","Product Issue"];
+function isOpenStatus(s){s=String(s||"").trim().toLowerCase();return s!=="solved"&&s!=="closed";}
+function daysBetween(a,b){return Math.max(0,Math.round((b.getTime()-a.getTime())/86400000));}
+function renderHealthReport(){
+  var card=G("health-report");if(!card)return;
+  var all=getBaseResults();
+  if(!all.length){card.style.display="none";return;}
+  card.style.display="block";
+  var now=new Date();
+  var wkStartMs=now.getTime()-7*86400000;
+  var prevWkStartMs=now.getTime()-14*86400000;
+  var m4wkStartMs=now.getTime()-28*86400000;
+  function evTime(r){return r.evaluatedAt||0;}
+  var week=all.filter(function(r){return evTime(r)>=wkStartMs;});
+  var prevWeek=all.filter(function(r){return evTime(r)>=prevWkStartMs&&evTime(r)<wkStartMs;});
+  var last4wk=all.filter(function(r){return evTime(r)>=m4wkStartMs;});
+
+  // ── Ticket Volume (Week) ──
+  var vol=week.length,prevVol=prevWeek.length;
+  var wow=prevVol>0?Math.round((vol-prevVol)/prevVol*100):null;
+  var avg4=Math.round(last4wk.length/4);
+  var elV=G("chr-vol");if(elV)elV.textContent=vol;
+  var elVS=G("chr-vol-sub");if(elVS)elVS.textContent="WoW "+(wow==null?"--":(wow>=0?"+":"")+wow+"%")+" · 4wk avg "+avg4;
+
+  // ── 1st Response SLA ──
+  var frrWeek=week.filter(function(r){return r.frr>0;});
+  var slaHit=frrWeek.filter(function(r){return r.frr<=CHR_SLA_TARGET_MIN;});
+  var slaPct=frrWeek.length?Math.round(slaHit.length/frrWeek.length*100):null;
+  var frr4wk=last4wk.filter(function(r){return r.frr>0;});
+  var slaHit4=frr4wk.filter(function(r){return r.frr<=CHR_SLA_TARGET_MIN;});
+  var slaPct4=frr4wk.length?Math.round(slaHit4.length/frr4wk.length*100):null;
+  var elS=G("chr-sla");if(elS)elS.textContent=slaPct==null?"--":slaPct+"%";
+  var elS2=G("chr-sla-sub");if(elS2)elS2.textContent="4wk avg "+(slaPct4==null?"--":slaPct4+"%");
+
+  // ── Critical Open (Sev 1) ──
+  var sev1=all.filter(function(r){return CHR_SEV1_RE.test(r.priority||"")&&isOpenStatus(r.status);});
+  var sev1Accounts={};sev1.forEach(function(r){if(r.org)sev1Accounts[r.org]=1;});
+  var hasARR=sev1.some(function(r){return typeof r.arr==="number";});
+  var arrAtRisk=sev1.reduce(function(a,r){return a+(typeof r.arr==="number"?r.arr:0);},0);
+  var elC=G("chr-sev1");if(elC)elC.textContent=sev1.length;
+  var elC2=G("chr-sev1-sub");if(elC2){var na=Object.keys(sev1Accounts).length;elC2.textContent="Across "+na+" account"+(na!==1?"s":"")+" · ARR at risk "+(hasARR?("$"+Math.round(arrAtRisk/1000)+"K"):"--");}
+
+  // ── CSAT / DSAT (Week) ──
+  var csat=week.filter(function(r){return CHR_CSAT_RE.test(r.satisfaction||"");}).length;
+  var dsat=week.filter(function(r){return CHR_DSAT_RE.test(r.satisfaction||"");}).length;
+  var csat4=last4wk.filter(function(r){return CHR_CSAT_RE.test(r.satisfaction||"");}).length;
+  var dsat4=last4wk.filter(function(r){return CHR_DSAT_RE.test(r.satisfaction||"");}).length;
+  var elCs=G("chr-csat");if(elCs)elCs.textContent=csat+" / "+dsat;
+  var elCs2=G("chr-csat-sub");if(elCs2)elCs2.textContent="4wk avg "+Math.round(csat4/4)+" / "+Math.round(dsat4/4);
+
+  // ── Top Accounts With Open Issues ──
+  var open=all.filter(function(r){return isOpenStatus(r.status);});
+  var byAcct={};
+  open.forEach(function(r){
+    var acct=r.org||r.requester||"Unknown";
+    if(!byAcct[acct])byAcct[acct]={tickets:[],arr:0};
+    byAcct[acct].tickets.push(r);
+    if(typeof r.arr==="number"&&r.arr>byAcct[acct].arr)byAcct[acct].arr=r.arr;
+  });
+  var acctKeys=Object.keys(byAcct).sort(function(a,b){
+    var A=byAcct[a],B=byAcct[b];
+    if(A.arr!==B.arr)return B.arr-A.arr;
+    return B.tickets.length-A.tickets.length;
+  });
+  var accTb=G("chr-accounts-tb");
+  if(accTb){
+    if(!acctKeys.length)accTb.innerHTML='<tr><td colspan="5" class="te">No open tickets.</td></tr>';
+    else{
+      var ah="";
+      acctKeys.slice(0,8).forEach(function(acct){
+        var info=byAcct[acct];
+        var rep=info.tickets[0],repDate=parseFlexDate(rep.created);
+        info.tickets.forEach(function(t){
+          var td=parseFlexDate(t.created);
+          if(td&&(!repDate||td<repDate)){rep=t;repDate=td;}
+        });
+        var days=repDate?daysBetween(repDate,now):null;
+        ah+="<tr><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
+      });
+      if(acctKeys.length>8)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-8)+" more accounts</td></tr>";
+      accTb.innerHTML=ah;
+    }
+  }
+
+  // ── This Week's Picture: category mix ──
+  var catCnt={};week.forEach(function(r){var c=r.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
+  var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];}).slice(0,5);
+  var cm=G("chr-catmix");
+  if(cm){
+    var ch="";
+    catKeys.forEach(function(k){
+      var pct=week.length?Math.round(catCnt[k]/week.length*100):0;
+      ch+="<div style='display:flex;justify-content:space-between;align-items:center'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
+    });
+    cm.innerHTML=ch||'<div class="te" style="text-align:left">No tickets this week.</div>';
+  }
+  // Top themes (sub categories)
+  var subCnt={};week.forEach(function(r){var s=r.sub_category;if(s)subCnt[s]=(subCnt[s]||0)+1;});
+  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,3);
+  var th=G("chr-themes");
+  if(th)th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
+
+  // ── Product Escalations to Engineering ──
+  var escTickets=all.filter(function(r){return CHR_ESC_CATS.indexOf(r.category)>=0;});
+  var escCnt={};escTickets.forEach(function(r){var k=r.sub_category||r.subject||"Unspecified";escCnt[k]=(escCnt[k]||0)+1;});
+  var escKeys=Object.keys(escCnt).sort(function(a,b){return escCnt[b]-escCnt[a];}).slice(0,5);
+  var escTb=G("chr-esc-tb");
+  if(escTb){
+    var prios=["P0","P1","P1","P2","P2"];
+    escTb.innerHTML=escKeys.length?escKeys.map(function(k,idx){
+      var pcls=prios[idx]==="P0"?"berr":prios[idx]==="P1"?"bwrn2":"bgr";
+      return"<tr><td style='padding:6px 10px'>"+esc(k)+"</td><td style='padding:6px 10px'>"+escCnt[k]+" tix</td><td style='padding:6px 10px'><span class='bdg "+pcls+"'>"+prios[idx]+"</span></td></tr>";
+    }).join(""):"<tr><td colspan='3' style='padding:10px;color:rgba(255,255,255,.55)'>No engineering escalations.</td></tr>";
+  }
+
+  var asof=G("chr-asof");if(asof)asof.textContent="As of "+now.toLocaleDateString();
 }
 
 // === SMB LICENSE RANGES ========================================
@@ -2034,6 +2253,110 @@ function resetSMBRangesToDefaults(){
   toast("Ranges reset to defaults","ok");
 }
 
+// === SMB CLASSIFICATION MODE (License Count vs ARR) ============
+// License mode (default, unchanged): SMB/Mega/Micro is looked up from the separate SMB
+// reference database (Activation Code -> License Count), uploaded on the SMB Database page.
+// ARR mode: SMB/Mega/Micro is computed directly from each ticket's own ARR value/column in the
+// MAIN ticket evaluation sheet (not the SMB reference database) — set the "arr" column alias in
+// CM to how your sheet names it (e.g. "ARR", "ARR Value", "Annual Recurring Revenue").
+function isTrialOrUAT(code){var c=String(code||"").trim().toLowerCase();return c.indexOf("trial")>=0||c.indexOf("uat")>=0;}
+function getSMBMode(){var m=lsG(SK.SMM,"license");return m==="arr"?"arr":"license";}
+function setSMBMode(m){lsS(SK.SMM,m==="arr"?"arr":"license");}
+async function loadSMBModeFromFirestore(){
+  if(!FB.enabled||!FB.db)return;
+  try{var d=await fsGet("shared/smbmode");if(d&&d.mode)lsS(SK.SMM,d.mode==="arr"?"arr":"license");}
+  catch(e){console.warn("loadSMBModeFromFirestore:",e);}
+}
+async function saveSMBModeToFirestore(mode){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{await fsSet("shared/smbmode",{mode:mode,savedAt:fsTs()});}
+  catch(e){console.warn("saveSMBModeToFirestore error:",e);}
+}
+var ARR_RANGE_DEFAULTS={Micro:{min:0,max:50000},SMB:{min:50001,max:250000},Mega:{min:250001,max:null}};
+function getARRRanges(){
+  var r=lsG(SK.ARRR,null);
+  if(!r||!r.Micro||!r.SMB||!r.Mega)return JSON.parse(JSON.stringify(ARR_RANGE_DEFAULTS));
+  return r;
+}
+function setARRRanges(r){lsS(SK.ARRR,r);}
+async function loadARRRangesFromFirestore(){
+  if(!FB.enabled||!FB.db)return;
+  try{var d=await fsGet("shared/arrranges");if(d&&d.ranges)lsS(SK.ARRR,d.ranges);}
+  catch(e){console.warn("loadARRRangesFromFirestore:",e);}
+}
+async function saveARRRangesToFirestore(ranges){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{await fsSet("shared/arrranges",{ranges:ranges,savedAt:fsTs()});}
+  catch(e){console.warn("saveARRRangesToFirestore error:",e);}
+}
+function typeFromARR(n){
+  if(n==null||n===""||isNaN(n))return"Unknown";
+  n=Number(n);
+  var r=getARRRanges(),order=["Micro","SMB","Mega"];
+  for(var i=0;i<order.length;i++){
+    var rg=r[order[i]];if(!rg)continue;
+    var min=(rg.min!=null&&rg.min!=="")?Number(rg.min):-Infinity;
+    var max=(rg.max!=null&&rg.max!=="")?Number(rg.max):Infinity;
+    if(n>=min&&n<=max)return order[i];
+  }
+  return"Unknown";
+}
+// Used by the eval pipeline when getSMBMode()==="arr": classifies straight from the ticket's own
+// ARR value instead of the Activation Code -> License Count reference database.
+function classifySMBByARR(activationCode,arr){
+  if(isTrialOrUAT(activationCode))return"Micro";
+  return typeFromARR(arr);
+}
+function renderARRRangeInputs(){
+  var r=getARRRanges();
+  var set=function(id,val){var el=G(id);if(el)el.value=(val==null||val==="")?"":val;};
+  set("arng-micro-min",r.Micro.min);set("arng-micro-max",r.Micro.max);
+  set("arng-smb-min",r.SMB.min);set("arng-smb-max",r.SMB.max);
+  set("arng-mega-min",r.Mega.min);set("arng-mega-max",r.Mega.max);
+}
+function saveARRRangesFromUI(){
+  var num=function(id){var v=gv(id);return(v===""||v==null)?null:Number(v);};
+  var ranges={
+    Micro:{min:num("arng-micro-min"),max:num("arng-micro-max")},
+    SMB:{min:num("arng-smb-min"),max:num("arng-smb-max")},
+    Mega:{min:num("arng-mega-min"),max:num("arng-mega-max")}
+  };
+  var keys=["Micro","SMB","Mega"];
+  for(var i=0;i<keys.length;i++){
+    var rg=ranges[keys[i]];
+    if(rg.min!=null&&isNaN(rg.min)){toast(keys[i]+": Min must be a number","err");return;}
+    if(rg.max!=null&&isNaN(rg.max)){toast(keys[i]+": Max must be a number","err");return;}
+    if(rg.min!=null&&rg.max!=null&&rg.min>rg.max){toast(keys[i]+" range: Min cannot be greater than Max","err");return;}
+  }
+  setARRRanges(ranges);
+  saveARRRangesToFirestore(ranges).catch(function(){});
+  var msg=G("smb-rng-msg");if(msg){msg.className="al ao";msg.style.display="block";msg.textContent="ARR ranges saved.";}
+  toast("ARR ranges saved","ok");
+}
+function resetARRRangesToDefaults(){
+  if(!confirm("Reset ARR ranges to defaults?"))return;
+  var d=JSON.parse(JSON.stringify(ARR_RANGE_DEFAULTS));
+  setARRRanges(d);
+  saveARRRangesToFirestore(d).catch(function(){});
+  renderARRRangeInputs();
+  toast("ARR ranges reset to defaults","ok");
+}
+function setSMBModeFromUI(mode){
+  setSMBMode(mode);
+  saveSMBModeToFirestore(mode).catch(function(){});
+  renderSMBModeUI();
+  toast("Now classifying SMB by "+(mode==="arr"?"ARR":"License Count"),"ok");
+}
+function renderSMBModeUI(){
+  var mode=getSMBMode();
+  var bl=G("smb-mode-license"),ba=G("smb-mode-arr");
+  if(bl){bl.classList.toggle("bpri",mode==="license");bl.classList.toggle("bgst",mode!=="license");}
+  if(ba){ba.classList.toggle("bpri",mode==="arr");ba.classList.toggle("bgst",mode!=="arr");}
+  var lc=G("smb-license-ranges"),ac=G("smb-arr-ranges");
+  if(lc)lc.style.display=mode==="license"?"flex":"none";
+  if(ac)ac.style.display=mode==="arr"?"flex":"none";
+}
+
 // ─── SMB ─────────────────────────────────────────────────────
 function parseSMBFile(file,ctx){
   var ext=file.name.split(".").pop().toLowerCase(),rd=new FileReader();
@@ -2089,9 +2412,12 @@ async function applySMB(ci,li,mode){
   // Auto-refresh dashboard charts with new SMB data
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
-function lookupSMB(code){if(!code)return"Unknown";var c=String(code).trim().toLowerCase();if(c.indexOf("trial")>=0||c.indexOf("uat")>=0)return"Micro";return effSMBType(ST.smbData[c]);}
+function lookupSMB(code){if(!code)return"Unknown";if(isTrialOrUAT(code))return"Micro";return effSMBType(ST.smbData[String(code).trim().toLowerCase()]);}
 async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
 function renderSMBPage(){
+  renderSMBRangeInputs();
+  renderARRRangeInputs();
+  renderSMBModeUI();
   var ks=Object.keys(ST.smbData),pc=G("smb-prev"),si=G("smb-stats-inner");
   // Fall back to old ID if new one not found
   if(!si){si=G("smb-stats");} if(!si||!pc)return;
@@ -2123,7 +2449,6 @@ function renderSMBPage(){
       renderSMBPage();upBadges();toast("Removed "+rw.code,"ok");
     };
   });
-  renderSMBRangeInputs();
 }
 
 function addSingleSMB(){
@@ -2860,7 +3185,8 @@ async function startEval(){
     if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
+    var rowArr=ci.arr!=null?Number(row[ci.arr]):NaN;
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:isNaN(rowArr)?null:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
@@ -2967,7 +3293,11 @@ async function startEval(){
           }
         }
       }
-      if(ST.fills.smb){res.smb_type=lookupSMB(res.activation_code);if(res.smb_type!=="Unknown")sc++;log("  SMB: "+res.smb_type,"ok");}
+      if(ST.fills.smb){
+        res.smb_type=getSMBMode()==="arr"?classifySMBByARR(res.activation_code,res.arr):lookupSMB(res.activation_code);
+        if(res.smb_type!=="Unknown")sc++;
+        log("  SMB: "+res.smb_type+" ("+(getSMBMode()==="arr"?"ARR":"License")+")","ok");
+      }
       if(ST.fills.env||ST.fills.cat||ST.fills.sub){
         if(!comments.length)try{comments=await zdGetComments(tid);}catch(ce){}
         var desc="";
@@ -3274,14 +3604,18 @@ function renderResTable(){
     h+="<td style=\"font-size:12px;color:var(--tx-2)\">"+esc(r.assignee||r.requester||"--")+"</td>";
     var evDate=r.evaluatedAt?new Date(r.evaluatedAt).toLocaleDateString("en-GB"):"--";
     h+="<td style=\"font-size:11.5px;color:var(--tx-3);white-space:nowrap\">"+evDate+"</td>";
-    h+="<td><button class=\"btn bgst bsm\" data-edit-gi=\""+gi+"\" title=\"Edit\">&#9998;</button>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--danger);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td>";
+    h+="<td style=\"display:flex;gap:4px\"><button class=\"btn bgst bsm\" data-edit-gi=\""+gi+"\" title=\"Edit\">&#9998;</button><button class=\"btn bdan bsm\" data-del-gi=\""+gi+"\" title=\"Delete\">&#128465;</button>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--danger);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td>";
     h+="</tr>";
   }
   tb.innerHTML=h;
-  tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){var any=Q(".rcb:checked").length>0;var es=G("exp-sel");if(es)es.style.display=any?"inline-flex":"none";};});
+  tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){var any=Q(".rcb:checked").length>0;var es=G("exp-sel");if(es)es.style.display=any?"inline-flex":"none";var ds=G("del-sel");if(ds)ds.style.display=any?"inline-flex":"none";};});
   // Edit buttons
   tb.querySelectorAll("[data-edit-gi]").forEach(function(btn){
     btn.onclick=function(){openEditResultModal(getFiltered()[+this.dataset.editGi]);};
+  });
+  // Delete buttons
+  tb.querySelectorAll("[data-del-gi]").forEach(function(btn){
+    btn.onclick=function(){deleteResult(+this.dataset.delGi);};
   });
   // Ticket hover preview
   tb.querySelectorAll("a[data-tid]").forEach(function(a){
@@ -3291,6 +3625,40 @@ function renderResTable(){
     a.addEventListener("mouseleave",hideTicketPreview);
   });
   var pages=Math.ceil(all.length/ST.pgSz)||1,pl=G("pg-lbl");if(pl)pl.textContent="Page "+(ST.pg+1)+" of "+pages;var rl=G("res-lbl");if(rl)rl.textContent=all.length+" records";
+}
+
+// ─── DELETE RESULTS ──────────────────────────────────────────
+// The one place tickets get removed from results — updates ST.results/ST.filtered/localStorage,
+// deletes the Firestore doc when synced, and re-renders the Results table and (if visible) the
+// Dashboard immediately so the removal is reflected everywhere without a manual refresh.
+function removeResultRecords(records){
+  records.forEach(function(r){
+    var idx=ST.results.indexOf(r);if(idx>=0)ST.results.splice(idx,1);
+    var fidx=ST.filtered.indexOf(r);if(fidx>=0)ST.filtered.splice(fidx,1);
+    if(FB.enabled&&FB.db&&FB.user&&r._fid){
+      FB.db.collection("shared").doc("org").collection("results").doc(r._fid).delete()
+        .catch(function(e){console.warn("Delete result Firestore error:",e);});
+    }
+  });
+  lsS(SK.RE,ST.results.slice(-200));
+  renderResTable();upBadges();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+}
+function deleteResult(gi){
+  var r=getFiltered()[gi];if(!r)return;
+  if(!confirm("Delete ticket #"+r.id+" from results? This cannot be undone."))return;
+  removeResultRecords([r]);
+  toast("Deleted ticket #"+r.id,"ok");
+}
+function deleteSelectedResults(){
+  var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});
+  var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);
+  if(!rows.length){toast("No rows selected","warn");return;}
+  if(!confirm("Delete "+rows.length+" selected ticket(s)? This cannot be undone."))return;
+  removeResultRecords(rows);
+  var es=G("exp-sel");if(es)es.style.display="none";
+  var ds=G("del-sel");if(ds)ds.style.display="none";
+  toast("Deleted "+rows.length+" ticket(s)","ok");
 }
 
 // ─── EXPORT ──────────────────────────────────────────────────
@@ -3872,6 +4240,10 @@ document.addEventListener("DOMContentLoaded",function(){
   var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-lc"),m?m.value:"replace");renderSMBPage();};
   var srs=G("smb-rng-save");if(srs)srs.onclick=saveSMBRangesFromUI;
   var srr=G("smb-rng-reset");if(srr)srr.onclick=resetSMBRangesToDefaults;
+  var arrs=G("arr-rng-save");if(arrs)arrs.onclick=saveARRRangesFromUI;
+  var arrr=G("arr-rng-reset");if(arrr)arrr.onclick=resetARRRangesToDefaults;
+  var sml=G("smb-mode-license");if(sml)sml.onclick=function(){setSMBModeFromUI("license");};
+  var sma=G("smb-mode-arr");if(sma)sma.onclick=function(){setSMBModeFromUI("arr");};
   var sas=G("smb-add-single");if(sas)sas.onclick=addSingleSMB;
   var smc=G("smb-add-code");if(smc)smc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleSMB();});
   var seb=G("smb-export-btn");if(seb)seb.onclick=exportSMBCsv;
@@ -3900,6 +4272,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
+  var dsl=G("del-sel");if(dsl)dsl.onclick=deleteSelectedResults;
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
   Q(".tbl th[data-s]").forEach(function(th){th.onclick=function(){srtBy(this.dataset.s);};});
 
@@ -3940,6 +4313,7 @@ document.addEventListener("DOMContentLoaded",function(){
   });
   // Chart filter buttons
   var csess=G("chart-session");if(csess)csess.onchange=function(){onReviewSessionChange(this.value);};
+  var chrr=G("chr-refresh");if(chrr)chrr.onclick=function(){try{renderHealthReport();toast("Health report refreshed","ok");}catch(e){}};
   var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn"),drefresh=G("dash-refresh-btn");
   if(capply)capply.onclick=function(){renderDashboardCharts();};
   if(creset)creset.onclick=function(){
