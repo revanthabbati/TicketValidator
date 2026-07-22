@@ -2120,6 +2120,15 @@ function addEscalationRow(){
 // Exports the report as a real, editable .pptx — reads current values straight out of the DOM
 // (including any manual edits you've made) rather than recomputing, so what you see is what
 // you get. Requires PptxGenJS (loaded via CDN in <head>).
+function chrCategoryColor(name,ORANGE,RED,NAVY,BLUE,GREEN,GRAY){
+  name=String(name||"").toLowerCase();
+  if(/bug|regression|product issue|outage/.test(name))return RED;
+  if(/how.?to/.test(name))return ORANGE;
+  if(/provision/.test(name))return NAVY;
+  if(/wae/.test(name))return BLUE;
+  if(/enhancement/.test(name))return GREEN;
+  return GRAY;
+}
 async function exportHealthReportPPT(){
   if(typeof PptxGenJS==="undefined"){toast("PPT library failed to load — check your internet connection and try again","err");return;}
   var btn=G("chr-ppt");if(btn){btn.disabled=true;btn.textContent="Generating…";}
@@ -2130,16 +2139,23 @@ async function exportHealthReportPPT(){
     var slide=pptx.addSlide();
     slide.background={color:"FFFFFF"};
 
-    var ORANGE="D9480F",DARK="1C1C1E",GRAY="6B7280",LGRAY="9CA3AF",RED="DC2626",GREEN="16A34A",AMBER="F59E0B",BLUE="4F6EF7",NAVY="111827";
+    var ORANGE="E8590C",DARK="1A1A2E",GRAY="6B7280",LGRAY="9CA3AF",BORDER="E5E7EB",
+        RED="DC2626",GREEN="16A34A",AMBER="F59E0B",BLUE="4F6EF7",NAVY="111827";
 
     function val(id){var el=G(id);if(!el)return"";var v=(el.value!=null?el.value:el.textContent)||"";return String(v).trim();}
     function tdText(tr,i){var tds=tr.querySelectorAll("td");return tds[i]?tds[i].textContent.trim():"";}
+    // A colored strip + bold title + italic gray subtitle, used above every panel (matches the template's section headers)
+    function sectionHeader(x,y,w,title,subtitle){
+      slide.addShape(pptx.ShapeType.rect,{x:x,y:y,w:w,h:0.045,fill:{color:ORANGE},line:{type:"none"}});
+      slide.addText(title,{x:x,y:y+0.1,w:w,h:0.25,fontSize:13,bold:true,color:DARK,fontFace:"Arial"});
+      slide.addText(subtitle,{x:x,y:y+0.34,w:w,h:0.22,fontSize:9,italic:true,color:GRAY,fontFace:"Arial"});
+    }
 
     // ── Header ──
-    slide.addText("SUPPORT   ·   CUSTOMER HEALTH INDICATOR",{x:0.4,y:0.2,w:9,h:0.3,fontSize:11,bold:true,color:ORANGE,charSpacing:2});
-    slide.addText(chrShortDate(new Date()),{x:10.4,y:0.2,w:2.5,h:0.3,fontSize:11,color:LGRAY,align:"right"});
-    slide.addText("Leading signals for retention risk",{x:0.4,y:0.48,w:10.5,h:0.55,fontSize:26,bold:true,color:DARK});
-    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:1.1,w:0.55,h:0.045,fill:{color:ORANGE},line:{type:"none"}});
+    slide.addText("SUPPORT   ·   CUSTOMER HEALTH INDICATOR",{x:0.4,y:0.18,w:9,h:0.28,fontSize:11,bold:true,color:ORANGE,charSpacing:2,fontFace:"Arial"});
+    slide.addText(chrShortDate(new Date()),{x:10.4,y:0.18,w:2.53,h:0.28,fontSize:11,color:LGRAY,align:"right",fontFace:"Arial"});
+    slide.addText("Leading signals for retention risk",{x:0.4,y:0.44,w:10.5,h:0.5,fontSize:26,bold:true,color:DARK,fontFace:"Arial"});
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:1.0,w:0.55,h:0.045,fill:{color:ORANGE},line:{type:"none"}});
 
     // ── 4 stat tiles ──
     var tiles=[
@@ -2148,58 +2164,82 @@ async function exportHealthReportPPT(){
       {label:"CRITICAL OPEN (SEV 1)",value:val("chr-sev1"),sub:"Across "+val("chr-sev1-accounts")+" accounts · ARR at risk "+(val("chr-arr-risk")||"--"),color:RED},
       {label:"CSAT / DSAT (WEEK)",value:val("chr-csat"),sub:val("chr-csat-sub"),color:AMBER}
     ];
-    var tileW=2.98,tileGap=0.14,tileX=0.4,tileY=1.3;
+    var tileW=2.98,tileGap=0.14,tileX=0.4,tileY=1.15,tileH=1.15;
     tiles.forEach(function(t,i){
       var x=tileX+i*(tileW+tileGap);
-      slide.addShape(pptx.ShapeType.rect,{x:x,y:tileY,w:tileW,h:1.3,fill:{color:"F9FAFB"},line:{color:"E5E7EB",width:0.75}});
+      slide.addShape(pptx.ShapeType.rect,{x:x,y:tileY,w:tileW,h:tileH,fill:{color:"F9FAFB"},line:{color:BORDER,width:0.75}});
       slide.addShape(pptx.ShapeType.rect,{x:x,y:tileY,w:tileW,h:0.05,fill:{color:t.color},line:{type:"none"}});
-      slide.addText(t.label,{x:x+0.15,y:tileY+0.12,w:tileW-0.3,h:0.25,fontSize:9,bold:true,color:GRAY});
-      slide.addText(t.value,{x:x+0.15,y:tileY+0.34,w:tileW-0.3,h:0.5,fontSize:24,bold:true,color:NAVY});
-      slide.addText(t.sub,{x:x+0.15,y:tileY+0.92,w:tileW-0.3,h:0.35,fontSize:8,color:GRAY});
+      slide.addText(t.label,{x:x+0.15,y:tileY+0.1,w:tileW-0.3,h:0.22,fontSize:9,bold:true,color:GRAY,fontFace:"Arial"});
+      slide.addText(t.value,{x:x+0.15,y:tileY+0.3,w:tileW-0.3,h:0.44,fontSize:22,bold:true,color:DARK,fontFace:"Arial"});
+      slide.addText(t.sub,{x:x+0.15,y:tileY+0.82,w:tileW-0.3,h:0.3,fontSize:8,color:GRAY,fontFace:"Arial"});
     });
 
-    // ── Top Accounts With Open Issues (read straight from the rendered table) ──
-    var accHeaderStyle={bold:true,color:"FFFFFF",fill:{color:NAVY},fontSize:9};
+    // ── Panels row (Top Accounts | This Week's Picture) ──
+    var panelY=tileY+tileH+0.12,panelH=2.7;
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:panelY,w:7.6,h:panelH,fill:{color:"FFFFFF"},line:{color:BORDER,width:0.75}});
+    slide.addShape(pptx.ShapeType.rect,{x:8.25,y:panelY,w:4.68,h:panelH,fill:{color:"FFFFFF"},line:{color:BORDER,width:0.75}});
+    sectionHeader(0.55,panelY+0.1,7.3,"TOP ACCOUNTS WITH OPEN ISSUES","Cross-reference against Top 50+ renewal list");
+    sectionHeader(8.4,panelY+0.1,4.4,"THIS WEEK'S PICTURE","Category mix + top themes");
+
+    // Top Accounts table — capped to keep the slide clean; the app's Results/Dashboard page has the full list
+    var accHeaderStyle={bold:true,color:"FFFFFF",fill:{color:NAVY},fontSize:9,fontFace:"Arial"};
     function accHeaderCell(t){return{text:t,options:accHeaderStyle};}
     var accRows=[["ACCOUNT","ARR","ISSUE TYPE","DAYS","OWNER / STATUS"].map(accHeaderCell)];
-    Q("#chr-accounts-tb tr").forEach(function(tr){
-      var tds=tr.querySelectorAll("td");
-      if(tds.length>=5)accRows.push([tdText(tr,0),tdText(tr,1),tdText(tr,2),tdText(tr,3),tdText(tr,4)]);
+    var accTrs=Q("#chr-accounts-tb tr").filter(function(tr){return tr.querySelectorAll("td").length>=5;});
+    accTrs.slice(0,5).forEach(function(tr){
+      accRows.push([tdText(tr,0),tdText(tr,1),tdText(tr,2),tdText(tr,3),tdText(tr,4)]);
     });
-    slide.addTable(accRows,{x:0.4,y:2.9,w:7.6,colW:[1.8,1.1,1.7,0.8,2.2],fontSize:9,border:{type:"solid",color:"E5E7EB",pt:0.75},autoPage:false});
+    if(accTrs.length>5)accRows.push([{text:"+ "+(accTrs.length-5)+" more accounts",options:{colspan:5,align:"center",italic:true,color:GRAY,fontSize:8}}]);
+    slide.addTable(accRows,{x:0.55,y:panelY+0.65,w:7.3,colW:[1.75,1.05,1.6,0.75,2.15],rowH:0.25,fontSize:9,fontFace:"Arial",color:DARK,border:{type:"solid",color:BORDER,pt:0.5},valign:"middle",autoPage:false});
 
-    // ── This Week's Picture ──
-    slide.addShape(pptx.ShapeType.rect,{x:8.25,y:2.9,w:4.68,h:2.6,fill:{color:"F9FAFB"},line:{color:"E5E7EB",width:0.75}});
-    slide.addText("THIS WEEK'S PICTURE",{x:8.45,y:3.0,w:4.3,h:0.25,fontSize:11,bold:true,color:DARK});
-    slide.addText("Category mix + top themes",{x:8.45,y:3.23,w:4.3,h:0.2,fontSize:8,color:GRAY});
+    // This Week's Picture — category mix (bold name + gray % of total on the left, big colored count on the right).
+    // Capped to the template's own 3-category example so it always fits the panel regardless of how many
+    // distinct categories exist in the real data.
     var catMix=(ST.chrComputed&&ST.chrComputed.catMix)||[];
-    catMix.slice(0,4).forEach(function(c,i){
-      var y=3.5+i*0.3;
-      slide.addText(c.label,{x:8.45,y:y,w:2.6,h:0.28,fontSize:9,bold:true,color:DARK});
-      slide.addText("["+c.pct+"%] "+c.count,{x:11.1,y:y,w:1.6,h:0.28,fontSize:9,color:GRAY,align:"right"});
+    var cy=panelY+0.72;
+    catMix.slice(0,3).forEach(function(c){
+      var color=chrCategoryColor(c.label,ORANGE,RED,NAVY,BLUE,GREEN,GRAY);
+      slide.addText(c.label,{x:8.4,y:cy,w:2.7,h:0.2,fontSize:10.5,bold:true,color:DARK,fontFace:"Arial"});
+      slide.addText("["+c.pct+"%] of total",{x:8.4,y:cy+0.2,w:2.7,h:0.16,fontSize:8,color:GRAY,fontFace:"Arial"});
+      slide.addText(String(c.count),{x:11.1,y:cy,w:1.6,h:0.36,fontSize:18,bold:true,color:color,align:"right",fontFace:"Arial"});
+      cy+=0.38;
     });
-    slide.addText("TOP THEMES THIS WEEK",{x:8.45,y:4.8,w:4.3,h:0.2,fontSize:9,bold:true,color:ORANGE});
+    slide.addText("TOP THEMES THIS WEEK",{x:8.4,y:cy+0.04,w:4.3,h:0.18,fontSize:10,bold:true,color:ORANGE,fontFace:"Arial"});
     var themes=(ST.chrComputed&&ST.chrComputed.themes)||[];
     var themeText=themes.length?themes.map(function(t,i){return(i+1)+". "+t.label+" ("+t.count+")";}).join("\n"):"No themes yet.";
-    slide.addText(themeText,{x:8.45,y:5.03,w:4.3,h:1.3,fontSize:9,color:DARK,lineSpacingMultiple:1.3});
+    var themeY=cy+0.24,themeH=Math.max(0.3,panelY+panelH-themeY-0.08);
+    slide.addText(themeText,{x:8.4,y:themeY,w:4.3,h:themeH,fontSize:9,color:DARK,fontFace:"Arial",lineSpacingMultiple:1.2});
 
-    // ── Product Escalations to Engineering (read from the editable inputs) ──
-    // Explicit rowH + tight margins keep the table compact so it never spills past the box below.
-    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:5.6,w:12.53,h:1.85,fill:{color:NAVY},line:{type:"none"}});
-    slide.addText("PRODUCT ESCALATIONS TO ENGINEERING",{x:0.6,y:5.68,w:8,h:0.22,fontSize:11,bold:true,color:AMBER});
-    slide.addText("Top ticket volume drivers · engineering priority list",{x:0.6,y:5.89,w:8,h:0.2,fontSize:8,color:"D1D5DB"});
-    var escHeaderStyle={bold:true,color:AMBER,fontSize:9,margin:[0.02,0.06,0.02,0.06]};
+    // ── Product Escalations to Engineering (manual table, read from the editable inputs) ──
+    var escY=panelY+panelH+0.12,escH=1.9;
+    slide.addShape(pptx.ShapeType.rect,{x:0.4,y:escY,w:12.53,h:escH,fill:{color:NAVY},line:{type:"none"}});
+    slide.addText("PRODUCT ESCALATIONS TO ENGINEERING",{x:0.6,y:escY+0.1,w:8,h:0.22,fontSize:12,bold:true,color:AMBER,fontFace:"Arial"});
+    slide.addText("Top ticket volume drivers · engineering priority list",{x:0.6,y:escY+0.32,w:8,h:0.2,fontSize:9,italic:true,color:"D1D5DB",fontFace:"Arial"});
+    var escHeaderStyle={bold:true,color:AMBER,fontSize:9,fontFace:"Arial",margin:[0.02,0.06,0.02,0.06]};
     function escHeaderCell(t){return{text:t,options:escHeaderStyle};}
     var escRows=[["ISSUE","IMPACT","ENG OWNER","P"].map(escHeaderCell)];
-    Q("#chr-esc-tb tr").forEach(function(tr){
+    function escPrioCell(p){
+      var c=p==="P0"?RED:(p==="P1"?AMBER:"4B5563");
+      return{text:p||"",options:{fontSize:9,bold:true,color:"FFFFFF",fill:{color:c},align:"center",fontFace:"Arial",margin:[0.02,0.06,0.02,0.06]}};
+    }
+    // Capped to 3 rows (matching the template's own example count) + a "+N more" note, so the
+    // table height stays fixed and safely inside the box no matter how many rows exist in the app.
+    var escTrs=Q("#chr-esc-tb tr").filter(function(tr){return tr.querySelector('[data-esc-f="issue"]');});
+    escTrs.slice(0,3).forEach(function(tr,idx){
       var issue=tr.querySelector('[data-esc-f="issue"]');
-      if(!issue)return;
       var impact=tr.querySelector('[data-esc-f="impact"]'),owner=tr.querySelector('[data-esc-f="engOwner"]'),prio=tr.querySelector('[data-esc-f="priority"]');
-      escRows.push([issue.value||"",impact?impact.value||"":"",owner?owner.value||"":"",prio?prio.value||"":""]);
+      var issueCell={text:[{text:(idx+1)+".  ",options:{color:ORANGE,bold:true}},{text:issue.value||"(untitled)",options:{color:"FFFFFF"}}],options:{fontSize:9,fontFace:"Arial",margin:[0.02,0.06,0.02,0.06]}};
+      var impactCell={text:impact?impact.value||"":"",options:{fontSize:9,color:"E5E7EB",fontFace:"Arial",margin:[0.02,0.06,0.02,0.06]}};
+      var ownerCell={text:owner?owner.value||"":"",options:{fontSize:9,color:"E5E7EB",fontFace:"Arial",margin:[0.02,0.06,0.02,0.06]}};
+      escRows.push([issueCell,impactCell,ownerCell,escPrioCell(prio?prio.value:"")]);
     });
     if(escRows.length>1){
-      slide.addTable(escRows,{x:0.6,y:6.15,w:12.1,colW:[6,2.5,2.3,1.3],rowH:0.26,fontSize:9,color:"FFFFFF",fill:{color:NAVY},border:{type:"none"},margin:[0.02,0.06,0.02,0.06],valign:"middle",autoPage:false});
+      slide.addTable(escRows,{x:0.6,y:escY+0.6,w:12.1,colW:[6.2,2.4,2.2,1.3],rowH:0.26,fontSize:9,fontFace:"Arial",fill:{color:NAVY},border:{type:"none"},valign:"middle",autoPage:false});
     }
+    if(escTrs.length>3){
+      slide.addText("+ "+(escTrs.length-3)+" more — see the app for the full list",{x:0.6,y:escY+escH-0.28,w:6,h:0.2,fontSize:8,italic:true,color:"9CA3AF",fontFace:"Arial"});
+    }
+    slide.addText("DISPATCHTRACK  ·  N.A. Weekly Update  ·  Confidential",{x:6.5,y:escY+escH-0.28,w:6.2,h:0.2,fontSize:8,color:"6B7280",align:"right",fontFace:"Arial"});
 
     await pptx.writeFile({fileName:"DT-CustomerHealth-"+stamp()+".pptx"});
     toast("PPT downloaded","ok");
