@@ -831,6 +831,10 @@ select.fin{cursor:pointer}
               <button class="btn bsm" id="smb-mode-license">License Count</button>
               <button class="btn bsm" id="smb-mode-arr">ARR</button>
             </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:0">
+            <div class="al aw" style="font-size:12.5px">Already-evaluated tickets keep whatever SMB value they were given at evaluation time &mdash; they don't update automatically when you change modes, ranges, or fix a parsing issue. Use this to reclassify every existing result using the current mode and ranges above.</div>
+            <div><button class="btn bout bsm" id="smb-recompute-all">&#8635; Recompute SMB for All Results</button></div>
+            <div id="smb-recompute-msg"></div>
             <div id="smb-license-ranges" style="display:flex;flex-direction:column;gap:12px">
               <hr style="border:none;border-top:1px solid var(--border);margin:0">
               <div style="font-size:13px;font-weight:600">License Count Ranges</div>
@@ -1308,6 +1312,22 @@ function parseFlexDate(v){
   }
   var d2=new Date(v);
   return isNaN(d2.getTime())?null:d2;
+}
+// Robustly parses a numeric value from a spreadsheet/CSV cell — handles plain numbers, currency-formatted
+// text ("$1,740.00"), and blank cells. Returns null (never 0) for blank/unparseable input, since a genuinely
+// missing value must never be treated as "0" — 0 is a valid, real number for range-based classification
+// (e.g. an ARR range starting at Min:0), so conflating "missing" with "zero" causes silent misclassification.
+function parseNumericValue(v){
+  if(v==null||v==="")return null;
+  if(typeof v==="number")return isNaN(v)?null:v;
+  var s=String(v).trim();
+  if(!s)return null;
+  var neg=/^\(.*\)$/.test(s); // accounting-style negative numbers, e.g. "(1,234.00)"
+  s=s.replace(/[^0-9.\-]/g,"");
+  if(s===""||s==="-"||s===".")return null;
+  var n=Number(s);
+  if(isNaN(n))return null;
+  return neg?-Math.abs(n):n;
 }
 function dlBlob(blob,name){var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u);},1000);}
 function lsG(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -2600,8 +2620,7 @@ async function applySMB(ci,li,mode){
   for(var i=0;i<rows.length;i++){
     var code=String(rows[i][ci]||"").trim();
     if(!code)continue;
-    var lcRaw=rows[i][li],lc=(lcRaw===""||lcRaw==null)?null:Number(lcRaw);
-    if(lc!=null&&isNaN(lc))lc=null;
+    var lc=parseNumericValue(rows[i][li]);
     var key=code.toLowerCase();
     // Duplicate detection uses the same unique key (lowercased Activation Code) as lookupSMB().
     if(append&&Object.prototype.hasOwnProperty.call(data,key)){skipped++;continue;}
@@ -2622,6 +2641,44 @@ async function applySMB(ci,li,mode){
 }
 function lookupSMB(code){if(!code)return"Unknown";if(isTrialOrUAT(code))return"Micro";return effSMBType(ST.smbData[String(code).trim().toLowerCase()]);}
 async function clearSMBData(){if(!confirm("Clear all SMB data?"))return;ST.smbData={};ST.smbRaw=[];lsD(SK.SM);if(FB.enabled&&FB.db)await fsDelete("shared/smbdata");renderSMBPage();upBadges();toast("SMB cleared","ok");}
+
+// Re-derives smb_type (and, in ARR mode, res.arr) for every already-evaluated result using the
+// CURRENT classification mode + ranges. Existing results keep whatever SMB value they got at
+// evaluation time — they never auto-update when ranges/mode change or a parsing bug gets fixed —
+// so this is the one place that brings them back in sync with the current configuration.
+async function recomputeAllSMB(){
+  if(!ST.results.length){toast("No results to recompute","in");return;}
+  var mode=getSMBMode();
+  if(!confirm("Recompute SMB classification for all "+ST.results.length+" result(s) using the current mode ("+(mode==="arr"?"ARR":"License Count")+") and ranges?"))return;
+  var msg=G("smb-recompute-msg");if(msg){msg.className="al ai";msg.style.display="block";msg.textContent="Recomputing…";}
+  var changed=0,toSync=[];
+  ST.results.forEach(function(r){
+    var oldType=r.smb_type;
+    if(mode==="arr"){
+      var ci2=r._ci,rd2=r._rd;
+      if(ci2&&rd2&&ci2.arr!=null)r.arr=parseNumericValue(rd2[ci2.arr]);
+      r.smb_type=classifySMBByARR(r.activation_code,r.arr);
+    }else{
+      r.smb_type=lookupSMB(r.activation_code);
+    }
+    if(r.smb_type!==oldType){changed++;if(r._fid)toSync.push(r);}
+  });
+  lsS(SK.RE,ST.results.slice(-200));
+  if(FB.enabled&&FB.db&&FB.user&&toSync.length){
+    try{
+      var coll=FB.db.collection("shared").doc("org").collection("results");
+      for(var i=0;i<toSync.length;i+=400){
+        var batch=FB.db.batch();
+        toSync.slice(i,i+400).forEach(function(r){batch.set(coll.doc(r._fid),{smb_type:r.smb_type,arr:(typeof r.arr==="number")?r.arr:null},{merge:true});});
+        await batch.commit();
+      }
+    }catch(e){console.warn("recomputeAllSMB Firestore sync error:",e);}
+  }
+  renderResTable();upBadges();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  if(msg){msg.className="al ao";msg.textContent="Recomputed "+ST.results.length+" result(s) — "+changed+" changed.";}
+  toast("Recomputed SMB: "+changed+" of "+ST.results.length+" changed","ok");
+}
 function renderSMBPage(){
   renderSMBRangeInputs();
   renderARRRangeInputs();
@@ -3393,8 +3450,8 @@ async function startEval(){
     if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
-    var rowArr=ci.arr!=null?Number(row[ci.arr]):NaN;
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:isNaN(rowArr)?null:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
+    var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
@@ -4452,6 +4509,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var arrr=G("arr-rng-reset");if(arrr)arrr.onclick=resetARRRangesToDefaults;
   var sml=G("smb-mode-license");if(sml)sml.onclick=function(){setSMBModeFromUI("license");};
   var sma=G("smb-mode-arr");if(sma)sma.onclick=function(){setSMBModeFromUI("arr");};
+  var srca=G("smb-recompute-all");if(srca)srca.onclick=recomputeAllSMB;
   var sas=G("smb-add-single");if(sas)sas.onclick=addSingleSMB;
   var smc=G("smb-add-code");if(smc)smc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleSMB();});
   var seb=G("smb-export-btn");if(seb)seb.onclick=exportSMBCsv;
