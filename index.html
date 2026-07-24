@@ -768,7 +768,10 @@ select.fin{cursor:pointer}
               <div class="dz" id="dz-smb1" style="padding:20px"><div class="dzi" style="font-size:22px">&#x1F3E2;</div><div class="dzt" style="font-size:14px">Drop SMB reference sheet</div><div class="dzs">Activation Code + License Count &#8594; auto-classified</div><input type="file" id="fi-smb1" accept=".xlsx,.xls,.csv" style="display:none"></div>
             </div></div>
           </div>
-          <div style="display:flex;justify-content:flex-end"><button class="btn bpri blg" id="btn-n1" disabled>Configure Options &#8594;</button></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="font-size:11.5px;color:var(--tx-3);max-width:420px">Sheet already reviewed &mdash; Environment / Category / Sub Category / SMB / FRR already filled in? Skip AI processing and import it straight into Results + Dashboard.</div>
+            <div style="display:flex;gap:10px"><button class="btn bout blg" id="btn-import-reviewed" disabled>&#128229; Import as Reviewed Results</button><button class="btn bpri blg" id="btn-n1" disabled>Configure Options &#8594;</button></div>
+          </div>
         </div>
 
         <div id="ph2" style="display:none">
@@ -805,7 +808,7 @@ select.fin{cursor:pointer}
         <div id="ph4" style="display:none">
           <div class="al aw"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div style="flex:1"><strong>Review &amp; Correct AI Classifications.</strong> Edit any cell &#8212; changes highlight amber and save as AI training data to improve future accuracy.</div><div style="display:flex;gap:8px;flex-shrink:0;align-items:center"><span class="bdg bgr" id="ch-cnt" style="font-size:12px">0 changes</span><button class="btn bpri bsm" id="save-corr">&#10003; Save Corrections</button></div></div>
           <div class="card"><div class="chd"><span class="ct">Editable Results</span><div style="display:flex;gap:8px"><button class="btn bgst bsm" id="rev-csv">&#8595; CSV</button><button class="btn bok bsm" id="rev-xl">&#8595; Excel</button></div></div>
-            <div class="tw" style="max-height:480px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>Type</th><th style="background:#FFFBEB">FRR (min)</th><th style="background:#FFFBEB">SMB</th><th style="background:#FFFBEB">Environment</th><th style="background:#FFFBEB">Category</th><th style="background:#FFFBEB">Sub Category</th><th>Status</th></tr></thead><tbody id="rev-tb"></tbody></table></div>
+            <div class="tw" style="max-height:480px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>Type</th><th style="background:#FFFBEB">FRR (min)</th><th style="background:#FFFBEB">SMB</th><th style="background:#FFFBEB">Environment</th><th style="background:#FFFBEB">Category</th><th style="background:#FFFBEB">Sub Category</th><th>Status</th><th>Delete</th></tr></thead><tbody id="rev-tb"></tbody></table></div>
           </div>
           <div style="display:flex;justify-content:space-between"><button class="btn bout" id="btn-b4">&#8592; Back</button><button class="btn bpri blg" id="btn-ph5">Finish &amp; Export &#8594;</button></div>
         </div>
@@ -813,7 +816,7 @@ select.fin{cursor:pointer}
         <div id="ph5" style="display:none">
           <div class="card" style="border:2px solid var(--success)"><div class="cbd" style="text-align:center;padding:40px 20px">
             <div style="font-size:48px;margin-bottom:14px">&#x2705;</div>
-            <div style="font-family:var(--font-heading);font-size:22px;font-weight:700;margin-bottom:6px">Evaluation Complete!</div>
+            <div style="font-family:var(--font-heading);font-size:22px;font-weight:700;margin-bottom:6px" id="done-title">Evaluation Complete!</div>
             <div style="font-size:14px;color:var(--tx-2);margin-bottom:24px" id="done-sum"></div>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="btn bpri bxl" id="fin-csv">&#8595; Download CSV</button><button class="btn bok bxl" id="fin-xl">&#8595; Download Excel</button><button class="btn bout bxl" data-pg="results">View Results &#8594;</button></div>
             <div style="margin-top:14px"><button class="btn bpri" id="save-review-session">&#128190; Save Review Session</button></div>
@@ -881,7 +884,7 @@ select.fin{cursor:pointer}
       <!-- RESULTS -->
       <div class="page" id="pg-results">
         <div class="card">
-          <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx-3);font-family:var(--font-mono)" id="res-lbl">0 records</span><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
+          <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx-3);font-family:var(--font-mono)" id="res-lbl">0 records</span><button class="btn bout bsm" id="res-manage">&#9881; Manage Data</button><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
           <div class="fb">
             <select class="fsel" id="f-session"><option value="">All Reviews</option></select>
             <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
@@ -1130,7 +1133,7 @@ var DS = ["API Documentation", "API Export", "API Import", "API Key Request", "A
 var DT = ["Technical"];
 
 // ─── COLUMN MAP ──────────────────────────────────────────────
-var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"]};
+var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"],confidence:["ai confidence","confidence"],ab_comment:["comments(ab)","comments (ab)"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
 var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm"};
@@ -2031,12 +2034,12 @@ function renderDash(){
     var ok=r.filter(function(x){return x._ok;});
     if(G("s-rat"))G("s-rat").textContent=r.length?Math.round(ok.length/r.length*100)+"%":"--";
     var fv=ok.filter(function(x){return x.frr>0;}).map(function(x){return x.frr;});
-    if(G("s-frr"))G("s-frr").textContent=fv.length?Math.round(fv.reduce(function(a,b){return a+b;},0)/fv.length)+"m":"--";
+    if(G("s-frr"))G("s-frr").textContent=fv.length?Math.round(fv.reduce(function(a,b){return a+b;},0)/fv.length):"--";
     if(G("s-lrn"))G("s-lrn").textContent=getFilteredCorrectionsCount();
     var dr=G("dash-rec");if(!dr)return;
     if(!r.length){dr.innerHTML='<div class="te">No evaluations yet.</div>';return;}
     var rc=r.slice().reverse().slice(0,8),rows="";
-    for(var i=0;i<rc.length;i++){var v=rc[i];var fc2=v.frr>60?"var(--danger)":v.frr>0?"var(--success)":"var(--tx-3)";rows+="<tr><td style=\"font-family:var(--font-mono)\"><a href=\""+esc(v.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(v.id)+"</a></td><td class=\"tr\" style=\"max-width:200px\" title=\""+esc(v.subject||"")+"\">"+esc(v.subject||"--")+"</td><td>"+smbBdg(v.smb_type)+"</td><td style=\"font-size:11.5px\">"+esc(v.environment||"--")+"</td><td>"+catBdg(v.category)+"</td><td style=\"font-size:11px;color:var(--tx-2)\">"+esc(v.sub_category||"--")+"</td><td style=\"font-family:var(--font-mono);font-weight:500;color:"+fc2+"\">"+(v.frr>0?v.frr+"m":"--")+"</td></tr>";}
+    for(var i=0;i<rc.length;i++){var v=rc[i];var fc2=v.frr>60?"var(--danger)":v.frr>0?"var(--success)":"var(--tx-3)";rows+="<tr><td style=\"font-family:var(--font-mono)\"><a href=\""+esc(v.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(v.id)+"</a></td><td class=\"tr\" style=\"max-width:200px\" title=\""+esc(v.subject||"")+"\">"+esc(v.subject||"--")+"</td><td>"+smbBdg(v.smb_type)+"</td><td style=\"font-size:11.5px\">"+esc(v.environment||"--")+"</td><td>"+catBdg(v.category)+"</td><td style=\"font-size:11px;color:var(--tx-2)\">"+esc(v.sub_category||"--")+"</td><td style=\"font-family:var(--font-mono);font-weight:500;color:"+fc2+"\">"+(v.frr>0?v.frr:"--")+"</td></tr>";}
     dr.innerHTML='<div class="tw" style="max-height:260px"><table class="tbl"><thead><tr><th>ID</th><th>Subject</th><th>SMB</th><th>Environment</th><th>Category</th><th>Sub Category</th><th>FRR</th></tr></thead><tbody>'+rows+"</tbody></table></div>";
     var ks=Object.keys(ST.smbData),ds=G("dash-smb");if(!ds)return;
     if(ks.length){var t={};ks.forEach(function(k){var v2=effSMBType(ST.smbData[k]);t[v2]=(t[v2]||0)+1;});var h2="";for(var k2 in t)h2+="<div style=\"display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px\"><span>"+esc(k2)+"</span><span style=\"font-family:var(--font-mono)\">"+t[k2]+"</span></div>";ds.innerHTML='<span class="bdg bok2" style="margin-bottom:8px">'+ks.length+" codes</span>"+h2;}
@@ -2768,10 +2771,68 @@ function parseInflow(file){
       if(nif)nif.style.display="flex";if(nic)nic.style.display="block";
       if(nicl){var vs=Object.values(ci),h3="";for(var ii=0;ii<hdrs.length;ii++)h3+='<span class="bdg '+(vs.indexOf(ii)>=0?"bok2":"bgr")+'" style="font-size:10.5px">'+esc(hdrs[ii]||"(empty)")+"</span>";nicl.innerHTML=h3;}
       if(bn1)bn1.disabled=false;if(pcl)pcl.textContent="("+rows.length+" rows)";
+      var bir=G("btn-import-reviewed");if(bir)bir.disabled=false;
       toast(rows.length+" rows loaded","ok");
     }catch(e){toast("Error: "+e.message,"err");}
   };
   if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
+}
+
+// Imports an already-evaluated/reviewed sheet directly as Results — no Zendesk fetch, no Gemini
+// classification, and no API keys required. Reads Environment/Category/Sub Category/SMB/FRR (and
+// everything else) straight from the sheet's own columns via the same CM auto-detection used for
+// normal evaluation, since a "reviewed" sheet is assumed to already be ground truth. The imported
+// batch lands in ST.results (so it shows up in Results/Dashboard/Health Report immediately) and in
+// ST.curEval, so the existing "Save Review Session" flow on the Done screen can name/tag it too.
+async function importReviewedAsResults(){
+  if(!ST.rows.length){toast("No inflow sheet loaded","err");return;}
+  var ci=ST.colIdx,total=ST.rows.length,imported=[],skipped=0;
+  ST.curEval=[];
+  for(var i=0;i<total;i++){
+    var row=ST.rows[i],tid=String(ci.ticket_id!=null?row[ci.ticket_id]:"").trim();
+    if(!tid||!/^\d+$/.test(tid)){skipped++;continue;}
+    var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
+    var rowFrr=ci.frr!=null?parseNumericValue(row[ci.frr]):null;
+    var rowConf=ci.confidence!=null?parseNumericValue(row[ci.confidence]):null;
+    var res={
+      id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),
+      assignee:String(ci.assignee!=null?row[ci.assignee]:""),
+      ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),
+      priority:String(ci.priority!=null?row[ci.priority]:""),
+      status:String(ci.status!=null?row[ci.status]:""),
+      subject:String(ci.subject!=null?row[ci.subject]:""),
+      ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),
+      requester:String(ci.requester!=null?row[ci.requester]:""),
+      org:String(ci.org!=null?row[ci.org]:""),
+      activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),
+      created:ci.created!=null?row[ci.created]:"",
+      solved:ci.solved!=null?row[ci.solved]:"",
+      satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),
+      arr:rowArr,
+      frr:rowFrr!=null?rowFrr:0,
+      frr_txt:rowFrr!=null?String(rowFrr):"",
+      smb_type:ci.smb!=null?(normSMB(String(row[ci.smb]||""))||"Unknown"):"Unknown",
+      environment:String(ci.environment!=null?row[ci.environment]:""),
+      category:String(ci.category!=null?row[ci.category]:""),
+      sub_category:String(ci.sub_category!=null?row[ci.sub_category]:""),
+      ab_comment:String(ci.ab_comment!=null?row[ci.ab_comment]:""),
+      confidence:rowConf!=null?rowConf:0,
+      zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,
+      _ok:true,error:"",
+      evaluatedAt:Date.now(),
+      reviewSessionId:"",reviewSessionName:"",reviewDate:0
+    };
+    ST.results.push(res);ST.curEval.push(res);imported.push(res);
+    if(FB.enabled&&FB.db&&FB.user)saveResultToFirestore(res).catch(function(e){console.warn("Firestore save error:",e);});
+  }
+  if(!imported.length){toast("No valid rows found — make sure the sheet has a Ticket ID column","err");return;}
+  lsS(SK.RE,ST.results.slice(-200));
+  upBadges();renderResTable();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  var dt=G("done-title");if(dt)dt.textContent="Import Complete!";
+  var ds=G("done-sum");if(ds)ds.textContent=imported.length+" ticket"+(imported.length!==1?"s":"")+" imported as results"+(skipped?" · "+skipped+" row"+(skipped!==1?"s":"")+" skipped (no valid Ticket ID)":"");
+  showPh(5);
+  toast(imported.length+" ticket(s) imported","ok");
 }
 
 // ─── PHASES ──────────────────────────────────────────────────
@@ -3013,7 +3074,7 @@ function showDrillDown(value,field,data){
     h+="<td class='tr' style='max-width:180px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
     h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.ticket_type||"--")+"</td>";
     h+="<td>"+smbBdg(r.smb_type)+"</td>";
-    h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr+"m":r.frr_txt||"--")+"</td>";
+    h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr:r.frr_txt||"--")+"</td>";
     h+="<td style='font-size:11px'>"+esc(r.environment||"--")+"</td>";
     h+="<td>"+catBdg(r.category)+"</td>";
     h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.sub_category||"--")+"</td>";
@@ -3273,7 +3334,7 @@ function showTicketPreview(e,r){
       '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:7px;font-size:12.5px">'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
       '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">SMB</div><div>'+smbBdg(r.smb_type)+'</div></div>'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">FRR</div><div style="font-family:JetBrains Mono,monospace;font-weight:500;color:'+fc+'">'+(r.frr>0?r.frr+"m":r.frr_txt||"--")+'</div></div>'+
+      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">FRR</div><div style="font-family:JetBrains Mono,monospace;font-weight:500;color:'+fc+'">'+(r.frr>0?r.frr:r.frr_txt||"--")+'</div></div>'+
       '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Environment</div><div>'+esc(r.environment||"--")+'</div></div>'+
       '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Category</div><div>'+catBdg(r.category)+'</div></div>'+
       '</div>'+
@@ -3487,9 +3548,9 @@ async function startEval(){
         }catch(re){}
         if(isZeroFrrAgent(rName,rEmail)){
           // Specific support/CS agents → FRR = 0
-          res.frr=0;res.frr_txt="0m (support agent)";fc++;
+          res.frr=0;res.frr_txt="0 (support agent)";fc++;
           abNotes.push("Internal support agent ticket — FRR=0");
-          log("  FRR: 0m ("+rName+" is zero-FRR agent)","ok");
+          log("  FRR: 0 ("+rName+" is zero-FRR agent)","ok");
         }else{
           // All other tickets → calculate FRR normally
           comments=await zdGetComments(tid);
@@ -3500,18 +3561,18 @@ async function startEval(){
             var frrMs=reply.getTime()-asgn.getTime();
             if(frrMs<0){
               // IR sent before or at same time as assignment
-              res.frr=0;res.frr_txt="0m";fc++;
+              res.frr=0;res.frr_txt="0";fc++;
               abNotes.push("IR sent simultaneously with or before agent assignment");
-              log("  FRR: 0m (IR sent at same time as assignment)","warn");
+              log("  FRR: 0 (IR sent at same time as assignment)","warn");
             }else if(frrMs<60000){
               // Within 1 minute = effectively simultaneous
-              res.frr=0;res.frr_txt="0m";fc++;
+              res.frr=0;res.frr_txt="0";fc++;
               abNotes.push("IR and assignment occurred within 1 minute");
-              log("  FRR: 0m (simultaneous)","ok");
+              log("  FRR: 0 (simultaneous)","ok");
             }else{
               res.frr=Math.round(frrMs/60000);
-              res.frr_txt=res.frr+"m";fc++;
-              log("  FRR: "+res.frr+"m","ok");
+              res.frr_txt=String(res.frr);fc++;
+              log("  FRR: "+res.frr,"ok");
             }
             // ── Check if support@dispatchtrack.com was CCed before IR ──
             var supportCCed=false;
@@ -3598,7 +3659,7 @@ async function startEval(){
     if(FB.enabled&&FB.db&&FB.user)saveResultToFirestore(res).catch(function(e){console.warn("Firestore save error:",e);});
     lsS(SK.RE,ST.results.slice(-200)); // keep last 200 in localStorage
     // Add live row
-    var tb=G("live-tb");if(tb){if(tb.querySelector(".te"))tb.innerHTML="";var tr=document.createElement("tr");var fcc=res.frr>60?"var(--danger)":res.frr>0?"var(--success)":"var(--tx-3)";tr.innerHTML="<td style=\"font-family:var(--font-mono)\"><a href=\""+esc(res.zd_url)+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(res.id)+"</a></td><td class=\"tr\" style=\"max-width:160px;font-size:12.5px\">"+esc(res.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx-2)\">"+esc(res.ticket_type||"--")+"</td><td>"+smbBdg(res.smb_type)+"</td><td style=\"font-size:11px;max-width:110px\" class=\"tr\">"+esc(res.environment||"--")+"</td><td>"+catBdg(res.category)+"</td><td style=\"font-size:11px;color:var(--tx-2);max-width:110px\" class=\"tr\">"+esc(res.sub_category||"--")+"</td><td style=\"font-family:var(--font-mono);font-weight:500;color:"+fcc+"\">"+(res.frr>0?res.frr+"m":res.frr_txt||"--")+"</td><td><span class=\"bdg "+(res._ok?"bok2":"berr")+"\">"+(res._ok?"OK":"Err")+"</span></td>";tb.appendChild(tr);tb.scrollTop=tb.scrollHeight;}
+    var tb=G("live-tb");if(tb){if(tb.querySelector(".te"))tb.innerHTML="";var tr=document.createElement("tr");var fcc=res.frr>60?"var(--danger)":res.frr>0?"var(--success)":"var(--tx-3)";tr.innerHTML="<td style=\"font-family:var(--font-mono)\"><a href=\""+esc(res.zd_url)+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(res.id)+"</a></td><td class=\"tr\" style=\"max-width:160px;font-size:12.5px\">"+esc(res.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx-2)\">"+esc(res.ticket_type||"--")+"</td><td>"+smbBdg(res.smb_type)+"</td><td style=\"font-size:11px;max-width:110px\" class=\"tr\">"+esc(res.environment||"--")+"</td><td>"+catBdg(res.category)+"</td><td style=\"font-size:11px;color:var(--tx-2);max-width:110px\" class=\"tr\">"+esc(res.sub_category||"--")+"</td><td style=\"font-family:var(--font-mono);font-weight:500;color:"+fcc+"\">"+(res.frr>0?res.frr:res.frr_txt||"--")+"</td><td><span class=\"bdg "+(res._ok?"bok2":"berr")+"\">"+(res._ok?"OK":"Err")+"</span></td>";tb.appendChild(tr);tb.scrollTop=tb.scrollHeight;}
     var pok=G("pc-ok"),per=G("pc-er"),pfr=G("pc-fr"),psm=G("pc-sm");
     if(pok)pok.textContent=ok;if(per)per.textContent=ec;if(pfr)pfr.textContent=fc;if(psm)psm.textContent=sc;
     upBadges();if(i<total-1)await sleep(ST.delay);
@@ -3607,7 +3668,7 @@ async function startEval(){
   if(pb2)pb2.style.width="100%";if(pp2)pp2.textContent="100%";if(pt2)pt2.textContent="Processing Complete";if(pe2)pe2.textContent="";
   log("DONE: "+ok+" ok, "+ec+" errors, "+fc+" FRR, "+sc+" SMB","ok");
   var af=fc>0?Math.round(ST.results.filter(function(r){return r.frr>0;}).reduce(function(a,r){return a+r.frr;},0)/fc):"--";
-  var ds=G("done-sum");if(ds)ds.textContent=ok+" evaluated \u00B7 "+ec+" errors \u00B7 "+fc+" FRR \u00B7 Avg FRR: "+af+"m";
+  var ds=G("done-sum");if(ds)ds.textContent=ok+" evaluated \u00B7 "+ec+" errors \u00B7 "+fc+" FRR \u00B7 Avg FRR: "+af;
   toast(ok+" tickets evaluated","ok");showPh(4);renderDash();
 }
 
@@ -3615,7 +3676,7 @@ async function startEval(){
 function buildRevTable(){
   var tb=G("rev-tb");if(!tb)return;
   ST.revChg={};var cc=G("ch-cnt");if(cc)cc.textContent="0 changes";
-  if(!ST.results.length){tb.innerHTML='<tr><td colspan="9" class="te">No results to review.</td></tr>';return;}
+  if(!ST.results.length){tb.innerHTML='<tr><td colspan="10" class="te">No results to review.</td></tr>';return;}
   var envs=getEnvs(),cats=getCats(),subs=getSubs().slice().sort(),h="";
   for(var i=0;i<ST.results.length;i++){
     var r=ST.results[i],eo="",co="",so="";
@@ -3626,7 +3687,7 @@ function buildRevTable(){
     so+="<option value='' "+((!r.sub_category||r.sub_category==='')?'selected':'')+" style='color:var(--tx-3)'>-- not set --</option>";
     for(var j=0;j<subs.length;j++)so+="<option value='"+esc(subs[j])+"'"+(subs[j]===r.sub_category?" selected":"")+">"+esc(subs[j])+"</option>";
     var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option><option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option><option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option><option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
-    h+="<tr id=\"rr-"+i+"\"><td style=\"font-family:var(--font-mono)\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx-2)\">"+esc(r.ticket_type||"--")+"</td><td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td><td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td></tr>";
+    h+="<tr id=\"rr-"+i+"\"><td style=\"font-family:var(--font-mono)\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\">#"+esc(r.id)+"</a></td><td class=\"tr\" style=\"max-width:180px;font-size:12.5px\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td><td style=\"font-size:11.5px;color:var(--tx-2)\">"+esc(r.ticket_type||"--")+"</td><td><input class=\"rinp\" data-ri=\""+i+"\" data-rf=\"frr\" value=\""+(r.frr>0?r.frr:"")+"\" placeholder=\"min\"></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"smb_type\">"+smbo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"environment\">"+eo+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"category\">"+co+"</select></td><td><select class=\"rsel\" data-ri=\""+i+"\" data-rf=\"sub_category\">"+so+"</select></td><td><span class=\"bdg "+(r._ok?"bok2":"berr")+"\">"+(r._ok?"OK":"Err")+"</span></td><td><button class=\"btn bdan bsm\" data-rev-del=\""+i+"\" title=\"Delete this ticket\">&#128465;</button></td></tr>";
   }
   tb.innerHTML=h;
   // Add ticket hover previews in review table
@@ -3637,6 +3698,18 @@ function buildRevTable(){
     a.addEventListener("mouseleave",hideTicketPreview);
   });
   tb.addEventListener("change",function(e){var el=e.target,idx=el.dataset.ri,field=el.dataset.rf;if(idx===undefined||!field)return;idx=+idx;var val=el.value;if(!ST.revChg[idx])ST.revChg[idx]={subject:ST.results[idx].subject,ticket_type:ST.results[idx].ticket_type,orig:{},corr:{}};if(!(field in ST.revChg[idx].orig))ST.revChg[idx].orig[field]=String(ST.results[idx][field]||"");ST.revChg[idx].corr[field]=val;el.parentElement.style.background="#FEF9C3";var rrow=G("rr-"+idx);if(rrow)rrow.classList.add("chrow");var tot=0;for(var k in ST.revChg)tot+=Object.keys(ST.revChg[k].corr||{}).length;var cc=G("ch-cnt");if(cc)cc.textContent=tot+" change"+(tot!==1?"s":"");});
+  tb.querySelectorAll("[data-rev-del]").forEach(function(btn){
+    btn.onclick=function(){deleteRevRow(+this.dataset.revDel);};
+  });
+}
+// Deletes a ticket straight out of Review & Correct (ph4), before Save Corrections is clicked —
+// removes it from ST.results entirely (not just this batch), same as a Results-page delete.
+function deleteRevRow(idx){
+  var r=ST.results[idx];if(!r)return;
+  if(!confirm("Delete ticket #"+r.id+"? This removes it from your results entirely and cannot be undone."))return;
+  removeResultRecords([r]);
+  buildRevTable();
+  toast("Deleted ticket #"+r.id,"ok");
 }
 async function saveCorr(){
   if(!Object.keys(ST.revChg).length){toast("No changes to save","in");return;}
@@ -3794,7 +3867,7 @@ function openEditResultModal(r){
   );
   G("er-cancel").onclick=closeModal;
   G("er-save").onclick=function(){
-    r.frr=+gv("er-frr")||0;r.frr_txt=r.frr>0?r.frr+"m":"";
+    r.frr=+gv("er-frr")||0;r.frr_txt=r.frr>0?String(r.frr):"";
     r.smb_type=gv("er-smb");r.environment=gv("er-env");r.category=gv("er-cat");r.sub_category=gv("er-scat");r.ab_comment=gv("er-ab");
     lsS(SK.RE,ST.results.slice(-200));
     // Save correction as learning data
@@ -3850,7 +3923,7 @@ function renderResTable(){
   var h="";for(var i=0;i<pg.length;i++){var r=pg[i],gi=ST.pg*ST.pgSz+i;
     var stCls=r.status==="open"?"st-open":r.status==="solved"?"st-solved":r.status==="closed"?"st-closed":r.status==="pending"?"st-pending":"bgr";
     var frrCls=r.frr>60?"frr-warn":r.frr>0?"frr-ok":"frr-none";
-    var frrVal=r.frr>0?r.frr+"m":(r.frr_txt||"--");
+    var frrVal=r.frr>0?r.frr:(r.frr_txt||"--");
     var confCls=r.confidence>=80?"conf-hi":r.confidence>=60?"conf-md":r.confidence>0?"conf-lo":"frr-none";
     var confVal=r.confidence?r.confidence+"%":"--";
     h+="<tr>";
@@ -3924,6 +3997,146 @@ function deleteSelectedResults(){
   var es=G("exp-sel");if(es)es.style.display="none";
   var ds=G("del-sel");if(ds)ds.style.display="none";
   toast("Deleted "+rows.length+" ticket(s)","ok");
+}
+
+// ─── BULK DATA MANAGEMENT (duplicates / time window / review sessions) ──────
+function getReviewSessionName(id){
+  for(var i=0;i<(ST.reviewSessions||[]).length;i++){if(ST.reviewSessions[i].id===id)return ST.reviewSessions[i].name;}
+  return"";
+}
+// Finds tickets with the same Ticket ID evaluated more than once within the current review-session
+// scope (getBaseResults() — respects the filter on Dashboard/Results), keeps the most recently
+// evaluated copy of each, and deletes the rest via the shared removeResultRecords() path.
+function removeDuplicateTickets(){
+  var scope=getBaseResults();
+  var scopeLabel=ST.reviewFilter?("\""+(getReviewSessionName(ST.reviewFilter)||"selected session")+"\""):"All Reviews";
+  var byId={};
+  scope.forEach(function(r){var k=String(r.id);if(!byId[k])byId[k]=[];byId[k].push(r);});
+  var dupes=[];
+  Object.keys(byId).forEach(function(k){
+    if(byId[k].length>1){
+      var sorted=byId[k].slice().sort(function(a,b){return(b.evaluatedAt||0)-(a.evaluatedAt||0);});
+      dupes=dupes.concat(sorted.slice(1));
+    }
+  });
+  if(!dupes.length){toast("No duplicate tickets found in "+scopeLabel,"in");return;}
+  if(!confirm("Found "+dupes.length+" duplicate ticket record(s) in "+scopeLabel+" (same Ticket ID evaluated more than once). Keep the most recently evaluated copy of each and delete the rest?"))return;
+  removeResultRecords(dupes);
+  toast("Removed "+dupes.length+" duplicate ticket(s)","ok");
+}
+// Deletes every ticket (across all sessions) whose evaluatedAt falls within the last N hours.
+function deleteTicketsReviewedInLastHours(hours){
+  var cutoff=Date.now()-hours*3600000;
+  var matches=ST.results.filter(function(r){return(r.evaluatedAt||0)>=cutoff;});
+  if(!matches.length){toast("No tickets evaluated in the last "+hours+" hour"+(hours!==1?"s":""),"in");return;}
+  if(!confirm("Delete "+matches.length+" ticket(s) evaluated in the last "+hours+" hour"+(hours!==1?"s":"")+"? This cannot be undone."))return;
+  removeResultRecords(matches);
+  toast("Deleted "+matches.length+" ticket(s)","ok");
+}
+// Batches a field update across every Firestore result doc tagged with the given session id.
+async function updateSessionTicketsInFirestore(sessionId,patch){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{
+    var coll=FB.db.collection("shared").doc("org").collection("results");
+    var snap=await coll.where("reviewSessionId","==",sessionId).get();
+    var docs=snap.docs;
+    for(var i=0;i<docs.length;i+=400){
+      var batch=FB.db.batch();
+      docs.slice(i,i+400).forEach(function(d){batch.set(d.ref,patch,{merge:true});});
+      await batch.commit();
+    }
+  }catch(e){console.warn("updateSessionTicketsInFirestore error:",e);}
+}
+function renameReviewSession(sessionId){
+  var s=null;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];break;}}
+  if(!s)return;
+  var newName=prompt("Rename review session:",s.name);
+  if(newName==null)return;
+  newName=newName.trim();
+  if(!newName){toast("Name cannot be empty","err");return;}
+  s.name=newName;
+  lsS(SK.RS,ST.reviewSessions);
+  ST.results.forEach(function(r){if(r.reviewSessionId===sessionId)r.reviewSessionName=newName;});
+  lsS(SK.RE,ST.results.slice(-200));
+  if(FB.enabled&&FB.db&&FB.user){
+    FB.db.collection("shared").doc("org").collection("reviewSessions").doc(sessionId).set({name:newName},{merge:true}).catch(function(){});
+    updateSessionTicketsInFirestore(sessionId,{reviewSessionName:newName});
+  }
+  fillReviewSessionDropdowns();renderManageSessionsList();renderResTable();
+  toast("Renamed to \""+newName+"\"","ok");
+}
+// Deletes just the session label — tagged tickets are kept and fall back under "All Reviews".
+function deleteReviewSessionOnly(sessionId){
+  var s=null,idx=-1;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];idx=i;break;}}
+  if(!s)return;
+  var taggedCount=ST.results.filter(function(r){return r.reviewSessionId===sessionId;}).length;
+  if(!confirm("Delete session \""+s.name+"\"? Its "+taggedCount+" ticket(s) will remain and move to \"All Reviews\"."))return;
+  ST.results.forEach(function(r){if(r.reviewSessionId===sessionId){r.reviewSessionId="";r.reviewSessionName="";r.reviewDate=0;}});
+  lsS(SK.RE,ST.results.slice(-200));
+  ST.reviewSessions.splice(idx,1);
+  lsS(SK.RS,ST.reviewSessions);
+  if(FB.enabled&&FB.db&&FB.user){
+    FB.db.collection("shared").doc("org").collection("reviewSessions").doc(sessionId).delete().catch(function(){});
+    updateSessionTicketsInFirestore(sessionId,{reviewSessionId:"",reviewSessionName:"",reviewDate:0});
+  }
+  if(ST.reviewFilter===sessionId)ST.reviewFilter="";
+  fillReviewSessionDropdowns();renderManageSessionsList();renderResTable();
+  var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+  toast("Session deleted (tickets kept)","ok");
+}
+// Deletes the session AND every ticket tagged with it.
+function deleteReviewSessionAndTickets(sessionId){
+  var s=null,idx=-1;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];idx=i;break;}}
+  if(!s)return;
+  var tickets=ST.results.filter(function(r){return r.reviewSessionId===sessionId;});
+  if(!confirm("Delete session \""+s.name+"\" AND its "+tickets.length+" ticket(s)? This cannot be undone."))return;
+  removeResultRecords(tickets);
+  ST.reviewSessions.splice(idx,1);
+  lsS(SK.RS,ST.reviewSessions);
+  if(FB.enabled&&FB.db&&FB.user){
+    FB.db.collection("shared").doc("org").collection("reviewSessions").doc(sessionId).delete().catch(function(e){console.warn("deleteReviewSessionAndTickets error:",e);});
+  }
+  if(ST.reviewFilter===sessionId)ST.reviewFilter="";
+  fillReviewSessionDropdowns();renderManageSessionsList();
+  toast("Session and its tickets deleted","ok");
+}
+function renderManageSessionsList(){
+  var box=G("mgd-sessions-list");if(!box)return;
+  var sessions=(ST.reviewSessions||[]).slice().sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0);});
+  if(!sessions.length){box.innerHTML='<div class="te" style="text-align:left">No saved review sessions yet.</div>';return;}
+  var h="";
+  sessions.forEach(function(s){
+    var cnt=ST.results.filter(function(r){return r.reviewSessionId===s.id;}).length;
+    h+="<div style='display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg);border-radius:7px;margin-bottom:6px;flex-wrap:wrap'>"+
+      "<div style='flex:1;min-width:140px'><div style='font-weight:600;font-size:13px'>"+esc(s.name)+"</div><div style='font-size:11px;color:var(--tx-3)'>"+cnt+" ticket"+(cnt!==1?"s":"")+"</div></div>"+
+      "<button class='btn bgst bsm' data-sess-rename='"+esc(s.id)+"'>Rename</button>"+
+      "<button class='btn bout bsm' data-sess-untag='"+esc(s.id)+"'>Delete (keep tickets)</button>"+
+      "<button class='btn bdan bsm' data-sess-delall='"+esc(s.id)+"'>Delete + Tickets</button>"+
+    "</div>";
+  });
+  box.innerHTML=h;
+  box.querySelectorAll("[data-sess-rename]").forEach(function(btn){btn.onclick=function(){renameReviewSession(this.dataset.sessRename);};});
+  box.querySelectorAll("[data-sess-untag]").forEach(function(btn){btn.onclick=function(){deleteReviewSessionOnly(this.dataset.sessUntag);};});
+  box.querySelectorAll("[data-sess-delall]").forEach(function(btn){btn.onclick=function(){deleteReviewSessionAndTickets(this.dataset.sessDelall);};});
+}
+function openManageDataModal(){
+  var scopeLabel=ST.reviewFilter?("the selected session (<strong>"+esc(getReviewSessionName(ST.reviewFilter)||"")+"</strong>)"):"<strong>All Reviews</strong>";
+  var body="<div style='display:flex;flex-direction:column;gap:16px'>"+
+    "<div><div style='font-weight:700;margin-bottom:6px'>Remove Duplicate Tickets</div>"+
+    "<div style='font-size:12.5px;color:var(--tx-2);margin-bottom:8px'>Finds tickets with the same Ticket ID evaluated more than once within "+scopeLabel+" (change the Review Session filter on the Results page to target a different session), keeps the most recently evaluated copy, and deletes the rest.</div>"+
+    "<button class='btn bout bsm' id='mgd-dedupe'>Remove Duplicates</button></div>"+
+    "<hr style='border:none;border-top:1px solid var(--border);margin:0'>"+
+    "<div><div style='font-weight:700;margin-bottom:6px'>Delete by Time Window</div>"+
+    "<div style='font-size:12.5px;color:var(--tx-2);margin-bottom:8px'>Deletes every ticket evaluated within the last N hours, across all sessions.</div>"+
+    "<div style='display:flex;gap:8px;align-items:center'><input type='number' min='1' class='fin' id='mgd-hours' value='5' style='width:80px'><span style='font-size:12.5px;color:var(--tx-2)'>hours</span><button class='btn bdan bsm' id='mgd-time-delete'>Delete</button></div></div>"+
+    "<hr style='border:none;border-top:1px solid var(--border);margin:0'>"+
+    "<div><div style='font-weight:700;margin-bottom:8px'>Review Sessions</div><div id='mgd-sessions-list'></div></div>"+
+    "</div>";
+  openModal("Manage Results Data",body,"<button class='btn bgst' id='mgd-close'>Close</button>","580px");
+  G("mgd-close").onclick=closeModal;
+  G("mgd-dedupe").onclick=function(){removeDuplicateTickets();renderManageSessionsList();};
+  G("mgd-time-delete").onclick=function(){var h=+gv("mgd-hours")||0;if(h<=0){toast("Enter a valid number of hours","err");return;}deleteTicketsReviewedInLastHours(h);renderManageSessionsList();};
+  renderManageSessionsList();
 }
 
 // ─── EXPORT ──────────────────────────────────────────────────
@@ -4501,7 +4714,7 @@ document.addEventListener("DOMContentLoaded",function(){
   function setupDZ(dzId,fiId,handler){var dz=G(dzId),fi=G(fiId);if(dz){dz.onclick=function(){if(fi)fi.click();};dz.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});dz.addEventListener("dragleave",function(){this.classList.remove("ov");});dz.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])handler(e.dataTransfer.files[0]);});}if(fi)fi.onchange=function(){if(this.files[0])handler(this.files[0]);};}
   setupDZ("dz-in","fi-in",parseInflow);setupDZ("dz-smb1","fi-smb1",function(f){parseSMBFile(f,"ph1");});setupDZ("dz-smb2","fi-smb2",function(f){parseSMBFile(f,"smb-pg");});
 
-  var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;};
+  var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1"),bir=G("btn-import-reviewed");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;if(bir)bir.disabled=true;};
   var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-lc"),m?m.value:"replace");renderSMBPage();};
   var srs=G("smb-rng-save");if(srs)srs.onclick=saveSMBRangesFromUI;
   var srr=G("smb-rng-reset");if(srr)srr.onclick=resetSMBRangesToDefaults;
@@ -4516,7 +4729,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var scb=G("smb-clear-stat");if(scb)scb.onclick=clearSMBData;
 
   // Evaluate
-  var bn1=G("btn-n1");if(bn1)bn1.onclick=function(){showPh(2);renderTechTags();};var bb2=G("btn-b2");if(bb2)bb2.onclick=function(){showPh(1);};var bst=G("btn-start");if(bst)bst.onclick=startEval;var bpa=G("btn-pause");if(bpa)bpa.onclick=togPause;var bst2=G("btn-stop");if(bst2)bst2.onclick=stopEval;var bb4=G("btn-b4");if(bb4)bb4.onclick=function(){showPh(3);};var bp5=G("btn-ph5");if(bp5)bp5.onclick=function(){showPh(5);};
+  var bn1=G("btn-n1");if(bn1)bn1.onclick=function(){showPh(2);renderTechTags();};var bir3=G("btn-import-reviewed");if(bir3)bir3.onclick=importReviewedAsResults;var bb2=G("btn-b2");if(bb2)bb2.onclick=function(){showPh(1);};var bst=G("btn-start");if(bst)bst.onclick=startEval;var bpa=G("btn-pause");if(bpa)bpa.onclick=togPause;var bst2=G("btn-stop");if(bst2)bst2.onclick=stopEval;var bb4=G("btn-b4");if(bb4)bb4.onclick=function(){showPh(3);};var bp5=G("btn-ph5");if(bp5)bp5.onclick=function(){var dt=G("done-title");if(dt)dt.textContent="Evaluation Complete!";showPh(5);};
   var aon=G("all-on"),aof=G("all-off");if(aon)aon.onclick=function(){setAllFills(true);};if(aof)aof.onclick=function(){setAllFills(false);};
   ["frr","smb","env","cat","sub"].forEach(function(k){var cb=G("cb-"+k),cr=G("cr-"+k);if(cb)cb.onchange=function(){ST.fills[k]=this.checked;if(cr){if(this.checked)cr.classList.add("on");else cr.classList.remove("on");}};if(cr)cr.onclick=function(e){if(e.target===cb)return;if(cb){cb.checked=!cb.checked;ST.fills[k]=cb.checked;if(cb.checked)this.classList.add("on");else this.classList.remove("on");}};});
   Q("input[name=spd]").forEach(function(r){r.onchange=function(){ST.delay=+this.value;};});
@@ -4527,11 +4740,12 @@ document.addEventListener("DOMContentLoaded",function(){
   for(var bid in expMap){(function(id,fn){var be=G(id);if(be)be.onclick=fn;})(bid,expMap[bid]);}
   var sco=G("save-corr");if(sco)sco.onclick=saveCorr;
   var srs=G("save-review-session");if(srs)srs.onclick=openSaveReviewSessionModal;
-  var nev=G("new-ev");if(nev)nev.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn=G("btn-n1"),pl=G("proc-log"),lt=G("live-tb");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn)bn.disabled=true;if(pl)pl.innerHTML="";if(lt)lt.innerHTML='<tr><td class="te" colspan="9">Waiting...</td></tr>';showPh(1);};
+  var nev=G("new-ev");if(nev)nev.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn=G("btn-n1"),bir2=G("btn-import-reviewed"),pl=G("proc-log"),lt=G("live-tb");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn)bn.disabled=true;if(bir2)bir2.disabled=true;if(pl)pl.innerHTML="";if(lt)lt.innerHTML='<tr><td class="te" colspan="9">Waiting...</td></tr>';showPh(1);};
   var fnres=G("fin-res");if(fnres)fnres.onclick=function(){goPage("results");};
 
   // Results
   var rclr=G("res-clr");if(rclr)rclr.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);renderResTable();upBadges();fillFilters();toast("Cleared","ok");};
+  var rmgd=G("res-manage");if(rmgd)rmgd.onclick=openManageDataModal;
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
   ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
