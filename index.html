@@ -4543,6 +4543,7 @@ function openUserModal(id){
     "<div><label class='flb'>Temporary Password <span style='color:var(--danger)'>*</span></label><input class='fin' id='mu-p' type='password' placeholder='Min 6 characters'></div>"+
     "<div><label class='flb'>Display Name</label><input class='fin' id='mu-n' placeholder='Full name'></div>"+
     "<div><label class='flb'>Role</label><select class='fin' id='mu-r'><option value='user'>User</option><option value='admin'>Admin</option></select></div>"+
+    "<div id='mu-result' style='display:none'></div>"+
     "</div>",
     "<button class='btn bgst' id='umc'>Cancel</button><button class='btn bpri' id='ums'>Create User &amp; Send Invite</button>",
     "500px"
@@ -4602,29 +4603,42 @@ async function createUserFromAdmin(){
       secApp=null;
 
       // Step 5: Send password reset email so user can confirm their account
+      var mr=G("mu-result");
       try{
         await FB.auth.sendPasswordResetEmail(em);
-        toast("\u2713 User created! Invite email sent to "+em,"ok");
+        toast("User created","ok");
+        if(mr){mr.style.display="block";mr.className="al ao";mr.innerHTML="<b>\u2713 User created.</b><br>The temporary password you entered is already active \u2014 they can log in with it right away. An invite email was also sent to <b>"+esc(em)+"</b> in case they'd rather set their own password instead.";}
       }catch(re){
-        toast("\u2713 User created: "+em+" ("+role+"). Share the password: "+pw,"ok");
+        toast("User created \u2014 invite email failed, see note below","warn");
+        if(mr){mr.style.display="block";mr.className="al aw";mr.innerHTML="<b>\u2713 User created.</b><br>The invite email could not be sent automatically. Share this temporary password with them directly \u2014 it's already active and ready to use: <code style=\"background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-weight:600\">"+esc(pw)+"</code>";}
       }
 
-      if(btn){btn.textContent="Create User & Send Invite";btn.disabled=false;}
-      closeModal();
+      if(btn){btn.textContent="Done";btn.disabled=true;}
       setTimeout(function(){renderUsers();},800);
 
     }catch(e){
       if(secApp){try{secApp.delete();}catch(da){}}
       if(btn){btn.textContent="Create User & Send Invite";btn.disabled=false;}
       var msg=e.message||"Error creating user";
+      var mr2=G("mu-result");
       if(msg.indexOf("configuration-not-found")>=0||msg.indexOf("auth/configuration")>=0)
         msg="Email/Password auth not enabled. Go to Firebase Console \u2192 Authentication \u2192 Sign-in method \u2192 Email/Password \u2192 Enable.";
       else if(msg.indexOf("email-already-in-use")>=0){
         saveUserLocally("existing_"+em.replace(/[@.]/g,"_"));
         // Send password reset email for existing user
-        try{await FB.auth.sendPasswordResetEmail(em);}catch(re){}
-        toast("Email already registered. Password reset email sent to "+em,"warn");
-        closeModal();setTimeout(function(){renderUsers();},600);
+        var resetSent=false;
+        try{await FB.auth.sendPasswordResetEmail(em);resetSent=true;}catch(re){}
+        if(mr2){
+          mr2.style.display="block";mr2.className="al "+(resetSent?"aw":"ae");
+          mr2.innerHTML="<b>"+esc(em)+" is already registered in Firebase Authentication.</b><br>"+
+            "The temporary password you just entered was <u>not</u> applied \u2014 this account already exists with a different (unknown) password from an earlier setup.<br><br>"+
+            (resetSent
+              ? "A password reset email was just sent to <b>"+esc(em)+"</b> \u2014 they need to check their inbox (and spam folder) and use that link to set a new password before they can log in."
+              : "A password reset email could <u>not</u> be sent automatically. Ask them to use \u201cForgot password?\u201d on the login screen instead, or reset it for them from Firebase Console \u2192 Authentication \u2192 Users.");
+        }
+        toast("Email already registered \u2014 see the note in this dialog","warn");
+        if(btn){btn.textContent="Done";btn.disabled=true;}
+        setTimeout(function(){renderUsers();},600);
         return;
       }else if(msg.indexOf("weak-password")>=0)msg="Password must be at least 6 characters.";
       else if(msg.indexOf("invalid-email")>=0)msg="Invalid email address format.";
