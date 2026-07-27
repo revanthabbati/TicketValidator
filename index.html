@@ -1475,6 +1475,33 @@ function onReviewSessionChange(val){
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
   var rpg=G("pg-results");if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
 }
+// Rebuilds any review session missing from ST.reviewSessions using the reviewSessionId/Name/Date
+// already tagged onto ST.results — a safety net for the (now-fixed) bug where an empty Firestore
+// snapshot could wipe the session list even though every ticket still carried its session tag.
+function reconstructReviewSessionsFromResults(){
+  var known={};
+  (ST.reviewSessions||[]).forEach(function(s){known[s.id]=true;});
+  var bySession={};
+  ST.results.forEach(function(r){
+    if(!r.reviewSessionId||known[r.reviewSessionId])return;
+    var s=bySession[r.reviewSessionId];
+    if(!s)s=bySession[r.reviewSessionId]={id:r.reviewSessionId,name:r.reviewSessionName||r.reviewSessionId,createdAt:Number(r.reviewDate)||Date.now(),ticketCount:0};
+    s.ticketCount++;
+  });
+  var recovered=Object.keys(bySession).map(function(k){return bySession[k];});
+  if(!recovered.length)return recovered;
+  ST.reviewSessions=(ST.reviewSessions||[]).concat(recovered);
+  lsS(SK.RS,ST.reviewSessions);
+  console.log("Recovered "+recovered.length+" review session(s) from tagged results:",recovered.map(function(s){return s.name;}));
+  if(FB.enabled&&FB.db&&FB.user){
+    recovered.forEach(function(s){
+      FB.db.collection("shared").doc("org").collection("reviewSessions").doc(s.id)
+        .set({name:s.name,createdAt:s.createdAt,ticketCount:s.ticketCount},{merge:true})
+        .catch(function(e){console.warn("reconstructReviewSessionsFromResults push:",e.message);});
+    });
+  }
+  return recovered;
+}
 
 // ─── AUTH ────────────────────────────────────────────────────
 // ─── First-time device Firebase setup (login page) ──────────
@@ -1614,10 +1641,10 @@ async function syncLocalDataToFirestore(){
 
     // ── Migrate results (upsert by ticket id) ──
     if(localResults.length>0){
-      var existingIds={};
+      var existingById={};
       var existingSnap=await FB.db.collection("shared").doc("org").collection("results").limit(3000).get();
-      existingSnap.forEach(function(d){var rid=d.data().id;if(rid)existingIds[String(rid)]=true;});
-      var missing=localResults.filter(function(r){return !r.id||!existingIds[String(r.id)];});
+      existingSnap.forEach(function(d){var data=d.data();var rid=data.id;if(rid)existingById[String(rid)]={ref:d.ref,data:data};});
+      var missing=localResults.filter(function(r){return !r.id||!existingById[String(r.id)];});
       if(missing.length>0){
         console.log("Migrating "+missing.length+" missing results to Firestore ("+localResults.length+" local, "+existingSnap.size+" already in Firestore)...");
         toast("Syncing "+missing.length+" records to cloud…","in");
@@ -1637,6 +1664,13 @@ async function syncLocalDataToFirestore(){
               category:String(r.category||""),sub_category:String(r.sub_category||""),
               ab_comment:String(r.ab_comment||""),confidence:Number(r.confidence)||0,
               zd_url:String(r.zd_url||""),_ok:Boolean(r._ok),error:String(r.error||""),
+              // Review-session and reviewer-assignment tags — these live on the result itself, so a
+              // migration that drops them silences "which session was this ticket reviewed in" for
+              // every record it pushes, even though the data was right there in local storage.
+              reviewSessionId:String(r.reviewSessionId||""),reviewSessionName:String(r.reviewSessionName||""),
+              reviewDate:Number(r.reviewDate)||0,
+              assignedTo:String(r.assignedTo||""),assignedToName:String(r.assignedToName||""),
+              assignedToEmail:String(r.assignedToEmail||""),
               evaluatedBy:String(FB.user.email||FB.user.uid||"admin"),
               evaluatedAt:Number(r.evaluatedAt)||Date.now(),
               savedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -1648,6 +1682,46 @@ async function syncLocalDataToFirestore(){
       }else{
         console.log("syncLocalDataToFirestore: all "+localResults.length+" local results are already in Firestore");
       }
+
+      // Repair pass: an already-synced Firestore doc can still be missing its review-session or
+      // assignment tag (e.g. it was pushed by an older version of this migration, before those
+      // fields were included) even though the local copy has always had it. Patch those in place.
+      var toPatch=[];
+      localResults.forEach(function(r){
+        if(!r.id)return;
+        var ex=existingById[String(r.id)];
+        if(!ex)return;
+        var patch={};
+        if(r.reviewSessionId&&ex.data.reviewSessionId!==r.reviewSessionId)patch.reviewSessionId=String(r.reviewSessionId);
+        if(r.reviewSessionName&&ex.data.reviewSessionName!==r.reviewSessionName)patch.reviewSessionName=String(r.reviewSessionName);
+        if(r.reviewDate&&ex.data.reviewDate!==r.reviewDate)patch.reviewDate=Number(r.reviewDate);
+        if(r.assignedTo&&ex.data.assignedTo!==r.assignedTo)patch.assignedTo=String(r.assignedTo);
+        if(r.assignedToName&&ex.data.assignedToName!==r.assignedToName)patch.assignedToName=String(r.assignedToName);
+        if(r.assignedToEmail&&ex.data.assignedToEmail!==r.assignedToEmail)patch.assignedToEmail=String(r.assignedToEmail);
+        if(Object.keys(patch).length)toPatch.push({ref:ex.ref,patch:patch});
+      });
+      if(toPatch.length>0){
+        console.log("Patching review-session/assignment tags onto "+toPatch.length+" already-synced result(s)...");
+        for(var p=0;p<toPatch.length;p+=400){
+          var pbatch=FB.db.batch();
+          toPatch.slice(p,p+400).forEach(function(item){pbatch.set(item.ref,item.patch,{merge:true});});
+          await pbatch.commit();
+        }
+      }
+    }
+
+    // ── Migrate review sessions ──
+    // Each session doc is keyed by its own id and written with merge:true, so pushing the full
+    // local list every time is always safe — there's no separate existence check needed.
+    var localSessions=lsG(SK.RS,[])||[];
+    if(localSessions.length>0){
+      var rsBatch=FB.db.batch();
+      localSessions.forEach(function(s){
+        if(!s||!s.id)return;
+        var rref=FB.db.collection("shared").doc("org").collection("reviewSessions").doc(s.id);
+        rsBatch.set(rref,{name:String(s.name||""),createdAt:Number(s.createdAt)||Date.now(),ticketCount:Number(s.ticketCount)||0},{merge:true});
+      });
+      await rsBatch.commit();
     }
 
     // ── Migrate SMB data ──
@@ -4934,6 +5008,7 @@ function bootApp(){
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
     loadDataFromFirestore().then(function(){
+      reconstructReviewSessionsFromResults();fillReviewSessionDropdowns();
       renderDash();upBadges();
       // Detect a sync gap off the RAW Firestore doc count (ST._fsResultsCount), not
       // ST.results.length — the latter gets silently backfilled from the local cache whenever
@@ -4946,7 +5021,7 @@ function bootApp(){
         // (sessions here persist for days, so doLogin()'s auto-sync may not run again for a while).
         if(isAdmin()){
           syncLocalDataToFirestore().then(function(){return loadDataFromFirestore();})
-            .then(function(){renderDash();upBadges();})
+            .then(function(){reconstructReviewSessionsFromResults();fillReviewSessionDropdowns();renderDash();upBadges();})
             .catch(function(e){console.warn("Auto-sync on boot failed:",e.message||e);});
         }
       }
@@ -5170,7 +5245,10 @@ document.addEventListener("DOMContentLoaded",function(){
         _rsUnsub=FB.db.collection("shared").doc("org").collection("reviewSessions")
           .orderBy("createdAt","desc").limit(200)
           .onSnapshot(function(snap){
-            if(!snap)return;
+            // The empty check matters: without it, a real-but-empty snapshot (e.g. before this
+            // device's sessions have finished migrating up) wipes ST.reviewSessions and the local
+            // cache down to nothing, silently deleting every saved review session from the dropdown.
+            if(!snap||snap.empty)return;
             ST.reviewSessions=snap.docs.map(function(d){
               var r=d.data();
               return{id:d.id,name:r.name||"",createdAt:(r.createdAt&&r.createdAt.toDate)?r.createdAt.toDate().getTime():(r.createdAt||Date.now()),ticketCount:r.ticketCount||0};
