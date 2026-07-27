@@ -556,6 +556,11 @@ select.fin{cursor:pointer}
 
       <!-- DASHBOARD -->
       <div class="page active" id="pg-dashboard">
+        <div class="al ae" id="sync-error-banner" style="display:none;margin-bottom:16px;align-items:flex-start">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style="flex:1"><strong>Not synced with the shared database.</strong> <span id="sync-error-msg"></span></div>
+          <button class="btn bdan bsm" id="sync-error-retry" style="flex-shrink:0">&#8635; Retry</button>
+        </div>
         <div class="g4">
           <div class="stat" style="border-top:3px solid var(--brand-light)">
             <div class="sic" style="background:var(--brand-bg)"><svg width="20" height="20" fill="none" stroke="var(--brand-light)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
@@ -682,6 +687,14 @@ select.fin{cursor:pointer}
                 <button class="btn bgst bsm" onclick="downloadChart('chart-sub','sub-categories')">&#x2B07; PNG</button>
               </div>
               <div class="cbd" style="height:320px;position:relative"><canvas id="chart-sub" style="cursor:pointer"></canvas></div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="chd"><span class="ct">First Response Time (FRR)</span>
+                <div style="display:flex;gap:6px;align-items:center"><span class="bdg bgr" id="chart-frr-total"></span><button class="btn bgst bsm" onclick="downloadChart('chart-frr','frr-distribution')">&#x2B07; PNG</button></div>
+              </div>
+              <div class="cbd" style="height:200px;position:relative"><canvas id="chart-frr" style="cursor:pointer"></canvas></div>
             </div>
           </div>
           <!-- Drill-down results modal trigger -->
@@ -1736,6 +1749,29 @@ async function syncLocalDataToFirestore(){
 }
 
 
+// Updates the small "fb-sync-status" badge (Dashboard, next to Recent Evaluations) and the
+// persistent "sync-error-banner" — both visible to EVERY logged-in user, not just admins. This is
+// the one place that surfaces a Firestore read failure; without it, a permission/rules problem
+// looks exactly like "no data" with no indication of why, which is what made this bug so hard to
+// spot in the first place.
+function setSyncStatus(ok,message){
+  var el=G("fb-sync-status");
+  if(el){
+    if(ok){el.innerHTML="<svg width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" viewBox=\"0 0 24 24\"><polyline points=\"20 6 9 17 4 12\"/></svg> Synced";el.style.color="var(--success)";}
+    else{el.innerHTML="<svg width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg> Sync error";el.style.color="var(--danger)";}
+  }
+  var banner=G("sync-error-banner"),msg=G("sync-error-msg");
+  if(banner){
+    banner.style.display=ok?"none":"flex";
+    if(msg&&!ok)msg.textContent=message||"Could not read shared data from Firestore.";
+  }
+}
+function firestoreErrorMessage(e){
+  var code=(e&&e.code)||"",text=((e&&e.message)||"").toLowerCase();
+  if(code==="permission-denied"||text.indexOf("permission")>=0||text.indexOf("insufficient")>=0)
+    return"Firestore permission denied — your security rules may not be published, or this account isn't authenticated the way the rules expect. Ask your admin to check Settings → Firestore Security Rules.";
+  return"Could not reach Firestore ("+((e&&e.message)||"unknown error")+"). Showing locally cached data if any is available on this device.";
+}
 async function loadDataFromFirestore(){
   if(!FB.enabled||!FB.db)return;
   // ── Load shared results (visible to ALL users) ──
@@ -1753,7 +1789,8 @@ async function loadDataFromFirestore(){
       // Firestore empty — use localStorage (will be migrated shortly)
       ST.results=lsG(SK.RE,[])||[];
     }
-  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];}
+    setSyncStatus(true);
+  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];setSyncStatus(false,firestoreErrorMessage(e));}
   // ── Load shared review sessions ──
   try{
     var rsSnap=await FB.db.collection("shared").doc("org").collection("reviewSessions").orderBy("createdAt","desc").limit(200).get();
@@ -2310,6 +2347,18 @@ async function exportHealthReportPPT(){
   }catch(e){toast("PPT export error: "+(e.message||e),"err");}
   if(btn){btn.disabled=false;btn.innerHTML="&#8595; Download PPT";}
 }
+// Categories in this order are pinned to the front of "This Week's Picture" / "Top Themes This
+// Week"; anything else (including sub-category text that doesn't match one of these names) keeps
+// its normal count-descending order.
+var CHR_CATEGORY_PRIORITY=["Product Issue","WAE","How to Question"];
+function chrPrioritySort(keys,cntMap){
+  return keys.slice().sort(function(a,b){
+    var pa=CHR_CATEGORY_PRIORITY.indexOf(a);if(pa===-1)pa=CHR_CATEGORY_PRIORITY.length;
+    var pb=CHR_CATEGORY_PRIORITY.indexOf(b);if(pb===-1)pb=CHR_CATEGORY_PRIORITY.length;
+    if(pa!==pb)return pa-pb;
+    return cntMap[b]-cntMap[a];
+  });
+}
 function renderHealthReport(){
   var card=G("health-report");if(!card)return;
   var all=getBaseResults();
@@ -2386,24 +2435,26 @@ function renderHealthReport(){
     }
   }
 
-  // ── This Week's Picture: category mix ──
-  var catCnt={};week.forEach(function(r){var c=r.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
-  var catKeys=Object.keys(catCnt).sort(function(a,b){return catCnt[b]-catCnt[a];}).slice(0,5);
+  // ── This Week's Picture: category mix (Provisioning excluded; Product Issue > WAE > How to
+  // Question prioritized ahead of the rest, which stay ranked by count) ──
+  var weekNoProv=week.filter(function(r){return (r.category||"")!=="Provisioning";});
+  var catCnt={};weekNoProv.forEach(function(r){var c=r.category||"Unclassified";catCnt[c]=(catCnt[c]||0)+1;});
+  var catKeys=chrPrioritySort(Object.keys(catCnt),catCnt).slice(0,5);
   var cm=G("chr-catmix");
   if(cm){
     var ch="";
     catKeys.forEach(function(k){
-      var pct=week.length?Math.round(catCnt[k]/week.length*100):0;
+      var pct=weekNoProv.length?Math.round(catCnt[k]/weekNoProv.length*100):0;
       ch+="<div style='display:flex;justify-content:space-between;align-items:center'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
     });
     cm.innerHTML=ch||'<div class="te" style="text-align:left">No tickets this week.</div>';
   }
-  // Top themes (sub categories)
-  var subCnt={};week.forEach(function(r){var s=r.sub_category;if(s)subCnt[s]=(subCnt[s]||0)+1;});
-  var subKeys=Object.keys(subCnt).sort(function(a,b){return subCnt[b]-subCnt[a];}).slice(0,3);
+  // Top themes (sub categories) — same Provisioning exclusion + priority ordering
+  var subCnt={};weekNoProv.forEach(function(r){var s=r.sub_category;if(s)subCnt[s]=(subCnt[s]||0)+1;});
+  var subKeys=chrPrioritySort(Object.keys(subCnt),subCnt).slice(0,3);
   // Stashed for the PPT export, which needs the plain data (not the rendered badge HTML)
   ST.chrComputed={
-    catMix:catKeys.map(function(k){return{label:k,count:catCnt[k],pct:week.length?Math.round(catCnt[k]/week.length*100):0};}),
+    catMix:catKeys.map(function(k){return{label:k,count:catCnt[k],pct:weekNoProv.length?Math.round(catCnt[k]/weekNoProv.length*100):0};}),
     themes:subKeys.map(function(k){return{label:k,count:subCnt[k]};})
   };
   var th=G("chr-themes");
@@ -3166,7 +3217,7 @@ function renderDashboardCharts(){
   G("dash-charts").style.display="block";
 
   // Set click cursor hint on all chart canvases
-  ["chart-cat","chart-env","chart-smb","chart-sub"].forEach(function(id){
+  ["chart-cat","chart-env","chart-smb","chart-sub","chart-frr"].forEach(function(id){
     var cv=G(id);if(cv){cv.style.cursor="pointer";cv.title="Click a bar to drill down";}
   });
 
@@ -3299,6 +3350,88 @@ function renderDashboardCharts(){
       plugins:[makeLabelPlugin("sub_category",r)]
     });
   }
+
+  // ── FRR Distribution Chart (< 30 min vs >= 30 min, only tickets with a measured FRR) ──
+  var frrRated=r.filter(function(x){return x.frr>0;});
+  var frrUnder=frrRated.filter(function(x){return x.frr<30;}).length;
+  var frrOver=frrRated.filter(function(x){return x.frr>=30;}).length;
+  var frrTotalEl=G("chart-frr-total");if(frrTotalEl)frrTotalEl.textContent=frrRated.length+" rated";
+  var frrKeys=["Under 30 min","30 min or more"];
+  var frrData=[frrUnder,frrOver];
+  var frrColors=["var(--success)","var(--danger)"];
+  var c5=G("chart-frr");
+  if(c5){
+    c5.height=160;
+    _dashCharts.frr=new Chart(c5,{
+      type:"bar",
+      data:{labels:frrKeys,datasets:[{
+        data:frrData,
+        backgroundColor:[CHART_PAL[0]+"CC",CHART_PAL[3]+"CC"],
+        borderColor:[CHART_PAL[0],CHART_PAL[3]],
+        borderWidth:1.5,borderRadius:6
+      }]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{label:function(ctx){var tot=frrRated.length||1;return " "+ctx.parsed.x+" tickets ("+Math.round(ctx.parsed.x/tot*100)+"%)";} }}
+        },
+        scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{font:{size:12,weight:"600"}}}},
+        onClick:function(evt,els){if(!els||!els.length)return;var idx=els[0].index;if(idx===undefined)return;showFRRDrillDown(idx===0?"under":"over",_chartCurrentData);}
+      },
+      plugins:[{
+        id:"frrLabels",
+        afterDatasetsDraw:function(chart){
+          var ctx=chart.ctx;
+          var ds=chart.data.datasets[0];
+          var tot2=frrRated.length||1;
+          var meta=chart.getDatasetMeta(0);
+          meta.data.forEach(function(bar,idx){
+            var val=ds.data[idx];
+            var pct=Math.round(val/tot2*100);
+            var label=val+" ("+pct+"%)";
+            var bw=Math.abs(bar.x-bar.base);
+            ctx.save();ctx.font="bold 11px Inter,sans-serif";
+            var tw=ctx.measureText(label).width;
+            if(bw>tw+12){ctx.fillStyle="#fff";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(label,bar.base+8,bar.y);}
+            else{ctx.fillStyle=frrColors[idx]||"#374151";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(label,bar.x+4,bar.y);}
+            ctx.restore();
+          });
+        }
+      }]
+    });
+  }
+}
+
+// Drill-down for the FRR distribution chart. Unlike showDrillDown() (exact-value match on a
+// single field), this buckets by a numeric range, so it needs its own filter logic.
+function showFRRDrillDown(bucket,data){
+  var src=data||_chartCurrentData||ST.results;
+  var matching=src.filter(function(r){
+    if(!(r.frr>0))return false;
+    return bucket==="under"?r.frr<30:r.frr>=30;
+  });
+  var label=bucket==="under"?"FRR Under 30 min":"FRR 30 min or more";
+  if(!matching.length){toast("No matching tickets found for: "+label,"in");return;}
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">';
+  h+='<span style="font-size:13px;color:var(--tx-2)">'+matching.length+' ticket'+(matching.length!==1?"s":"")+'</span></div>';
+  h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
+  h+='<thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>SMB</th><th>FRR</th><th>Environment</th><th>Category</th><th>Sub Category</th></tr></thead><tbody>';
+  matching.slice(0,150).forEach(function(r){
+    var fc=r.frr>60?"var(--danger)":r.frr>0?"var(--success)":"var(--tx-3)";
+    h+="<tr>";
+    h+="<td style='white-space:nowrap'><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:var(--brand-light);font-family:monospace'>#"+esc(r.id)+"</a></td>";
+    h+="<td class='tr' style='max-width:180px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td>"+smbBdg(r.smb_type)+"</td>";
+    h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr:r.frr_txt||"--")+"</td>";
+    h+="<td style='font-size:11px'>"+esc(r.environment||"--")+"</td>";
+    h+="<td>"+catBdg(r.category)+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.sub_category||"--")+"</td>";
+    h+="</tr>";
+  });
+  if(matching.length>150)h+='<tr><td colspan="8" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export for full list.</td></tr>';
+  h+="</tbody></table></div>";
+  openModal(esc(label), h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
+  var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
 }
 
 // (Duplicate renderDashboardCharts, CHART_PAL, and destroyCharts removed — the correct implementations appear above)
@@ -5002,6 +5135,8 @@ document.addEventListener("DOMContentLoaded",function(){
     renderDashboardCharts();
   };
   if(drefresh)drefresh.onclick=refreshDashboard;
+  var syncRetryBtn=G("sync-error-retry");
+  if(syncRetryBtn)syncRetryBtn.onclick=function(){toast("Retrying sync…","in");refreshDashboard();};
 
   // Sync to Cloud button
   var syncCloudBtn=G("sync-cloud-btn");
@@ -5043,6 +5178,7 @@ document.addEventListener("DOMContentLoaded",function(){
             });
             lsS(SK.RE,ST.results.slice(0,200));
             upBadges();
+            setSyncStatus(true);
             var dpg=G("pg-dashboard");
             if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
             var rpg=G("pg-results");
@@ -5050,8 +5186,7 @@ document.addEventListener("DOMContentLoaded",function(){
           },function(err){
             console.error("Results listener error:",err.code,err.message);
             _resultsUnsub=null; // Reset so we can retry
-            if(err.code==="permission-denied")
-              toast("Firestore permission denied. Publish security rules: allow read,write: if request.auth!=null","err");
+            setSyncStatus(false,firestoreErrorMessage(err));
           });
         console.log("Results real-time listener started");
       }catch(le){console.warn("startResultsListener:",le);}
@@ -5093,21 +5228,6 @@ document.addEventListener("DOMContentLoaded",function(){
       }catch(le){console.warn("startReviewSessionsListener:",le);}
     }
 
-    // Retry starting listeners until FB.user is set (up to 12s for master async auth)
-    var _retries=0;
-    function tryStartListeners(){
-      if(FB.user){
-        startResultsListener();
-        startSMBListener();
-        startReviewSessionsListener();
-      }else if(_retries<24){
-        _retries++;
-        setTimeout(tryStartListeners,500);
-      }else{
-        console.warn("tryStartListeners: gave up after 12s, FB.user never set");
-      }
-    }
-
     FB.auth.onAuthStateChanged(function(user){
       if(user){
         FB.user=user;
@@ -5137,14 +5257,12 @@ document.addEventListener("DOMContentLoaded",function(){
         // Start real-time listeners now that we have a user
         startResultsListener();
         startSMBListener();
+        startReviewSessionsListener();
       }else{
         FB.user=null;
-        _resultsUnsub=null;_smbUnsub=null;
+        _resultsUnsub=null;_smbUnsub=null;_rsUnsub=null;
       }
     });
-
-    // Also try immediately (for master who authenticates after DOMContentLoaded)
-    setTimeout(tryStartListeners,1200);
   },300);
 
   // Login UI cleanup
