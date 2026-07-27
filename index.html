@@ -1631,13 +1631,17 @@ function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master
 // whose id isn't already present in Firestore, so it's safe to re-run any time — including the
 // common case where some records synced fine already (e.g. evaluated after Firestore rules were
 // fixed) while older ones are still stranded in this browser's local storage.
-async function syncLocalDataToFirestore(){
+// Accepts an optional preloadedResults snapshot — callers that already have ST.results captured
+// from BEFORE loadDataFromFirestore() overwrites the local cache should pass it in, otherwise this
+// reads whatever is currently in localStorage (which may already reflect Firestore, not the
+// original local copy, if loadDataFromFirestore() ran first).
+async function syncLocalDataToFirestore(preloadedResults){
   if(!FB.enabled||!FB.db||!FB.user){
     console.warn("syncLocalDataToFirestore: not ready (user="+!!FB.user+")");
     return;
   }
   try{
-    var localResults=lsG(SK.RE,[])||[];
+    var localResults=preloadedResults||lsG(SK.RE,[])||[];
 
     // ── Migrate results (upsert by ticket id) ──
     if(localResults.length>0){
@@ -3369,7 +3373,11 @@ function renderDashboardCharts(){
   }
 
   // ── FRR Distribution Chart (< 30 min vs >= 30 min, only tickets with a measured FRR) ──
-  var frrRated=r.filter(function(x){return x.frr>0;});
+  // hasMeasuredFRR() is the field-level source of truth (used here and by showFRRDrillDown so the
+  // chart and its drill-down always agree): frr_txt=="--" means FRR wasn't calculable for this
+  // ticket, so it's excluded either way — but a genuine 0-minute response (frr_txt "0" or "0
+  // (support agent)") IS a measurement and belongs in the "Under 30 min" bucket, not off the chart.
+  var frrRated=r.filter(hasMeasuredFRR);
   var frrUnder=frrRated.filter(function(x){return x.frr<30;}).length;
   var frrOver=frrRated.filter(function(x){return x.frr>=30;}).length;
   var frrTotalEl=G("chart-frr-total");if(frrTotalEl)frrTotalEl.textContent=frrRated.length+" rated";
@@ -3420,10 +3428,17 @@ function renderDashboardCharts(){
 
 // Drill-down for the FRR distribution chart. Unlike showDrillDown() (exact-value match on a
 // single field), this buckets by a numeric range, so it needs its own filter logic.
+// True when this ticket has an actual FRR measurement (including a genuine 0-minute reply) rather
+// than frr_txt=="--" (not calculable). Numeric r.frr alone can't distinguish the two: both default
+// to 0.
+function hasMeasuredFRR(r){
+  var t=String(r.frr_txt||"").trim();
+  return t!==""&&t!=="--";
+}
 function showFRRDrillDown(bucket,data){
   var src=data||_chartCurrentData||ST.results;
   var matching=src.filter(function(r){
-    if(!(r.frr>0))return false;
+    if(!hasMeasuredFRR(r))return false;
     return bucket==="under"?r.frr<30:r.frr>=30;
   });
   var label=bucket==="under"?"FRR Under 30 min":"FRR 30 min or more";
@@ -5007,23 +5022,23 @@ function bootApp(){
   migrateSMBState();
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
-    loadDataFromFirestore().then(function(){
+    // Snapshot local results BEFORE loadDataFromFirestore() below can overwrite ST.results (and the
+    // SK.RE cache) with Firestore's copy — syncLocalDataToFirestore() needs the untouched local
+    // version to patch any review-session/assignment tags that never made it to Firestore. Doing
+    // this sync-then-load (matching doLogin()'s order) unconditionally for admins, rather than only
+    // when a raw doc-count gap is detected, is what actually repairs per-doc tags: two Firestore
+    // syncs can agree on total count while some docs are still missing metadata fields.
+    var localSnapshotForSync=ST.results.slice();
+    var presync=isAdmin()?syncLocalDataToFirestore(localSnapshotForSync).catch(function(e){console.warn("Boot sync failed:",e.message||e);}):Promise.resolve();
+    presync.then(function(){return loadDataFromFirestore();}).then(function(){
       reconstructReviewSessionsFromResults();fillReviewSessionDropdowns();
       renderDash();upBadges();
-      // Detect a sync gap off the RAW Firestore doc count (ST._fsResultsCount), not
-      // ST.results.length — the latter gets silently backfilled from the local cache whenever
-      // Firestore comes back empty, which would otherwise make a fully-unsynced device look synced.
+      // Still show the manual Sync button as a fallback if a raw doc-count gap remains (e.g. sync
+      // above failed, or this is a non-admin device that never attempts the push itself).
       var localLen=(lsG(SK.RE,[])||[]).length;
       var fsCount=ST._fsResultsCount;
       if(localLen>0&&fsCount!=null&&fsCount<localLen){
         var syncBtn=G("sync-cloud-btn");if(syncBtn)syncBtn.style.display="inline-flex";
-        // Admins can push right away instead of waiting for their next fresh login to catch this
-        // (sessions here persist for days, so doLogin()'s auto-sync may not run again for a while).
-        if(isAdmin()){
-          syncLocalDataToFirestore().then(function(){return loadDataFromFirestore();})
-            .then(function(){reconstructReviewSessionsFromResults();fillReviewSessionDropdowns();renderDash();upBadges();})
-            .catch(function(e){console.warn("Auto-sync on boot failed:",e.message||e);});
-        }
       }
     }).catch(function(){renderDash();});
   }else{
