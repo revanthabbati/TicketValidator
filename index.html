@@ -901,7 +901,11 @@ select.fin{cursor:pointer}
           <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
             <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
-            <div style="display:flex;align-items:center;gap:10px"><button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx-2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">Show</label>
+              <select class="fsel" id="pg-size" style="padding:5px 8px"><option value="30">30</option><option value="50">50</option><option value="100">100</option><option value="250">250</option><option value="Infinity">All</option></select>
+              <button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx-2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1167,30 +1171,66 @@ function initFirebase(config) {
   }
 }
 
+// Built-in default Firebase project for this deployment. A web app's Firebase config (apiKey,
+// authDomain, etc.) is NOT a secret — Google documents it as safe to ship in client code, since
+// access is controlled by Firestore/Auth security rules, not by hiding this. Baking it in means
+// every teammate who opens the app gets a working, connected instance with zero per-device setup
+// (no Team Setup Link, no pasting config manually) — only a genuinely different/overriding config
+// saved on a specific device (Priority 2 below) or a setup link (Priority 1) takes precedence.
+var DEFAULT_FIREBASE_CONFIG={"apiKey":"AIzaSyBxmE_ermbp358PTMUw_vaCuId6wzmH-Fk","authDomain":"ticketvalidator-b0e7c.firebaseapp.com","projectId":"ticketvalidator-b0e7c","storageBucket":"ticketvalidator-b0e7c.firebasestorage.app","messagingSenderId":"1049520851601","appId":"1:1049520851601:web:da55e69bc7f2a62ff6cd30","measurementId":"G-BPMLYPEZ2L"};
+
 function tryAutoInitFirebase() {
+  var initialized=false;
   // Priority 1: Team Setup Link in URL hash (#fbcfg=BASE64)
   try{
     var hash=window.location.hash;
     if(hash&&hash.indexOf("fbcfg=")>=0){
       var encoded=hash.split("fbcfg=")[1].split("&")[0];
       var cfg=JSON.parse(atob(encoded));
-      if(cfg&&cfg.apiKey&&cfg.projectId){
-        if(initFirebase(cfg)){
-          history.replaceState(null,"",window.location.pathname+window.location.search);
-          setTimeout(function(){toast("Firebase connected via setup link. You can now log in.","ok");},500);
-          return;
-        }
+      if(cfg&&cfg.apiKey&&cfg.projectId&&initFirebase(cfg)){
+        history.replaceState(null,"",window.location.pathname+window.location.search);
+        setTimeout(function(){toast("Firebase connected via setup link. You can now log in.","ok");},500);
+        initialized=true;
       }
     }
   }catch(he){console.warn("Setup link parse:",he);}
 
-  // Priority 2: Saved in localStorage on this device
-  var saved=lsG(SK.FB,null);
-  if(!saved)return;
+  // Priority 2: Saved in localStorage on this device (e.g. a deliberately different project)
+  if(!initialized){
+    var saved=lsG(SK.FB,null);
+    if(saved){
+      try{
+        var cfg2=typeof saved==="string"?JSON.parse(saved):saved;
+        if(cfg2&&cfg2.apiKey&&cfg2.projectId){initFirebase(cfg2);initialized=true;}
+      }catch(e){console.warn("Firebase auto-init:",e);}
+    }
+  }
+
+  // Priority 3: built-in default for this deployment — makes the app work out of the box for
+  // every user, with no per-device setup, Team Setup Link, or manual config paste required.
+  if(!initialized&&DEFAULT_FIREBASE_CONFIG&&DEFAULT_FIREBASE_CONFIG.apiKey&&DEFAULT_FIREBASE_CONFIG.projectId){
+    try{initFirebase(DEFAULT_FIREBASE_CONFIG);initialized=true;}catch(e){console.warn("Default Firebase init:",e);}
+  }
+
+  // Whichever config we just connected with, check whether an admin has since saved a different
+  // canonical config via Settings (see saveFirebaseSettings()) and switch to it automatically —
+  // this is what makes an admin's saved config sync out to every other device with no code change.
+  if(initialized)checkForFirebaseConfigUpdate();
+}
+// Best-effort: looks up shared/firebaseconfig on whatever project we're currently connected to.
+// If it names a different project than the one we're on, that means the admin migrated Firebase
+// projects since this device last connected — follow the pointer and remember it locally.
+async function checkForFirebaseConfigUpdate(){
+  if(!FB.enabled||!FB.db)return;
   try{
-    var cfg2=typeof saved==="string"?JSON.parse(saved):saved;
-    if(cfg2&&cfg2.apiKey&&cfg2.projectId) initFirebase(cfg2);
-  }catch(e){console.warn("Firebase auto-init:",e);}
+    var d=await fsGet("shared/firebaseconfig");
+    if(d&&d.config&&d.config.apiKey&&d.config.projectId){
+      var cur=FB.app&&FB.app.options||{};
+      if(d.config.projectId!==cur.projectId||d.config.apiKey!==cur.apiKey){
+        initFirebase(d.config);
+      }
+    }
+  }catch(e){console.warn("checkForFirebaseConfigUpdate error:",e);}
 }
 
 // Firestore helpers
@@ -3966,7 +4006,10 @@ function renderResTable(){
     a.addEventListener("mousemove",function(e){showTicketPreview(e,r);});
     a.addEventListener("mouseleave",hideTicketPreview);
   });
-  var pages=Math.ceil(all.length/ST.pgSz)||1,pl=G("pg-lbl");if(pl)pl.textContent="Page "+(ST.pg+1)+" of "+pages;var rl=G("res-lbl");if(rl)rl.textContent=all.length+" records";
+  var pages=Math.ceil(all.length/ST.pgSz)||1,pl=G("pg-lbl");
+  if(pl)pl.textContent=(ST.pgSz===Infinity)?("All "+all.length+" shown"):("Page "+(ST.pg+1)+" of "+pages);
+  var pgpEl=G("pg-p"),pgnEl=G("pg-n");if(pgpEl)pgpEl.style.display=(ST.pgSz===Infinity)?"none":"inline-flex";if(pgnEl)pgnEl.style.display=(ST.pgSz===Infinity)?"none":"inline-flex";
+  var rl=G("res-lbl");if(rl)rl.textContent=all.length+" records";
 }
 
 // ─── DELETE RESULTS ──────────────────────────────────────────
@@ -4635,23 +4678,34 @@ function saveAPISettings(){
   toast("Settings saved","ok");
 }
 async function saveFirebaseSettings(){
+  if(!isAdmin()){toast("Admin access required","err");return;}
   var raw=(gv("s-fb")||"").trim();
   if(!raw){toast("Please enter Firebase config JSON","err");return;}
   try{
     var config=parseFirebaseConfig(raw);
     if(!config.apiKey||!config.projectId)throw new Error("Config must include apiKey and projectId");
+    // Capture the connection we're leaving (if any) so, when this save is a migration to a
+    // different Firebase project, we can leave a forwarding pointer on the OLD project too —
+    // any device still pointed at it will follow the pointer via checkForFirebaseConfigUpdate().
+    var oldDb=(FB.enabled&&FB.app&&FB.app.options&&FB.app.options.projectId!==config.projectId)?FB.db:null;
     var ok=initFirebase(config);
     if(ok){
       setBox("fb-res",
         "<b>Firebase connected!</b> Project: "+esc(config.projectId)+"<br>"+
         "&#10003; Auth and Firestore are ready.<br><br>"+
-        "<b>Share with your team:</b> Copy the Team Setup Link below (shown in the button panel). "+
-        "Each team member opens it once — Firebase configures automatically on their device. "+
-        "After that they just login with email+password.",
+        "This config now syncs automatically to every other device that opens the app — no Team "+
+        "Setup Link or manual paste required. The link below still works too, if you'd rather share it directly.",
         "ok");
       upBadges();toast("Firebase initialized: "+config.projectId,"ok");
       // Show the setup link panel
       generateSetupLink(config);
+      // Write the canonical config so every device auto-discovers it (see tryAutoInitFirebase()).
+      try{await FB.db.collection("shared").doc("firebaseconfig").set({config:config,updatedAt:fsTs()},{merge:true});}
+      catch(se){console.warn("Save shared Firebase config:",se);}
+      if(oldDb){
+        try{await oldDb.collection("shared").doc("firebaseconfig").set({config:config,updatedAt:fsTs()},{merge:true});}
+        catch(se2){console.warn("Save forwarding pointer on old project:",se2);}
+      }
       if(getSess())await loadDataFromFirestore();
     }else{
       setBox("fb-res","Firebase initialization failed. Check browser console for details.","err");
@@ -4874,6 +4928,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
   var dsl=G("del-sel");if(dsl)dsl.onclick=deleteSelectedResults;
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
+  var pgsz=G("pg-size");if(pgsz){pgsz.value=String(ST.pgSz);pgsz.onchange=function(){ST.pgSz=+this.value||30;ST.pg=0;renderResTable();};}
   Q(".tbl th[data-s]").forEach(function(th){th.onclick=function(){srtBy(this.dataset.s);};});
 
   // Learning
