@@ -4088,6 +4088,14 @@ async function getAllUsers(){
     var exists=users.some(function(u){return u.email&&u.email.toLowerCase()===lu.email.toLowerCase();});
     if(!exists)users.push(lu);
   });
+  // Always include the currently logged-in account, even if it has no "users" doc of its own
+  // (e.g. the master account, or one that signed in via the anonymous-auth fallback).
+  var sess=getSess();
+  if(sess&&sess.email){
+    var meId=uid();
+    var already=users.some(function(u){return(u.id&&u.id===meId)||(u.email&&u.email.toLowerCase()===sess.email.toLowerCase());});
+    if(!already)users.unshift({id:meId,name:sess.name||sess.email,email:sess.email,role:sess.role||""});
+  }
   return users;
 }
 function classifyForAssignment(r){
