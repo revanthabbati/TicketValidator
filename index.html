@@ -901,7 +901,7 @@ select.fin{cursor:pointer}
           <div class="fb">
             <select class="fsel" id="f-session"><option value="">All Reviews</option></select>
             <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
-            <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tx-2);white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-mine" style="accent-color:var(--brand-light)">My assigned tickets</label>
+            <select class="fsel" id="f-reviewer"><option value="">All Reviewers</option></select>
             <div style="display:flex;align-items:center;gap:4px">
               <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">From</label>
               <input type="date" class="fsel" id="f-date-from" style="padding:5px 8px">
@@ -4133,7 +4133,7 @@ function fillFilters(){
   fillReviewSessionDropdowns();
   var base=getBaseResults();
   function fill(id,key,lbl){var s=G(id);if(!s)return;var vals=[],cur=s.value;base.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";}
-  fill("f-env","environment","Environments");fill("f-cat","category","Categories");fill("f-sub","sub_category","Sub Categories");fill("f-smb","smb_type","SMB Types");
+  fill("f-env","environment","Environments");fill("f-cat","category","Categories");fill("f-sub","sub_category","Sub Categories");fill("f-smb","smb_type","SMB Types");fill("f-reviewer","assignedToName","Reviewers");
   var rl=G("res-lbl");if(rl)rl.textContent=base.length+" records";
 }
 function getFiltered(){return ST.filtered.length?ST.filtered:getBaseResults();}
@@ -4143,7 +4143,7 @@ function applyF(){
   var dateFrom=gv("f-date-from"),dateTo=gv("f-date-to");
   var fromTs=dateFrom?new Date(dateFrom).getTime():0;
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
-  var mineEl=G("f-mine"),mine=mineEl&&mineEl.checked,myId=uid();
+  var reviewer=gv("f-reviewer");
   ST.filtered=base.filter(function(r){
     if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
     if(env&&r.environment!==env)return false;
@@ -4151,7 +4151,7 @@ function applyF(){
     if(sub&&r.sub_category!==sub)return false;
     if(smb&&r.smb_type!==smb)return false;
     if(st&&r.status!==st)return false;
-    if(mine&&r.assignedTo!==myId)return false;
+    if(reviewer&&r.assignedToName!==reviewer)return false;
     if(fromTs||toTs<Infinity){
       var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
       if(ts&&(ts<fromTs||ts>toTs))return false;
@@ -4162,7 +4162,7 @@ function applyF(){
   var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<base.length?ST.filtered.length+" of "+base.length+" shown":"";
   renderResTable();
 }
-function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});var fm=G("f-mine");if(fm)fm.checked=false;ST.filtered=[];applyF();}
+function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-reviewer","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
 function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
 // Single source of truth for the Results-page bulk-action bar (Export/Save as Session/Delete) so
@@ -4357,7 +4357,25 @@ async function getAllUsers(){
     var already=users.some(function(u){return(u.id&&u.id===meId)||(u.email&&u.email.toLowerCase()===sess.email.toLowerCase());});
     if(!already)users.unshift({id:meId,name:sess.name||sess.email,email:sess.email,role:sess.role||""});
   }
-  return users;
+  // Final dedupe by email: past auth hiccups (e.g. the old anonymous-auth fallback creating its own
+  // uid, or an account recreated under a new uid) can leave more than one users/{uid} doc for the
+  // same person, which showed up as the same person listed twice in the reviewer picker — once
+  // under a proper name and once under the raw email-prefix fallback name. Keep one entry per
+  // email, preferring whichever has a real (non-email-prefix) name.
+  var byEmail={},order=[];
+  users.forEach(function(u){
+    if(!u.email){order.push(u);return;}
+    var key=u.email.toLowerCase(),localPart=key.split("@")[0];
+    var isRaw=!u.name||u.name.trim().toLowerCase()===localPart;
+    var existing=byEmail[key];
+    if(!existing){byEmail[key]=u;order.push(u);return;}
+    var existingIsRaw=!existing.name||existing.name.trim().toLowerCase()===localPart;
+    if(existingIsRaw&&!isRaw){
+      var pos=order.indexOf(existing);if(pos>=0)order[pos]=u;
+      byEmail[key]=u;
+    }
+  });
+  return order.filter(function(u){return!u.email||byEmail[u.email.toLowerCase()]===u;});
 }
 function classifyForAssignment(r){
   var tt=String(r.ticket_type||"").trim().toLowerCase();
@@ -5164,8 +5182,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var rmgd=G("res-manage");if(rmgd)rmgd.onclick=openManageDataModal;
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
-  ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
-  var fmine=G("f-mine");if(fmine)fmine.onchange=applyF;
+  ["f-env","f-cat","f-sub","f-smb","f-st","f-reviewer","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
   var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});updateBulkActionButtons();};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
