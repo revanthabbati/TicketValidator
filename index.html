@@ -1558,8 +1558,8 @@ async function doLogin(){
     lsS(SK.U,lsu2);
     setSess({id:FB.user.uid,email:em,name:name,role:role});
 
-    // First master login on a device with pre-existing local-only data: push it up to Firestore
-    // (no-op if Firestore already has data — see syncLocalDataToFirestore's own empty-check).
+    // Every master login pushes any locally-held results Firestore doesn't have yet — cheap no-op
+    // once everything's synced, but catches historical data that's still stranded on this device.
     if(isMaster)syncLocalDataToFirestore().catch(function(e){console.warn("syncLocalDataToFirestore:",e.message||e);});
 
     // Load all shared data from Firestore
@@ -1600,7 +1600,10 @@ function isAdmin(){var s=getSess();return s&&(s.role==="admin"||s.role==="master
 // ─── FIRESTORE DATA SYNC ─────────────────────────────────────
 // ─── SYNC ALL LOCAL DATA → FIRESTORE ─────────────────────────
 // Called after login when FB.user is confirmed set.
-// Migrates localStorage → Firestore. Idempotent: skips if Firestore already has data.
+// Migrates localStorage → Firestore. Idempotent by ticket id: only ever writes local results
+// whose id isn't already present in Firestore, so it's safe to re-run any time — including the
+// common case where some records synced fine already (e.g. evaluated after Firestore rules were
+// fixed) while older ones are still stranded in this browser's local storage.
 async function syncLocalDataToFirestore(){
   if(!FB.enabled||!FB.db||!FB.user){
     console.warn("syncLocalDataToFirestore: not ready (user="+!!FB.user+")");
@@ -1609,41 +1612,42 @@ async function syncLocalDataToFirestore(){
   try{
     var localResults=lsG(SK.RE,[])||[];
 
-    // Only migrate if Firestore is empty (avoid duplicating data)
-    var checkSnap=await FB.db.collection("shared").doc("org").collection("results").limit(1).get();
-    if(!checkSnap.empty){
-      console.log("Firestore has data — no migration needed");
-      return;
-    }
-
-    // ── Migrate results ──
+    // ── Migrate results (upsert by ticket id) ──
     if(localResults.length>0){
-      console.log("Migrating "+localResults.length+" results to Firestore...");
-      toast("Syncing "+localResults.length+" records to cloud…","in");
-      for(var j=0;j<localResults.length;j+=400){
-        var batch=FB.db.batch();
-        var chunk=localResults.slice(j,j+400);
-        for(var k=0;k<chunk.length;k++){
-          var r=chunk[k];
-          var ref=FB.db.collection("shared").doc("org").collection("results").doc();
-          batch.set(ref,{
-            id:String(r.id||""),subject:String(r.subject||""),
-            assignee:String(r.assignee||""),ticket_type:String(r.ticket_type||""),
-            priority:String(r.priority||""),status:String(r.status||""),
-            requester:String(r.requester||""),activation_code:String(r.activation_code||""),
-            frr:Number(r.frr)||0,frr_txt:String(r.frr_txt||""),
-            smb_type:String(r.smb_type||""),environment:String(r.environment||""),
-            category:String(r.category||""),sub_category:String(r.sub_category||""),
-            ab_comment:String(r.ab_comment||""),confidence:Number(r.confidence)||0,
-            zd_url:String(r.zd_url||""),_ok:Boolean(r._ok),error:String(r.error||""),
-            evaluatedBy:String(FB.user.email||FB.user.uid||"admin"),
-            evaluatedAt:Number(r.evaluatedAt)||Date.now(),
-            savedAt:firebase.firestore.FieldValue.serverTimestamp()
-          });
+      var existingIds={};
+      var existingSnap=await FB.db.collection("shared").doc("org").collection("results").limit(3000).get();
+      existingSnap.forEach(function(d){var rid=d.data().id;if(rid)existingIds[String(rid)]=true;});
+      var missing=localResults.filter(function(r){return !r.id||!existingIds[String(r.id)];});
+      if(missing.length>0){
+        console.log("Migrating "+missing.length+" missing results to Firestore ("+localResults.length+" local, "+existingSnap.size+" already in Firestore)...");
+        toast("Syncing "+missing.length+" records to cloud…","in");
+        for(var j=0;j<missing.length;j+=400){
+          var batch=FB.db.batch();
+          var chunk=missing.slice(j,j+400);
+          for(var k=0;k<chunk.length;k++){
+            var r=chunk[k];
+            var ref=FB.db.collection("shared").doc("org").collection("results").doc();
+            batch.set(ref,{
+              id:String(r.id||""),subject:String(r.subject||""),
+              assignee:String(r.assignee||""),ticket_type:String(r.ticket_type||""),
+              priority:String(r.priority||""),status:String(r.status||""),
+              requester:String(r.requester||""),activation_code:String(r.activation_code||""),
+              frr:Number(r.frr)||0,frr_txt:String(r.frr_txt||""),
+              smb_type:String(r.smb_type||""),environment:String(r.environment||""),
+              category:String(r.category||""),sub_category:String(r.sub_category||""),
+              ab_comment:String(r.ab_comment||""),confidence:Number(r.confidence)||0,
+              zd_url:String(r.zd_url||""),_ok:Boolean(r._ok),error:String(r.error||""),
+              evaluatedBy:String(FB.user.email||FB.user.uid||"admin"),
+              evaluatedAt:Number(r.evaluatedAt)||Date.now(),
+              savedAt:firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          await batch.commit();
         }
-        await batch.commit();
+        toast("✓ "+missing.length+" result(s) synced! All users can see them.","ok");
+      }else{
+        console.log("syncLocalDataToFirestore: all "+localResults.length+" local results are already in Firestore");
       }
-      toast("\u2713 "+localResults.length+" results synced! All users can see them.","ok");
     }
 
     // ── Migrate SMB data ──
@@ -4927,9 +4931,10 @@ function bootApp(){
   if(FB.enabled&&FB.db){
     loadDataFromFirestore().then(function(){
       renderDash();upBadges();
-      // Show Sync button if local has data but Firestore results empty
+      // Show Sync button whenever this device holds local results Firestore doesn't have yet —
+      // not just when Firestore is totally empty, so a partial past sync doesn't hide the fix.
       var localLen=(lsG(SK.RE,[])||[]).length;
-      if(localLen>0&&ST.results.length===0){
+      if(localLen>0&&ST.results.length<localLen){
         var syncBtn=G("sync-cloud-btn");if(syncBtn)syncBtn.style.display="inline-flex";
       }
     }).catch(function(){renderDash();});
