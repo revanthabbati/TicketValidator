@@ -1717,6 +1717,10 @@ async function loadDataFromFirestore(){
   try{
     var sharedSnap=await FB.db.collection("shared").doc("org").collection("results")
       .orderBy("savedAt","desc").limit(1500).get();
+    // Recorded BEFORE the empty-fallback below overwrites ST.results with the local cache —
+    // otherwise a genuinely-empty Firestore looks identical to a fully-synced one once local
+    // data backfills ST.results, and the "needs sync" gap becomes undetectable.
+    ST._fsResultsCount=sharedSnap.docs.length;
     if(sharedSnap.docs.length>0){
       ST.results=sharedSnap.docs.map(function(d){
         var r=d.data();
@@ -1729,7 +1733,7 @@ async function loadDataFromFirestore(){
       ST.results=lsG(SK.RE,[])||[];
     }
     setSyncStatus(true);
-  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];setSyncStatus(false,firestoreErrorMessage(e));}
+  }catch(e){console.warn("loadDataFromFirestore results:",e);ST.results=lsG(SK.RE,[])||[];ST._fsResultsCount=null;setSyncStatus(false,firestoreErrorMessage(e));}
   // ── Load shared review sessions ──
   try{
     var rsSnap=await FB.db.collection("shared").doc("org").collection("reviewSessions").orderBy("createdAt","desc").limit(200).get();
@@ -4931,11 +4935,20 @@ function bootApp(){
   if(FB.enabled&&FB.db){
     loadDataFromFirestore().then(function(){
       renderDash();upBadges();
-      // Show Sync button whenever this device holds local results Firestore doesn't have yet —
-      // not just when Firestore is totally empty, so a partial past sync doesn't hide the fix.
+      // Detect a sync gap off the RAW Firestore doc count (ST._fsResultsCount), not
+      // ST.results.length — the latter gets silently backfilled from the local cache whenever
+      // Firestore comes back empty, which would otherwise make a fully-unsynced device look synced.
       var localLen=(lsG(SK.RE,[])||[]).length;
-      if(localLen>0&&ST.results.length<localLen){
+      var fsCount=ST._fsResultsCount;
+      if(localLen>0&&fsCount!=null&&fsCount<localLen){
         var syncBtn=G("sync-cloud-btn");if(syncBtn)syncBtn.style.display="inline-flex";
+        // Admins can push right away instead of waiting for their next fresh login to catch this
+        // (sessions here persist for days, so doLogin()'s auto-sync may not run again for a while).
+        if(isAdmin()){
+          syncLocalDataToFirestore().then(function(){return loadDataFromFirestore();})
+            .then(function(){renderDash();upBadges();})
+            .catch(function(e){console.warn("Auto-sync on boot failed:",e.message||e);});
+        }
       }
     }).catch(function(){renderDash();});
   }else{
