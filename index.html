@@ -888,6 +888,7 @@ select.fin{cursor:pointer}
           <div class="fb">
             <select class="fsel" id="f-session"><option value="">All Reviews</option></select>
             <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tx-2);white-space:nowrap;cursor:pointer"><input type="checkbox" id="f-mine" style="accent-color:var(--brand-light)">My assigned tickets</label>
             <div style="display:flex;align-items:center;gap:4px">
               <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">From</label>
               <input type="date" class="fsel" id="f-date-from" style="padding:5px 8px">
@@ -897,7 +898,7 @@ select.fin{cursor:pointer}
             <button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
             <span style="margin-left:auto;font-size:11.5px;color:var(--tx-3)" id="f-cnt"></span>
           </div>
-          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
             <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
             <div style="display:flex;align-items:center;gap:10px"><button class="btn bgst bsm" id="pg-p">&#8249; Prev</button><span style="font-size:12.5px;color:var(--tx-2)" id="pg-lbl"></span><button class="btn bgst bsm" id="pg-n">Next &#8250;</button></div>
@@ -1747,7 +1748,7 @@ async function loadDataFromFirestore(){
 
 async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,savedAt:fsTs()};
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",savedAt:fsTs()};
   try{
     await FB.db.collection("shared").doc("org").collection("results").add(toSave);
   }catch(e){console.warn("saveResultToFirestore error:",e);}
@@ -1820,7 +1821,7 @@ async function saveSMBToFirestore(){
 // ─── NAV ─────────────────────────────────────────────────────
 var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
-  if((pg==="users"||pg==="settings")&&!isAdmin()){toast("Admin access required","err");return;}
+  if((pg==="users"||pg==="settings"||pg==="evaluate")&&!isAdmin()){toast("Admin access required","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
   var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
@@ -2318,7 +2319,7 @@ function renderHealthReport(){
   var open=all.filter(function(r){return isOpenStatus(r.status);});
   var byAcct={};
   open.forEach(function(r){
-    var acct=r.org||r.requester||"Unknown";
+    var acct=r.activation_code||r.org||r.requester||"Unknown";
     if(!byAcct[acct])byAcct[acct]={tickets:[],arr:0};
     byAcct[acct].tickets.push(r);
     if(typeof r.arr==="number"&&r.arr>byAcct[acct].arr)byAcct[acct].arr=r.arr;
@@ -3512,7 +3513,7 @@ async function startEval(){
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
     var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0};
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0,assignedTo:"",assignedToName:"",assignedToEmail:""};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
@@ -3897,6 +3898,7 @@ function applyF(){
   var dateFrom=gv("f-date-from"),dateTo=gv("f-date-to");
   var fromTs=dateFrom?new Date(dateFrom).getTime():0;
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
+  var mineEl=G("f-mine"),mine=mineEl&&mineEl.checked,myId=uid();
   ST.filtered=base.filter(function(r){
     if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
     if(env&&r.environment!==env)return false;
@@ -3904,6 +3906,7 @@ function applyF(){
     if(sub&&r.sub_category!==sub)return false;
     if(smb&&r.smb_type!==smb)return false;
     if(st&&r.status!==st)return false;
+    if(mine&&r.assignedTo!==myId)return false;
     if(fromTs||toTs<Infinity){
       var ts=r.evaluatedAt||(r.savedAt&&r.savedAt.toDate?r.savedAt.toDate().getTime():null)||0;
       if(ts&&(ts<fromTs||ts>toTs))return false;
@@ -3914,7 +3917,7 @@ function applyF(){
   var cnt=G("f-cnt");if(cnt)cnt.textContent=ST.filtered.length<base.length?ST.filtered.length+" of "+base.length+" shown":"";
   renderResTable();
 }
-function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
+function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});var fm=G("f-mine");if(fm)fm.checked=false;ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
 function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
 function renderResTable(){
@@ -3940,6 +3943,7 @@ function renderResTable(){
     h+="<td class=\"tr\" style=\"max-width:140px;font-size:10.5px;color:var(--warning-text)\" title=\""+esc(r.ab_comment||"")+"\">"+(r.ab_comment?"<span title='"+esc(r.ab_comment)+"'>"+esc(r.ab_comment.substring(0,40))+(r.ab_comment.length>40?"…":"")+"</span>":"")+"</td>";
     h+="<td><span class=\""+confCls+"\">"+confVal+"</span></td>";
     h+="<td style=\"font-size:12px;color:var(--tx-2)\">"+esc(r.assignee||r.requester||"--")+"</td>";
+    h+="<td style=\"font-size:12px;color:var(--tx-2)\">"+esc(r.assignedToName||"--")+"</td>";
     var evDate=r.evaluatedAt?new Date(r.evaluatedAt).toLocaleDateString("en-GB"):"--";
     h+="<td style=\"font-size:11.5px;color:var(--tx-3);white-space:nowrap\">"+evDate+"</td>";
     h+="<td style=\"display:flex;gap:4px\"><button class=\"btn bgst bsm\" data-edit-gi=\""+gi+"\" title=\"Edit\">&#9998;</button><button class=\"btn bdan bsm\" data-del-gi=\""+gi+"\" title=\"Delete\">&#128465;</button>"+(r.error?"<span title=\""+esc(r.error)+"\" style=\"color:var(--danger);cursor:help;margin-left:4px\">&#x26A0;</span>":"")+"</td>";
@@ -4047,6 +4051,110 @@ async function updateSessionTicketsInFirestore(sessionId,patch){
     }
   }catch(e){console.warn("updateSessionTicketsInFirestore error:",e);}
 }
+// Like updateSessionTicketsInFirestore, but each record can get a DIFFERENT patch (patchFn(record)) —
+// used for reviewer assignment, where every ticket is set to a different assignee. Only touches
+// records that already have a known Firestore doc id (_fid); local state is always updated by the
+// caller regardless, so this is best-effort remote sync on top of that.
+async function batchPatchResultsInFirestore(records,patchFn){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  var withFid=records.filter(function(r){return r._fid;});
+  if(!withFid.length)return;
+  try{
+    var coll=FB.db.collection("shared").doc("org").collection("results");
+    for(var i=0;i<withFid.length;i+=400){
+      var batch=FB.db.batch();
+      withFid.slice(i,i+400).forEach(function(r){batch.set(coll.doc(r._fid),patchFn(r),{merge:true});});
+      await batch.commit();
+    }
+  }catch(e){console.warn("batchPatchResultsInFirestore error:",e);}
+}
+
+// === REVIEWER ASSIGNMENT =========================================
+// Splits a saved review session's tickets into Technical (ticket_type matches the configured
+// "Technical Ticket Types" list) and Provisioning (ticket_type or category is "Provisioning"),
+// then round-robins each bucket separately and evenly across the selected reviewers. Any ticket
+// that's neither is left unassigned (still visible to admins, just not auto-routed to a reviewer).
+async function getAllUsers(){
+  var users=[];
+  if(FB.enabled&&FB.user){
+    try{
+      var snap=await FB.db.collection("users").get();
+      snap.docs.forEach(function(d){var data=d.data();if(data&&data.email)users.push(Object.assign({id:d.id},data));});
+    }catch(e){console.warn("getAllUsers Firestore query failed:",e.message);}
+  }
+  var localUsers=lsG(SK.U,[])||[];
+  localUsers.forEach(function(lu){
+    if(!lu.email)return;
+    var exists=users.some(function(u){return u.email&&u.email.toLowerCase()===lu.email.toLowerCase();});
+    if(!exists)users.push(lu);
+  });
+  return users;
+}
+function classifyForAssignment(r){
+  var tt=String(r.ticket_type||"").trim().toLowerCase();
+  var cat=String(r.category||"").trim().toLowerCase();
+  if(tt==="provisioning"||cat==="provisioning")return"provisioning";
+  var techList=getTech().map(function(t){return String(t).trim().toLowerCase();});
+  if(techList.indexOf(tt)>=0)return"technical";
+  return"other";
+}
+async function assignReviewersToSession(sessionId,userIds,users){
+  var tickets=ST.results.filter(function(r){return r.reviewSessionId===sessionId;});
+  if(!tickets.length){toast("This session has no tickets to assign","in");return null;}
+  if(!userIds.length){toast("Select at least one reviewer","err");return null;}
+  var selUsers=userIds.map(function(id){return users.filter(function(u){return u.id===id;})[0];}).filter(Boolean);
+  if(!selUsers.length){toast("Select at least one reviewer","err");return null;}
+  var technical=[],provisioning=[],other=[];
+  tickets.forEach(function(r){
+    var k=classifyForAssignment(r);
+    if(k==="technical")technical.push(r);else if(k==="provisioning")provisioning.push(r);else other.push(r);
+  });
+  function roundRobinAssign(list){
+    list.forEach(function(r,i){
+      var u=selUsers[i%selUsers.length];
+      r.assignedTo=u.id;r.assignedToName=u.name||u.email||"";r.assignedToEmail=u.email||"";
+    });
+  }
+  roundRobinAssign(technical);
+  roundRobinAssign(provisioning);
+  lsS(SK.RE,ST.results.slice(-200));
+  await batchPatchResultsInFirestore(technical.concat(provisioning),function(r){
+    return{assignedTo:r.assignedTo||"",assignedToName:r.assignedToName||"",assignedToEmail:r.assignedToEmail||""};
+  });
+  renderResTable();
+  var summary="Assigned "+technical.length+" technical + "+provisioning.length+" provisioning ticket(s) across "+selUsers.length+" reviewer(s)"+(other.length?(" — "+other.length+" other ticket(s) left unassigned"):"")+".";
+  toast(summary,"ok");
+  return summary;
+}
+async function openAssignReviewersModal(sessionId){
+  var s=null;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];break;}}
+  if(!s)return;
+  openModal("Assign Reviewers — \""+esc(s.name)+"\"","<div class='te'>Loading users…</div>","<button class='btn bgst' id='arv-cancel'>Cancel</button><button class='btn bpri' id='arv-assign'>Assign</button>","540px");
+  G("arv-cancel").onclick=closeModal;
+  var users=await getAllUsers();
+  var mbd=G("mbd");if(!mbd)return;
+  if(!users.length){
+    mbd.innerHTML="<div class='al aw'>No users found. Add reviewers first from User Management.</div>";
+    var av0=G("arv-assign");if(av0)av0.style.display="none";
+    return;
+  }
+  var tickets=ST.results.filter(function(r){return r.reviewSessionId===sessionId;});
+  var techCount=0,provCount=0,otherCount=0;
+  tickets.forEach(function(r){var k=classifyForAssignment(r);if(k==="technical")techCount++;else if(k==="provisioning")provCount++;else otherCount++;});
+  var body="<div class='al ai' style='font-size:12.5px;margin-bottom:12px'>This session has "+tickets.length+" ticket(s): <strong>"+techCount+" technical</strong>, <strong>"+provCount+" provisioning</strong>"+(otherCount?(", "+otherCount+" other (won't be auto-assigned)"):"")+". Technical tickets are split equally among the reviewers you select below, and provisioning tickets are split equally among them too (as a separate, even split).</div>"+
+    "<div style='display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto'>"+
+    users.map(function(u){return "<label style='display:flex;align-items:center;gap:8px;padding:7px 8px;background:var(--bg);border-radius:6px;cursor:pointer'><input type='checkbox' class='arv-user' value='"+esc(u.id)+"'><span style='font-weight:600;font-size:13px'>"+esc(u.name||u.email||"")+"</span><span style='font-size:11.5px;color:var(--tx-3)'>"+esc(u.email||"")+"</span></label>";}).join("")+
+    "</div>";
+  mbd.innerHTML=body;
+  G("arv-assign").onclick=async function(){
+    var selIds=Q(".arv-user:checked").map(function(c){return c.value;});
+    if(!selIds.length){toast("Select at least one reviewer","err");return;}
+    var btn=G("arv-assign");btn.disabled=true;btn.textContent="Assigning…";
+    await assignReviewersToSession(sessionId,selIds,users);
+    closeModal();
+  };
+}
+
 function renameReviewSession(sessionId){
   var s=null;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];break;}}
   if(!s)return;
@@ -4109,12 +4217,14 @@ function renderManageSessionsList(){
     var cnt=ST.results.filter(function(r){return r.reviewSessionId===s.id;}).length;
     h+="<div style='display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg);border-radius:7px;margin-bottom:6px;flex-wrap:wrap'>"+
       "<div style='flex:1;min-width:140px'><div style='font-weight:600;font-size:13px'>"+esc(s.name)+"</div><div style='font-size:11px;color:var(--tx-3)'>"+cnt+" ticket"+(cnt!==1?"s":"")+"</div></div>"+
+      "<button class='btn bpri bsm' data-sess-assign='"+esc(s.id)+"'>Assign Reviewers</button>"+
       "<button class='btn bgst bsm' data-sess-rename='"+esc(s.id)+"'>Rename</button>"+
       "<button class='btn bout bsm' data-sess-untag='"+esc(s.id)+"'>Delete (keep tickets)</button>"+
       "<button class='btn bdan bsm' data-sess-delall='"+esc(s.id)+"'>Delete + Tickets</button>"+
     "</div>";
   });
   box.innerHTML=h;
+  box.querySelectorAll("[data-sess-assign]").forEach(function(btn){btn.onclick=function(){openAssignReviewersModal(this.dataset.sessAssign);};});
   box.querySelectorAll("[data-sess-rename]").forEach(function(btn){btn.onclick=function(){renameReviewSession(this.dataset.sessRename);};});
   box.querySelectorAll("[data-sess-untag]").forEach(function(btn){btn.onclick=function(){deleteReviewSessionOnly(this.dataset.sessUntag);};});
   box.querySelectorAll("[data-sess-delall]").forEach(function(btn){btn.onclick=function(){deleteReviewSessionAndTickets(this.dataset.sessDelall);};});
@@ -4664,6 +4774,7 @@ function bootApp(){
   if(G("sbav"))G("sbav").textContent=String(s.name||"?").charAt(0).toUpperCase();
   if(G("sbun"))G("sbun").textContent=s.name||s.email;if(G("sbur"))G("sbur").textContent=s.role;
   if(isAdmin()){var sa=G("sb-adm"),su=G("sb-usr"),ss=G("sb-set");if(sa)sa.style.display="block";if(su)su.style.display="flex";if(ss)ss.style.display="flex";}
+  else{Q('[data-pg="evaluate"]').forEach(function(el){el.style.display="none";});}
   ST.results=lsG(SK.RE,[])||[];
   ST.reviewSessions=lsG(SK.RS,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
@@ -4749,6 +4860,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
   ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
+  var fmine=G("f-mine");if(fmine)fmine.onchange=applyF;
   var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
