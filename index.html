@@ -913,7 +913,7 @@ select.fin{cursor:pointer}
           </div>
           <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
-            <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
+            <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bout bsm" id="save-sel-session" style="display:none">&#128190; Save as Review Session</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
             <div style="display:flex;align-items:center;gap:10px">
               <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">Show</label>
               <select class="fsel" id="pg-size" style="padding:5px 8px"><option value="30">30</option><option value="50">50</option><option value="100">100</option><option value="250">250</option><option value="Infinity">All</option></select>
@@ -3946,39 +3946,79 @@ function openSaveReviewSessionModal(){
   G("rs-cancel").onclick=closeModal;
   G("rs-save").onclick=saveReviewSession;
 }
+// Shared by both "Save Review Session" entry points (the just-finished Evaluate batch, and an
+// arbitrary selection of tickets from the Results page) \u2014 tags every result in `list` with the
+// same session id/name/date, registers the session itself, and pushes both to Firestore.
+async function saveResultsAsReviewSession(name,list){
+  if(!name)throw new Error("Enter a session name");
+  if(!list||!list.length)throw new Error("No tickets to save");
+  var sessionId="rs_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+  var createdAt=Date.now();
+  var ids=[];
+  for(var i=0;i<list.length;i++){
+    var res=list[i];
+    res.reviewSessionId=sessionId;res.reviewSessionName=name;res.reviewDate=createdAt;
+    ids.push(String(res.id));
+  }
+  // Also tag matching entries in ST.results by ticket id, in case `list` holds different object
+  // references than ST.results currently does (e.g. after a Firestore snapshot refresh).
+  var idSet={};ids.forEach(function(x){idSet[x]=1;});
+  ST.results.forEach(function(r){
+    if(idSet[String(r.id)]){r.reviewSessionId=sessionId;r.reviewSessionName=name;r.reviewDate=createdAt;}
+  });
+  var session={id:sessionId,name:name,createdAt:createdAt,ticketCount:ids.length};
+  ST.reviewSessions.push(session);
+  lsS(SK.RS,ST.reviewSessions);
+  lsS(SK.RE,ST.results.slice(-200));
+  if(FB.enabled&&FB.db){
+    await saveReviewSessionToFirestore(session);
+    await tagResultsWithSessionInFirestore(ids,sessionId,name,createdAt);
+  }
+  fillReviewSessionDropdowns();
+  return session;
+}
 async function saveReviewSession(){
   var name=(gv("rs-name")||"").trim();
   if(!name){toast("Enter a session name","err");return;}
   if(!ST.curEval.length){toast("No tickets in the current evaluation to save.","err");closeModal();return;}
   var btn=G("rs-save");if(btn){btn.disabled=true;btn.textContent="Saving\u2026";}
   try{
-    var sessionId="rs_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-    var createdAt=Date.now();
-    var ids=[];
-    for(var i=0;i<ST.curEval.length;i++){
-      var res=ST.curEval[i];
-      res.reviewSessionId=sessionId;res.reviewSessionName=name;res.reviewDate=createdAt;
-      ids.push(String(res.id));
-    }
-    // Also tag matching entries in ST.results by ticket id, in case a Firestore
-    // snapshot refresh already replaced ST.results with different object references.
-    var idSet={};ids.forEach(function(x){idSet[x]=1;});
-    ST.results.forEach(function(r){
-      if(idSet[String(r.id)]){r.reviewSessionId=sessionId;r.reviewSessionName=name;r.reviewDate=createdAt;}
-    });
-    var session={id:sessionId,name:name,createdAt:createdAt,ticketCount:ids.length};
-    ST.reviewSessions.push(session);
-    lsS(SK.RS,ST.reviewSessions);
-    lsS(SK.RE,ST.results.slice(-200));
-    if(FB.enabled&&FB.db){
-      await saveReviewSessionToFirestore(session);
-      await tagResultsWithSessionInFirestore(ids,sessionId,name,createdAt);
-    }
-    fillReviewSessionDropdowns();
+    var session=await saveResultsAsReviewSession(name,ST.curEval);
     closeModal();
-    toast("Review session \u201c"+name+"\u201d saved ("+ids.length+" tickets)","ok");
+    toast("Review session \u201c"+name+"\u201d saved ("+session.ticketCount+" tickets)","ok");
   }catch(e){toast("Error saving session: "+(e.message||e),"err");}
   if(btn){btn.disabled=false;btn.textContent="Save Session";}
+}
+// \u2500\u2500\u2500 SAVE RESULTS-PAGE SELECTION AS REVIEW SESSION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// The Evaluate-tab flow above only ever offers ST.curEval (the batch that was just run) \u2014 there
+// was no way to turn an arbitrary Results-page selection (e.g. everything checked via "Show: All" +
+// select-all) into a session. This reuses the same tagging logic against whatever rows are checked.
+function openSaveSelectedAsSessionModal(){
+  var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});
+  var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);
+  if(!rows.length){toast("No rows selected","warn");return;}
+  openModal("Save Selected as Review Session",
+    "<div class='al ai' style='font-size:12.5px'><svg width='14' height='14' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg><div>Name this batch of "+rows.length+" ticket"+(rows.length!==1?"s":"")+" so you can filter the Dashboard and Results page by it later &mdash; e.g. \"July Week 3\".</div></div>"+
+    "<div><label class='flb'>Session Name <span style='color:var(--danger)'>*</span></label><input class='fin' id='rs-sel-name' placeholder='e.g. July Week 3'></div>",
+    "<button class='btn bgst' id='rs-sel-cancel'>Cancel</button><button class='btn bpri' id='rs-sel-save'>Save Session</button>"
+  );
+  var rn=G("rs-sel-name");if(rn)rn.addEventListener("keydown",function(e){if(e.key==="Enter")saveSelectedAsReviewSession(rows);});
+  G("rs-sel-cancel").onclick=closeModal;
+  G("rs-sel-save").onclick=function(){saveSelectedAsReviewSession(rows);};
+}
+async function saveSelectedAsReviewSession(rows){
+  var name=(gv("rs-sel-name")||"").trim();
+  if(!name){toast("Enter a session name","err");return;}
+  var btn=G("rs-sel-save");if(btn){btn.disabled=true;btn.textContent="Saving\u2026";}
+  try{
+    var session=await saveResultsAsReviewSession(name,rows);
+    closeModal();
+    renderResTable();fillFilters();
+    toast("Review session \u201c"+name+"\u201d saved ("+session.ticketCount+" tickets)","ok");
+  }catch(e){
+    toast("Error saving session: "+(e.message||e),"err");
+    if(btn){btn.disabled=false;btn.textContent="Save Session";}
+  }
 }
 
 // ─── CATEGORIES ──────────────────────────────────────────────
@@ -4125,10 +4165,24 @@ function applyF(){
 function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});var fm=G("f-mine");if(fm)fm.checked=false;ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
 function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
+// Single source of truth for the Results-page bulk-action bar (Export/Save as Session/Delete) so
+// the "select all" header checkbox and individual row checkboxes always agree on which buttons show.
+function updateBulkActionButtons(){
+  var any=Q(".rcb:checked").length>0;
+  ["exp-sel","save-sel-session","del-sel"].forEach(function(id){
+    var el=G(id);if(el)el.style.display=any?"inline-flex":"none";
+  });
+}
 function renderResTable(){
-  var all=getFiltered(),pg=all.slice(ST.pg*ST.pgSz,(ST.pg+1)*ST.pgSz),tb=G("res-tb");if(!tb)return;
+  var all=getFiltered();
+  // ST.pg*ST.pgSz is NaN when pgSz is Infinity ("Show: All") — 0*Infinity===NaN in JS — which made
+  // every row's gi (and therefore its checkbox, edit/delete buttons, and hover preview) resolve to
+  // getFiltered()[NaN]===undefined. That's why "Export selected" reported "No rows selected" even
+  // with every row visibly checked: none of the checkboxes carried a usable index.
+  var startIdx=(ST.pgSz===Infinity)?0:ST.pg*ST.pgSz;
+  var pg=all.slice(startIdx,startIdx+ST.pgSz),tb=G("res-tb");if(!tb)return;
   if(!pg.length){tb.innerHTML='<tr><td colspan="12" class="te">No records match your filters.</td></tr>';return;}
-  var h="";for(var i=0;i<pg.length;i++){var r=pg[i],gi=ST.pg*ST.pgSz+i;
+  var h="";for(var i=0;i<pg.length;i++){var r=pg[i],gi=startIdx+i;
     var stCls=r.status==="open"?"st-open":r.status==="solved"?"st-solved":r.status==="closed"?"st-closed":r.status==="pending"?"st-pending":"bgr";
     var frrCls=r.frr>60?"frr-warn":r.frr>0?"frr-ok":"frr-none";
     var frrVal=r.frr>0?r.frr:(r.frr_txt||"--");
@@ -4155,7 +4209,7 @@ function renderResTable(){
     h+="</tr>";
   }
   tb.innerHTML=h;
-  tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){var any=Q(".rcb:checked").length>0;var es=G("exp-sel");if(es)es.style.display=any?"inline-flex":"none";var ds=G("del-sel");if(ds)ds.style.display=any?"inline-flex":"none";};});
+  tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){updateBulkActionButtons();};});
   // Edit buttons
   tb.querySelectorAll("[data-edit-gi]").forEach(function(btn){
     btn.onclick=function(){openEditResultModal(getFiltered()[+this.dataset.editGi]);};
@@ -4206,8 +4260,7 @@ function deleteSelectedResults(){
   if(!rows.length){toast("No rows selected","warn");return;}
   if(!confirm("Delete "+rows.length+" selected ticket(s)? This cannot be undone."))return;
   removeResultRecords(rows);
-  var es=G("exp-sel");if(es)es.style.display="none";
-  var ds=G("del-sel");if(ds)ds.style.display="none";
+  updateBulkActionButtons();
   toast("Deleted "+rows.length+" ticket(s)","ok");
 }
 
@@ -5114,8 +5167,9 @@ document.addEventListener("DOMContentLoaded",function(){
   ["f-env","f-cat","f-sub","f-smb","f-st","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
   var fmine=G("f-mine");if(fmine)fmine.onchange=applyF;
   var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
-  var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});var es=G("exp-sel");if(es)es.style.display=this.checked?"inline-flex":"none";};
+  var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});updateBulkActionButtons();};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
+  var svs=G("save-sel-session");if(svs)svs.onclick=openSaveSelectedAsSessionModal;
   var dsl=G("del-sel");if(dsl)dsl.onclick=deleteSelectedResults;
   var pgp=G("pg-p");if(pgp)pgp.onclick=function(){ST.pg=Math.max(0,ST.pg-1);renderResTable();};var pgn=G("pg-n");if(pgn)pgn.onclick=function(){ST.pg++;renderResTable();};
   var pgsz=G("pg-size");if(pgsz){pgsz.value=String(ST.pgSz);pgsz.onchange=function(){ST.pgSz=+this.value||30;ST.pg=0;renderResTable();};}
