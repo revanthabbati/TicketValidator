@@ -1675,6 +1675,7 @@ async function syncLocalDataToFirestore(preloadedResults){
               reviewDate:Number(r.reviewDate)||0,
               assignedTo:String(r.assignedTo||""),assignedToName:String(r.assignedToName||""),
               assignedToEmail:String(r.assignedToEmail||""),
+              description:String(r.description||""),first_customer_comment:String(r.first_customer_comment||""),
               evaluatedBy:String(FB.user.email||FB.user.uid||"admin"),
               evaluatedAt:Number(r.evaluatedAt)||Date.now(),
               savedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -1846,7 +1847,7 @@ async function loadDataFromFirestore(){
 
 async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",savedAt:fsTs()};
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",description:res.description||"",first_customer_comment:res.first_customer_comment||"",savedAt:fsTs()};
   try{
     await FB.db.collection("shared").doc("org").collection("results").add(toSave);
   }catch(e){console.warn("saveResultToFirestore error:",e);}
@@ -2996,6 +2997,19 @@ function findReply(co,rid){
   pub.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});
   return new Date(pub[0].created_at);
 }
+// The earliest PUBLIC comment actually authored by the requester — i.e. the customer's own first
+// email — as opposed to findReply() above, which deliberately excludes the requester to find the
+// agent's reply instead.
+function findFirstCustomerComment(co,rid){
+  var mine=[];
+  for(var i=0;i<co.length;i++){
+    var c=co[i];
+    if(c.public&&String(c.author_id)===String(rid))mine.push(c);
+  }
+  if(!mine.length)return"";
+  mine.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});
+  return String(mine[0].body||"").substring(0,2000);
+}
 
 // ─── GEMINI ──────────────────────────────────────────────────
 function buildLrnEx(){
@@ -3526,6 +3540,7 @@ function saveZeroFrrSettings(){
 
 // ─── TICKET HOVER PREVIEW ────────────────────────────────────
 var _prevTimeout=null;
+function previewTrunc(s){s=String(s||"");return s.length>300?s.substring(0,300)+"…":s;}
 function showTicketPreview(e,r){
   clearTimeout(_prevTimeout);
   _prevTimeout=setTimeout(function(){
@@ -3545,13 +3560,15 @@ function showTicketPreview(e,r){
       '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Category</div><div>'+catBdg(r.category)+'</div></div>'+
       '</div>'+
       '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Sub Category</div><div style="color:var(--tx-2)">'+esc(r.sub_category||"--")+'</div></div>'+
+      (r.description?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Description</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.description))+'</div></div>':'')+
+      (r.first_customer_comment?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">First Customer Email</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.first_customer_comment))+'</div></div>':'')+
       (r.ab_comment?'<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;font-size:11.5px;color:#78350F">'+esc(r.ab_comment)+'</div>':'')+
       (r.confidence?'<div style="font-size:11px;color:var(--tx-3)">AI Confidence: <strong style="color:'+(r.confidence>=80?"var(--success)":r.confidence>=60?"var(--warning)":"var(--danger)")+'">'+r.confidence+'%</strong></div>':'')+
       '<a href="'+esc(r.zd_url||"#")+'" target="_blank" style="color:var(--brand-light);font-size:12px;text-align:center;display:block;padding:4px 0;border-top:1px solid var(--border);margin-top:4px">&#8599; Open in Zendesk</a>'+
       '</div>';
     var x=e.clientX+14,y=e.clientY+14;
     if(x+410>window.innerWidth)x=e.clientX-415;
-    if(y+320>window.innerHeight)y=e.clientY-320;
+    if(y+480>window.innerHeight)y=Math.max(8,e.clientY-480);
     tp.style.left=x+"px";tp.style.top=y+"px";tp.style.display="block";
   },200);
 }
@@ -3718,11 +3735,12 @@ async function startEval(){
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
     var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0,assignedTo:"",assignedToName:"",assignedToEmail:""};
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0,assignedTo:"",assignedToName:"",assignedToEmail:"",description:"",first_customer_comment:""};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
       res.ab_comment="";
+      res.description=String(t.description||"").substring(0,2000);
       log("  ZD OK: \""+String(t.subject||"").substring(0,40)+"\"","ok");
 
       // ── Column AB: Merged ticket detection ──
@@ -3835,6 +3853,9 @@ async function startEval(){
         var desc="";
         for(var ci2=0;ci2<comments.length;ci2++){if(comments[ci2].public){desc=String(comments[ci2].body||"").substring(0,2000);break;}}
         if(!desc)desc=String(t.description||"").substring(0,2000);
+        // For the hover preview: the customer's own first message, as opposed to `desc` above
+        // (first public comment from anyone, used for the AI prompt).
+        res.first_customer_comment=findFirstCustomerComment(comments,t.requester_id)||res.description;
         // Build full conversation for Gemini
         var allReplies=[];
         for(var cr=0;cr<Math.min(comments.length,5);cr++){
@@ -5396,7 +5417,7 @@ document.addEventListener("DOMContentLoaded",function(){
   updateSidebarLogo();
 });
 </script>
-<div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
+<div id="ticket-preview" style="position:fixed;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:0;width:400px;max-height:80vh;z-index:9900;display:none;pointer-events:none;overflow:hidden"></div>
 
 <script>
 
