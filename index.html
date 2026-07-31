@@ -1460,7 +1460,14 @@ function getBaseResults(){
 function fillReviewSessionDropdowns(){
   var sessions=(ST.reviewSessions||[]).slice().sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0);});
   var opts="<option value=\"\">All Reviews</option>";
-  sessions.forEach(function(s){opts+="<option value=\""+esc(s.id)+"\">"+esc(s.name)+" ("+(s.ticketCount||0)+")</option>";});
+  // Count live off ST.results rather than trusting the session's stored ticketCount — that field is
+  // only ever set once (at creation) and never decremented, so it drifted from reality the moment
+  // any tagged ticket was deleted. renderManageSessionsList() already computes this live; matching
+  // that here is what makes the dropdown label stop lying about how many tickets remain.
+  sessions.forEach(function(s){
+    var cnt=ST.results.filter(function(r){return r.reviewSessionId===s.id;}).length;
+    opts+="<option value=\""+esc(s.id)+"\">"+esc(s.name)+" ("+cnt+")</option>";
+  });
   ["chart-session","f-session"].forEach(function(id){
     var el=G(id);if(!el)return;
     var cur=ST.reviewFilter||"";
@@ -1803,7 +1810,11 @@ async function loadDataFromFirestore(){
     if(sharedSnap.docs.length>0){
       ST.results=sharedSnap.docs.map(function(d){
         var r=d.data();
-        return Object.assign({zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);
+        // _fid (the Firestore doc id) is what lets edits/deletes update the right doc in place —
+        // without it here, only the realtime listener's snapshots carried it, so any edit made
+        // right after this one-time load (e.g. before the listener caught up) had no doc to update
+        // and fell back to creating a duplicate.
+        return Object.assign({_fid:d.id,zd_url:r.zd_url||"",_ok:r._ok||false,error:r.error||"",frr_txt:r.frr_txt||""},r);
       });
       // Also update localStorage cache
       lsS(SK.RE,ST.results.slice(0,200));
@@ -1849,8 +1860,32 @@ async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
   var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",description:res.description||"",first_customer_comment:res.first_customer_comment||"",savedAt:fsTs()};
   try{
-    await FB.db.collection("shared").doc("org").collection("results").add(toSave);
+    var ref=await FB.db.collection("shared").doc("org").collection("results").add(toSave);
+    res._fid=ref.id;
   }catch(e){console.warn("saveResultToFirestore error:",e);}
+}
+// Updates an EXISTING result's Firestore doc in place — used by the Edit modal. saveResultToFirestore()
+// above always .add()s a brand-new doc, which is correct for a fresh evaluation but silently created
+// a duplicate every time an already-synced ticket was edited (the original stale doc stuck around
+// alongside a second, updated one). Resolves the doc by res._fid when known, otherwise looks it up
+// by the ticket's own id field — records loaded before _fid started being tracked won't have it yet.
+async function updateResultInFirestore(res){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  var patch={frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",
+    category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||""};
+  try{
+    var coll=FB.db.collection("shared").doc("org").collection("results");
+    if(!res._fid){
+      var q=await coll.where("id","==",String(res.id)).limit(1).get();
+      if(!q.empty)res._fid=q.docs[0].id;
+    }
+    if(res._fid){
+      await coll.doc(res._fid).set(patch,{merge:true});
+    }else{
+      // Never synced at all (e.g. created fully offline) — nothing to update in place, so create it.
+      await saveResultToFirestore(res);
+    }
+  }catch(e){console.warn("updateResultInFirestore error:",e);}
 }
 
 async function saveReviewSessionToFirestore(session){
@@ -4180,8 +4215,9 @@ function openEditResultModal(r){
     var corr=lsG(SK.CO,[])||[];
     corr.push({subject:String(r.subject||"").substring(0,80),ticket_type:r.ticket_type||"",field:"edit",original:"",corrected:"env:"+r.environment+",cat:"+r.category+",sub:"+r.sub_category,ts:Date.now()});
     lsS(SK.CO,corr);
-    // Save updated result to Firestore
-    if(FB.enabled&&FB.db){saveResultToFirestore(r).catch(function(){});}
+    // Update the existing Firestore doc in place — NOT saveResultToFirestore(), which always
+    // .add()s a new doc and would leave a stale duplicate behind every time a ticket is edited.
+    if(FB.enabled&&FB.db){updateResultInFirestore(r).catch(function(){});}
     closeModal();applyF();toast("Result updated","ok");upBadges();
     // Auto-refresh dashboard charts
     var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
@@ -4305,6 +4341,7 @@ function removeResultRecords(records){
     }
   });
   lsS(SK.RE,ST.results.slice(-200));
+  fillReviewSessionDropdowns(); // refresh the "(N)" ticket count next to each session's name
   renderResTable();upBadges();
   var dpg=G("pg-dashboard");if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
 }
