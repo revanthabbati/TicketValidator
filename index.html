@@ -3539,37 +3539,76 @@ function saveZeroFrrSettings(){
 }
 
 // ─── TICKET HOVER PREVIEW ────────────────────────────────────
-var _prevTimeout=null;
+var _prevTimeout=null,_previewReqId=0;
+// Tickets evaluated before description/first_customer_comment started being saved (see
+// findFirstCustomerComment) have neither field stored locally or in Firestore. Rather than the
+// preview just omitting those sections forever for old tickets, cache a one-time live Zendesk
+// fetch per ticket id so hovering an already-reviewed ticket still shows them.
+var _previewLiveCache={};
 function previewTrunc(s){s=String(s||"");return s.length>300?s.substring(0,300)+"…":s;}
+function renderTicketPreviewContent(tp,r,e,loading){
+  var fc=r.frr>60?"var(--danger)":r.frr>0?"var(--success)":"var(--tx-3)";
+  tp.dataset.tid=String(r.id);
+  tp.innerHTML=
+    '<div style="background:linear-gradient(135deg,var(--brand-light),#7C5CF7);padding:12px 16px;color:#fff">'+
+    '<div style="font-size:11px;opacity:.7;margin-bottom:2px">Ticket #'+esc(r.id)+'</div>'+
+    '<div style="font-weight:600;font-size:14px;line-height:1.4">'+esc(r.subject||"--")+'</div>'+
+    '<div style="font-size:11px;opacity:.65;margin-top:4px">'+esc(r.ticket_type||"")+(r.status?' · '+esc(r.status):"")+'</div>'+
+    '</div>'+
+    '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:7px;font-size:12.5px">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+    '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">SMB</div><div>'+smbBdg(r.smb_type)+'</div></div>'+
+    '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">FRR</div><div style="font-family:JetBrains Mono,monospace;font-weight:500;color:'+fc+'">'+(r.frr>0?r.frr:r.frr_txt||"--")+'</div></div>'+
+    '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Environment</div><div>'+esc(r.environment||"--")+'</div></div>'+
+    '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Category</div><div>'+catBdg(r.category)+'</div></div>'+
+    '</div>'+
+    '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Sub Category</div><div style="color:var(--tx-2)">'+esc(r.sub_category||"--")+'</div></div>'+
+    (r.description?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Description</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.description))+'</div></div>':'')+
+    (r.first_customer_comment?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">First Customer Email</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.first_customer_comment))+'</div></div>':'')+
+    (loading?'<div style="font-size:11px;color:var(--tx-3);font-style:italic">Loading ticket content from Zendesk…</div>':'')+
+    (r.ab_comment?'<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;font-size:11.5px;color:#78350F">'+esc(r.ab_comment)+'</div>':'')+
+    (r.confidence?'<div style="font-size:11px;color:var(--tx-3)">AI Confidence: <strong style="color:'+(r.confidence>=80?"var(--success)":r.confidence>=60?"var(--warning)":"var(--danger)")+'">'+r.confidence+'%</strong></div>':'')+
+    '<a href="'+esc(r.zd_url||"#")+'" target="_blank" style="color:var(--brand-light);font-size:12px;text-align:center;display:block;padding:4px 0;border-top:1px solid var(--border);margin-top:4px">&#8599; Open in Zendesk</a>'+
+    '</div>';
+  var x=e.clientX+14,y=e.clientY+14;
+  if(x+410>window.innerWidth)x=e.clientX-415;
+  if(y+480>window.innerHeight)y=Math.max(8,e.clientY-480);
+  tp.style.left=x+"px";tp.style.top=y+"px";tp.style.display="block";
+}
+// Live Zendesk fetch for tickets missing description/first_customer_comment — only ever runs once
+// per ticket id per page load (cached in _previewLiveCache), and only if Zendesk API creds are
+// configured on this device (silently skipped otherwise, same as any other Zendesk-dependent
+// feature on a reviewer's device that hasn't set those up).
+async function fetchTicketPreviewExtras(tid){
+  try{
+    var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");
+    var t=zdR.ticket;if(!t)return null;
+    var description=String(t.description||"").substring(0,2000);
+    var comments=await zdGetComments(tid);
+    var first_customer_comment=findFirstCustomerComment(comments,t.requester_id)||description;
+    return{description:description,first_customer_comment:first_customer_comment};
+  }catch(e){console.warn("fetchTicketPreviewExtras:",e.message||e);return null;}
+}
 function showTicketPreview(e,r){
   clearTimeout(_prevTimeout);
   _prevTimeout=setTimeout(function(){
     var tp=G("ticket-preview");if(!tp||!r)return;
-    var fc=r.frr>60?"var(--danger)":r.frr>0?"var(--success)":"var(--tx-3)";
-    tp.innerHTML=
-      '<div style="background:linear-gradient(135deg,var(--brand-light),#7C5CF7);padding:12px 16px;color:#fff">'+
-      '<div style="font-size:11px;opacity:.7;margin-bottom:2px">Ticket #'+esc(r.id)+'</div>'+
-      '<div style="font-weight:600;font-size:14px;line-height:1.4">'+esc(r.subject||"--")+'</div>'+
-      '<div style="font-size:11px;opacity:.65;margin-top:4px">'+esc(r.ticket_type||"")+(r.status?' · '+esc(r.status):"")+'</div>'+
-      '</div>'+
-      '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:7px;font-size:12.5px">'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">SMB</div><div>'+smbBdg(r.smb_type)+'</div></div>'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">FRR</div><div style="font-family:JetBrains Mono,monospace;font-weight:500;color:'+fc+'">'+(r.frr>0?r.frr:r.frr_txt||"--")+'</div></div>'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Environment</div><div>'+esc(r.environment||"--")+'</div></div>'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Category</div><div>'+catBdg(r.category)+'</div></div>'+
-      '</div>'+
-      '<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Sub Category</div><div style="color:var(--tx-2)">'+esc(r.sub_category||"--")+'</div></div>'+
-      (r.description?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Description</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.description))+'</div></div>':'')+
-      (r.first_customer_comment?'<div><div style="font-size:10px;color:var(--tx-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">First Customer Email</div><div style="color:var(--tx-2);font-size:11.5px;line-height:1.5;max-height:90px;overflow:hidden;white-space:pre-wrap">'+esc(previewTrunc(r.first_customer_comment))+'</div></div>':'')+
-      (r.ab_comment?'<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;font-size:11.5px;color:#78350F">'+esc(r.ab_comment)+'</div>':'')+
-      (r.confidence?'<div style="font-size:11px;color:var(--tx-3)">AI Confidence: <strong style="color:'+(r.confidence>=80?"var(--success)":r.confidence>=60?"var(--warning)":"var(--danger)")+'">'+r.confidence+'%</strong></div>':'')+
-      '<a href="'+esc(r.zd_url||"#")+'" target="_blank" style="color:var(--brand-light);font-size:12px;text-align:center;display:block;padding:4px 0;border-top:1px solid var(--border);margin-top:4px">&#8599; Open in Zendesk</a>'+
-      '</div>';
-    var x=e.clientX+14,y=e.clientY+14;
-    if(x+410>window.innerWidth)x=e.clientX-415;
-    if(y+480>window.innerHeight)y=Math.max(8,e.clientY-480);
-    tp.style.left=x+"px";tp.style.top=y+"px";tp.style.display="block";
+    var cached=_previewLiveCache[r.id];
+    var merged=cached?Object.assign({},r,cached):r;
+    var needsFetch=!merged.description&&!merged.first_customer_comment&&!cached;
+    renderTicketPreviewContent(tp,merged,e,needsFetch&&cfg("ZD_TOK")&&cfg("ZD_SUB"));
+    if(needsFetch&&cfg("ZD_TOK")&&cfg("ZD_SUB")){
+      var myReq=++_previewReqId;
+      fetchTicketPreviewExtras(r.id).then(function(extra){
+        if(!extra)return;
+        _previewLiveCache[r.id]=extra;
+        // Only re-render if the preview is still showing (and still pointed at) this same ticket —
+        // the user may have moved on to hovering something else while the fetch was in flight.
+        if(myReq===_previewReqId&&tp.style.display!=="none"&&tp.dataset.tid===String(r.id)){
+          renderTicketPreviewContent(tp,Object.assign({},r,extra),e);
+        }
+      });
+    }
   },200);
 }
 function hideTicketPreview(){clearTimeout(_prevTimeout);var tp=G("ticket-preview");if(tp)tp.style.display="none";}
