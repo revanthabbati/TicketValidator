@@ -534,6 +534,7 @@ select.fin{cursor:pointer}
       <div class="sbi active" data-pg="dashboard"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
       <div class="sbi" data-pg="evaluate"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>Evaluate<span class="sbbd" id="bd-ev">0</span></div>
       <div class="sbi" data-pg="smb"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>SMB Database<span class="sbbd" id="bd-smb">&#x25CF;</span></div>
+      <div class="sbi" data-pg="arr"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>ARR Database<span class="sbbd" id="bd-arr">&#x25CF;</span></div>
       <div class="sbi" data-pg="results"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Results<span class="sbbd" id="bd-res">0</span></div>
       <hr class="sbdv">
       <div class="sbi" data-pg="categories"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Manage Labels</div>
@@ -894,6 +895,28 @@ select.fin{cursor:pointer}
         <div class="card" id="smb-prev" style="display:none"><div class="chd"><span class="ct">SMB Data Preview</span><span class="bdg bok2" id="smb-prev-cnt"></span></div><div class="tw" style="max-height:320px"><table class="tbl"><thead><tr><th>Activation Code</th><th>License Count</th><th>Customer Type</th><th style="width:50px"></th></tr></thead><tbody id="smb-prev-tb"></tbody></table></div></div>
       </div>
 
+      <!-- ARR DATABASE -->
+      <div class="page" id="pg-arr">
+        <div class="al ai" style="font-size:12.5px;margin-bottom:14px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Persistent Activation Code &rarr; ARR reference database. Any ticket evaluated with an ARR value in its sheet automatically saves that value here; tickets evaluated with a blank/missing ARR column look it up from here instead. Used together with the ARR Ranges on the SMB Database page when classifying by ARR.</div></div>
+        <div class="g2">
+          <div class="card"><div class="chd"><span class="ct">Upload ARR Reference Sheet</span></div><div class="cbd" style="display:flex;flex-direction:column;gap:14px">
+            <div class="dz" id="dz-arr2"><div class="dzi">&#x1F4B0;</div><div class="dzt">Drop ARR sheet here or click to browse</div><div class="dzs">Excel or CSV: Activation Code + ARR columns</div><input type="file" id="fi-arr2" accept=".xlsx,.xls,.csv" style="display:none"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">Add or update a single entry:</div>
+            <div class="al ai" style="font-size:11.5px">Using an activation code that's already in the database overwrites its stored ARR value — this is also how you update an existing entry.</div>
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="flex:1"><label class="flb">Activation Code</label><input id="arr-add-code" class="fin" placeholder="e.g. ACT12345"></div>
+              <div style="flex:1"><label class="flb">ARR ($)</label><input id="arr-add-val" class="fin" type="number" min="0" placeholder="e.g. 75000"></div>
+              <button class="btn bpri" id="arr-add-single" style="white-space:nowrap;padding:9px 16px">+ Add</button>
+            </div>
+            <div id="arr-mapper" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Map columns from your sheet:</div><div class="g2" style="gap:10px"><div><label class="flb">Activation Code column</label><select id="arr-cc" class="fin"></select></div><div><label class="flb">ARR column</label><select id="arr-ac" class="fin"></select></div></div><div style="margin-top:12px"><label class="flb">Import Mode</label><div style="display:flex;flex-direction:column;gap:6px"><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="arr-mode-inline" value="replace" checked> Replace Existing Database</label><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="radio" name="arr-mode-inline" value="append"> Append to Existing Database</label></div></div><button class="btn bpri" style="margin-top:12px;width:100%;justify-content:center" id="arr-save">&#10003; Save ARR Database</button></div>
+            <div id="arr-pg-msg"></div>
+          </div></div>
+          <div class="card" id="arr-stats"><div class="chd"><span class="ct">ARR Data</span><div style="display:flex;gap:6px"><button class="btn bout bsm" id="arr-export-btn">&#8595; Export CSV</button><button class="btn bdan bsm" id="arr-clear-stat">Clear All</button></div></div><div class="cbd" id="arr-stats-inner"><div style="text-align:center;color:var(--tx-3);padding:24px 0">No ARR data loaded.</div></div></div>
+        </div>
+        <div class="card" id="arr-prev" style="display:none"><div class="chd"><span class="ct">ARR Data Preview</span><span class="bdg bok2" id="arr-prev-cnt"></span></div><div class="al ai" style="font-size:11px;margin:10px 16px 0">Click a row's Activation Code to load it into the form above for editing.</div><div class="tw" style="max-height:320px"><table class="tbl"><thead><tr><th>Activation Code</th><th>ARR ($)</th><th style="width:50px"></th></tr></thead><tbody id="arr-prev-tb"></tbody></table></div></div>
+      </div>
+
       <!-- RESULTS -->
       <div class="page" id="pg-results">
         <div class="card">
@@ -1157,7 +1180,7 @@ var DT = ["Technical"];
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"],confidence:["ai confidence","confidence"],ab_comment:["comments(ab)","comments (ab)"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm",ARD:"tep_ard"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1441,12 +1464,13 @@ async function saveLabelsToFirestore(){
 // ─── STATE ───────────────────────────────────────────────────
 var ST={
   sess:null,results:[],curEval:[],filtered:[],smbData:{},smbRaw:[],
+  arrData:{},arrRaw:[],
   rows:[],headers:[],colIdx:{},
   fills:{frr:true,smb:true,env:true,cat:true,sub:true},
   delay:1500,paused:false,stop:false,
   tech:[],revChg:{},
   sortK:null,sortD:"asc",pg:0,pgSz:30,
-  pendSMB:null,
+  pendSMB:null,pendARR:null,
   reviewSessions:[],reviewFilter:"",
   chrComputed:null
 };
@@ -1745,6 +1769,15 @@ async function syncLocalDataToFirestore(preloadedResults){
       }
     }
 
+    // ── Migrate ARR reference database ──
+    var arrCheck=null;try{arrCheck=await fsGet("shared/arrdata");}catch(e){}
+    if(!arrCheck){
+      var localARR=lsG(SK.ARD,null);
+      if(localARR&&localARR.data&&Object.keys(localARR.data).length>0){
+        await fsSet("shared/arrdata",{map:localARR.data,raw:localARR.raw||[],savedAt:fsTs()});
+      }
+    }
+
     // ── Migrate labels ──
     var labCheck=await fsGet("shared/labels");
     if(!labCheck){
@@ -1844,6 +1877,12 @@ async function loadDataFromFirestore(){
     else{var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   }catch(e){var lsmb=lsG(SK.SM,null);if(lsmb){ST.smbData=lsmb.data||{};ST.smbRaw=lsmb.raw||[];}}
   migrateSMBState();
+  // ── Load shared ARR reference database (Activation Code -> ARR) ──
+  try{
+    var arrd=await fsGet("shared/arrdata");
+    if(arrd&&arrd.map){ST.arrData=arrd.map;ST.arrRaw=arrd.raw||[];}
+    else{var larr=lsG(SK.ARD,null);if(larr){ST.arrData=larr.data||{};ST.arrRaw=larr.raw||[];}}
+  }catch(e){var larr=lsG(SK.ARD,null);if(larr){ST.arrData=larr.data||{};ST.arrRaw=larr.raw||[];}}
   // ── Load shared SMB license/ARR ranges + classification mode ──
   await loadSMBRangesFromFirestore();
   await loadARRRangesFromFirestore();
@@ -1951,9 +1990,13 @@ async function saveSMBToFirestore(){
   // Save to SHARED SMB path so all users share the same SMB data
   await fsSet("shared/smbdata",{map:ST.smbData,raw:ST.smbRaw,savedAt:fsTs()});
 }
+async function saveARRDataToFirestore(){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  await fsSet("shared/arrdata",{map:ST.arrData,raw:ST.arrRaw,savedAt:fsTs()});
+}
 
 // ─── NAV ─────────────────────────────────────────────────────
-var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
+var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload, classify and enrich tickets"},smb:{t:"SMB Database",d:"Customer type reference data"},arr:{t:"ARR Database",d:"Activation Code → ARR reference data"},results:{t:"Results",d:"All evaluated tickets"},categories:{t:"Manage Labels",d:"Environment, Category & Sub Category labels"},learning:{t:"AI Learning",d:"Correction history & learning progress"},training:{t:"AI Training",d:"Upload reviewed sheets to train the AI classifier"},users:{t:"User Management",d:"Manage platform users"},settings:{t:"API Settings",d:"Zendesk, Gemini & Firebase configuration"}};
 function goPage(pg){
   if((pg==="users"||pg==="settings"||pg==="evaluate")&&!isAdmin()){toast("Admin access required","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
@@ -1965,6 +2008,7 @@ function goPage(pg){
   if(pg==="categories")renderCatPanels();if(pg==="learning")renderLrnPage();
   if(pg==="training")renderTrainingPage();
   if(pg==="users")renderUsers();if(pg==="settings")loadSettings();if(pg==="smb")renderSMBPage();
+  if(pg==="arr")renderARRPage();
 }
 
 // ─── BADGES ──────────────────────────────────────────────────
@@ -2146,6 +2190,7 @@ async function loadTrainingFromFirestore(){
 function upBadges(){
   var rb=G("bd-res");if(rb){rb.textContent=ST.results.length;rb.style.display=ST.results.length?"inline":"none";}
   var sb=G("bd-smb");if(sb)sb.style.display=Object.keys(ST.smbData).length?"inline":"none";
+  var ab=G("bd-arr");if(ab)ab.style.display=Object.keys(ST.arrData).length?"inline":"none";
   var corr=lsG(SK.CO,[])||[];var lc=corr.length;var lb=G("bd-lrn");if(lb){lb.textContent=lc;lb.style.display=lc?"inline":"none";}
   var fbb=G("fb-status-badge");if(fbb){fbb.textContent=FB.enabled?"Connected":"Not configured";fbb.className="bdg "+(FB.enabled?"bok2":"bgr");fbb.style.fontSize="10px";}
   var trnBdg=G("bd-trn");if(trnBdg){var tn=getTraining().length;trnBdg.textContent=tn;trnBdg.style.display=tn?"inline":"none";}
@@ -2808,7 +2853,8 @@ async function recomputeAllSMB(){
     var oldType=r.smb_type;
     if(mode==="arr"){
       var ci2=r._ci,rd2=r._rd;
-      if(ci2&&rd2&&ci2.arr!=null)r.arr=parseNumericValue(rd2[ci2.arr]);
+      var sheetArr=(ci2&&rd2&&ci2.arr!=null)?parseNumericValue(rd2[ci2.arr]):null;
+      r.arr=sheetArr!=null?sheetArr:lookupARR(r.activation_code);
       r.smb_type=classifySMBByARR(r.activation_code,r.arr);
     }else{
       r.smb_type=lookupSMB(r.activation_code);
@@ -2891,6 +2937,141 @@ function exportSMBCsv(){
   toast("SMB exported ("+ST.smbRaw.length+" records)","ok");
 }
 
+// ─── ARR DATABASE ────────────────────────────────────────────
+// Activation Code -> ARR reference database, mirroring the SMB reference database above. Fed two
+// ways: (1) every ticket evaluated WITH an ARR value in its sheet auto-upserts that value here via
+// upsertARRFromTicket(), and (2) manual import/add/edit/delete/export on the ARR Database page.
+// Ticket evaluation falls back to lookupARR() whenever a ticket's own sheet has no ARR value.
+function lookupARR(code){
+  if(!code)return null;
+  var rec=ST.arrData[String(code).trim().toLowerCase()];
+  return rec&&rec.arr!=null&&!isNaN(rec.arr)?Number(rec.arr):null;
+}
+// Called from the eval pipeline whenever a ticket's sheet DID carry a usable ARR value — keeps the
+// reference database current without requiring a separate manual import for every new customer.
+function upsertARRFromTicket(code,arr){
+  if(!code||arr==null||arr===""||isNaN(arr))return;
+  var key=String(code).trim().toLowerCase();
+  var rec={code:String(code).trim(),arr:Number(arr)};
+  if(!ST.arrData[key])ST.arrRaw.push(rec);
+  else{var idx=ST.arrRaw.findIndex(function(r){return r.code.toLowerCase()===key;});if(idx>=0)ST.arrRaw[idx]=rec;else ST.arrRaw.push(rec);}
+  ST.arrData[key]=rec;
+  lsS(SK.ARD,{data:ST.arrData,raw:ST.arrRaw});
+  saveARRDataToFirestore().catch(function(){});
+}
+function parseARRFile(file){
+  var ext=file.name.split(".").pop().toLowerCase(),rd=new FileReader();
+  rd.onerror=function(){toast("Cannot read file","err");};
+  rd.onload=function(ev){
+    try{
+      var raw;
+      if(ext==="csv")raw=Papa.parse(ev.target.result,{header:false,skipEmptyLines:true}).data;
+      else{var wb=XLSX.read(ev.target.result,{type:"array"});raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});}
+      if(!raw||raw.length<2){toast("ARR file appears empty","err");return;}
+      var hdrs=raw[0].map(function(c){return String(c||"").trim();}),ci=-1,ai=-1;
+      for(var i=0;i<hdrs.length;i++){if(/activ|code/i.test(hdrs[i])&&ci<0)ci=i;}
+      for(var i=0;i<hdrs.length;i++){if(/arr|annual recurring revenue/i.test(hdrs[i])&&ai<0)ai=i;}
+      ST.pendARR={hdrs:hdrs,rows:raw.slice(1)};
+      showARRMapper(hdrs,ci,ai);
+    }catch(e){toast("Error: "+e.message,"err");}
+  };
+  if(ext==="csv")rd.readAsText(file);else rd.readAsArrayBuffer(file);
+}
+function showARRMapper(hdrs,ci,ai){
+  var cc=G("arr-cc"),ac=G("arr-ac");if(!cc||!ac)return;
+  cc.innerHTML=mkOpts(hdrs,ci>=0?ci:0);ac.innerHTML=mkOpts(hdrs,ai>=0?ai:0);
+  G("arr-mapper").style.display="block";
+  var mr=document.querySelector('input[name="arr-mode-inline"][value="replace"]');if(mr)mr.checked=true;
+  var msg=G("arr-pg-msg");if(msg){msg.className="al ao";msg.textContent=ST.pendARR.rows.length+" rows ready.";}
+}
+async function applyARR(ci,ai,mode){
+  if(!ST.pendARR)return;
+  var append=mode==="append";
+  var rows=ST.pendARR.rows;
+  var data=append?Object.assign({},ST.arrData):{};
+  var raw=append?ST.arrRaw.slice():[];
+  var added=0,skipped=0;
+  for(var i=0;i<rows.length;i++){
+    var code=String(rows[i][ci]||"").trim();
+    if(!code)continue;
+    var arr=parseNumericValue(rows[i][ai]);
+    if(arr==null||isNaN(arr))continue;
+    var key=code.toLowerCase();
+    if(append&&Object.prototype.hasOwnProperty.call(data,key)){skipped++;continue;}
+    var rec={code:code,arr:Number(arr)};
+    data[key]=rec;raw.push(rec);added++;
+  }
+  ST.arrData=data;ST.arrRaw=raw;
+  lsS(SK.ARD,{data:data,raw:raw});
+  await saveARRDataToFirestore();
+  var msg=append
+    ?("ARR appended: "+added+" new record"+(added!==1?"s":"")+(skipped?", "+skipped+" duplicate"+(skipped!==1?"s":"")+" skipped":"")+" ("+Object.keys(data).length+" total)")
+    :("ARR saved: "+Object.keys(data).length+" records");
+  toast(msg,"ok");upBadges();renderARRPage();
+}
+async function clearARRData(){
+  if(!confirm("Clear all ARR data?"))return;
+  ST.arrData={};ST.arrRaw=[];lsD(SK.ARD);
+  if(FB.enabled&&FB.db)await fsDelete("shared/arrdata");
+  renderARRPage();upBadges();toast("ARR cleared","ok");
+}
+function addSingleARR(){
+  var code=(gv("arr-add-code")||"").trim();
+  var arrRaw=gv("arr-add-val");
+  if(!code){toast("Enter an activation code","err");return;}
+  if(arrRaw===""||isNaN(+arrRaw)){toast("Enter a valid ARR value","err");return;}
+  upsertARRFromTicket(code,+arrRaw);
+  var inp=G("arr-add-code");if(inp)inp.value="";
+  var vinp=G("arr-add-val");if(vinp)vinp.value="";
+  renderARRPage();upBadges();toast("Saved: "+code+" → $"+(+arrRaw).toLocaleString(),"ok");
+}
+function exportARRCsv(){
+  if(!ST.arrRaw.length){toast("No ARR data to export","err");return;}
+  dlBlob(new Blob([Papa.unparse(ST.arrRaw.map(function(r){return{"Activation Code":r.code,"ARR":r.arr!=null?r.arr:""};}))],{type:"text/csv;charset=utf-8;"}),"arr-database-"+stamp()+".csv");
+  toast("ARR exported ("+ST.arrRaw.length+" records)","ok");
+}
+function renderARRPage(){
+  var ks=Object.keys(ST.arrData),si=G("arr-stats-inner"),pc=G("arr-prev");
+  if(!si||!pc)return;
+  if(!ks.length){
+    si.innerHTML='<div style="text-align:center;color:var(--tx-3);padding:24px 0">No ARR data loaded.</div>';
+    pc.style.display="none";return;
+  }
+  var total=ks.reduce(function(a,k){return a+(ST.arrData[k].arr||0);},0);
+  si.innerHTML='<span class="bdg bok2" style="margin-bottom:12px;display:inline-block">'+ks.length+' codes</span>'+
+    "<div style='display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:7px'><span style='font-size:12.5px;color:var(--tx-2)'>Total ARR</span><span style='font-family:\"JetBrains Mono\",monospace'>$"+Math.round(total).toLocaleString()+"</span></div>";
+  pc.style.display="block";
+  var cnt=G("arr-prev-cnt");if(cnt)cnt.textContent=ST.arrRaw.length+" records";
+  var tb=G("arr-prev-tb");if(!tb)return;
+  var h2="";
+  for(var i=0;i<ST.arrRaw.length&&i<200;i++){
+    var rw=ST.arrRaw[i];
+    h2+="<tr><td style='font-size:12px;font-family:monospace;cursor:pointer;color:var(--brand-light)' data-aedit='"+i+"'>"+esc(rw.code)+"</td><td style='font-family:\"JetBrains Mono\",monospace;font-size:12px'>"+(rw.arr!=null?"$"+Math.round(rw.arr).toLocaleString():"--")+"</td><td><button class='btn bdan bsm' data-adel='"+i+"'>×</button></td></tr>";
+  }
+  if(ST.arrRaw.length>200)h2+='<tr><td colspan="3" class="te">+ '+(ST.arrRaw.length-200)+" more</td></tr>";
+  tb.innerHTML=h2;
+  tb.querySelectorAll("[data-adel]").forEach(function(btn){
+    btn.onclick=function(){
+      var idx=+this.dataset.adel,rw=ST.arrRaw[idx];if(!rw)return;
+      if(!confirm("Remove activation code: "+rw.code+"?"))return;
+      delete ST.arrData[rw.code.toLowerCase()];
+      ST.arrRaw.splice(idx,1);
+      lsS(SK.ARD,{data:ST.arrData,raw:ST.arrRaw});
+      saveARRDataToFirestore().catch(function(){});
+      renderARRPage();upBadges();toast("Removed "+rw.code,"ok");
+    };
+  });
+  // Click a row's code to load it back into the Add/Update form above — the de-facto "edit" path,
+  // same convention the SMB Database page uses (re-adding a code overwrites the existing record).
+  tb.querySelectorAll("[data-aedit]").forEach(function(td){
+    td.onclick=function(){
+      var idx=+this.dataset.aedit,rw=ST.arrRaw[idx];if(!rw)return;
+      var ci2=G("arr-add-code"),vi=G("arr-add-val");
+      if(ci2)ci2.value=rw.code;if(vi)vi.value=rw.arr!=null?rw.arr:"";
+      if(ci2)ci2.scrollIntoView({behavior:"smooth",block:"center"});
+    };
+  });
+}
 
 // ─── INFLOW ──────────────────────────────────────────────────
 function parseInflow(file){
@@ -2940,7 +3121,12 @@ async function importReviewedAsResults(){
   for(var i=0;i<total;i++){
     var row=ST.rows[i],tid=String(ci.ticket_id!=null?row[ci.ticket_id]:"").trim();
     if(!tid||!/^\d+$/.test(tid)){skipped++;continue;}
+    var actCode=String(ci.activation_code!=null?row[ci.activation_code]:"").trim();
     var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
+    // Sheet carried its own ARR value — maintain the reference database with it. Otherwise fall
+    // back to whatever this activation code's ARR was last recorded as.
+    if(rowArr!=null)upsertARRFromTicket(actCode,rowArr);
+    var finalArr=rowArr!=null?rowArr:lookupARR(actCode);
     var rowFrr=ci.frr!=null?parseNumericValue(row[ci.frr]):null;
     var rowConf=ci.confidence!=null?parseNumericValue(row[ci.confidence]):null;
     var res={
@@ -2953,11 +3139,11 @@ async function importReviewedAsResults(){
       ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),
       requester:String(ci.requester!=null?row[ci.requester]:""),
       org:String(ci.org!=null?row[ci.org]:""),
-      activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),
+      activation_code:actCode,
       created:ci.created!=null?row[ci.created]:"",
       solved:ci.solved!=null?row[ci.solved]:"",
       satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),
-      arr:rowArr,
+      arr:finalArr,
       frr:rowFrr!=null?rowFrr:0,
       frr_txt:rowFrr!=null?String(rowFrr):"",
       smb_type:ci.smb!=null?(normSMB(String(row[ci.smb]||""))||"Unknown"):"Unknown",
@@ -3808,8 +3994,13 @@ async function startEval(){
     if(pb)pb.style.width=pct+"%";if(pp)pp.textContent=pct+"%";if(pl)pl.textContent="Ticket #"+tid+" ("+(i+1)+"/"+total+")";
     if(i>1){var elap=(Date.now()-start)/1000,eta=Math.round((elap/i)*(total-i));var pe=G("pc-eta");if(pe)pe.textContent="ETA ~"+fmtS(eta);}
     log("\u2192 #"+tid+"\u2026","inf");
+    var actCode=String(ci.activation_code!=null?row[ci.activation_code]:"").trim();
     var rowArr=ci.arr!=null?parseNumericValue(row[ci.arr]):null;
-    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:String(ci.activation_code!=null?row[ci.activation_code]:"").trim(),created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:rowArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0,assignedTo:"",assignedToName:"",assignedToEmail:"",description:"",first_customer_comment:""};
+    // Sheet carried its own ARR value — maintain the reference database with it. Otherwise fall
+    // back to whatever this activation code's ARR was last recorded as.
+    if(rowArr!=null)upsertARRFromTicket(actCode,rowArr);
+    var finalArr=rowArr!=null?rowArr:lookupARR(actCode);
+    var res={id:tid,_rd:row.slice(),_hd:ST.headers.slice(),_ci:Object.assign({},ci),assignee:String(ci.assignee!=null?row[ci.assignee]:""),ticket_type:String(ci.ticket_type!=null?row[ci.ticket_type]:""),priority:String(ci.priority!=null?row[ci.priority]:""),status:String(ci.status!=null?row[ci.status]:""),subject:String(ci.subject!=null?row[ci.subject]:""),ticket_category:String(ci.ticket_category!=null?row[ci.ticket_category]:""),requester:String(ci.requester!=null?row[ci.requester]:""),org:String(ci.org!=null?row[ci.org]:""),activation_code:actCode,created:ci.created!=null?row[ci.created]:"",solved:ci.solved!=null?row[ci.solved]:"",satisfaction:String(ci.satisfaction!=null?row[ci.satisfaction]:""),arr:finalArr,frr:0,frr_txt:"",smb_type:"",environment:"",category:"",sub_category:"",ab_comment:"",confidence:0,zd_url:"https://"+cfg("ZD_SUB")+".zendesk.com/agent/tickets/"+tid,_ok:false,error:"",reviewSessionId:"",reviewSessionName:"",reviewDate:0,assignedTo:"",assignedToName:"",assignedToEmail:"",description:"",first_customer_comment:""};
     try{
       var zdR=await zdGet(zdBase()+"/tickets/"+tid+".json");var t=zdR.ticket;
       res.status=res.status||t.status||"";res.subject=res.subject||t.subject||"";
@@ -5188,6 +5379,7 @@ function bootApp(){
   ST.reviewSessions=lsG(SK.RS,[])||[];
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   migrateSMBState();
+  var am=lsG(SK.ARD,null);if(am){ST.arrData=am.data||{};ST.arrRaw=am.raw||[];}
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
     // Snapshot local results BEFORE loadDataFromFirestore() below can overwrite ST.results (and the
@@ -5244,6 +5436,7 @@ document.addEventListener("DOMContentLoaded",function(){
   // Dropzone helper
   function setupDZ(dzId,fiId,handler){var dz=G(dzId),fi=G(fiId);if(dz){dz.onclick=function(){if(fi)fi.click();};dz.addEventListener("dragover",function(e){e.preventDefault();this.classList.add("ov");});dz.addEventListener("dragleave",function(){this.classList.remove("ov");});dz.addEventListener("drop",function(e){e.preventDefault();this.classList.remove("ov");if(e.dataTransfer.files[0])handler(e.dataTransfer.files[0]);});}if(fi)fi.onchange=function(){if(this.files[0])handler(this.files[0]);};}
   setupDZ("dz-in","fi-in",parseInflow);setupDZ("dz-smb1","fi-smb1",function(f){parseSMBFile(f,"ph1");});setupDZ("dz-smb2","fi-smb2",function(f){parseSMBFile(f,"smb-pg");});
+  setupDZ("dz-arr2","fi-arr2",parseARRFile);
 
   var inclr=G("in-clr");if(inclr)inclr.onclick=function(){ST.rows=[];var fiin=G("fi-in");if(fiin)fiin.value="";var ii=G("in-info"),ic=G("in-cols"),bn1=G("btn-n1"),bir=G("btn-import-reviewed");if(ii)ii.style.display="none";if(ic)ic.style.display="none";if(bn1)bn1.disabled=true;if(bir)bir.disabled=true;};
   var ss=G("smb-save");if(ss)ss.onclick=function(){var m=document.querySelector('input[name="smb-mode-inline"]:checked');applySMB(+gv("smb-cc"),+gv("smb-lc"),m?m.value:"replace");renderSMBPage();};
@@ -5258,6 +5451,11 @@ document.addEventListener("DOMContentLoaded",function(){
   var smc=G("smb-add-code");if(smc)smc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleSMB();});
   var seb=G("smb-export-btn");if(seb)seb.onclick=exportSMBCsv;
   var scb=G("smb-clear-stat");if(scb)scb.onclick=clearSMBData;
+  var ars=G("arr-save");if(ars)ars.onclick=function(){var m=document.querySelector('input[name="arr-mode-inline"]:checked');applyARR(+gv("arr-cc"),+gv("arr-ac"),m?m.value:"replace");};
+  var aas=G("arr-add-single");if(aas)aas.onclick=addSingleARR;
+  var amc=G("arr-add-code");if(amc)amc.addEventListener("keydown",function(e){if(e.key==="Enter")addSingleARR();});
+  var aeb=G("arr-export-btn");if(aeb)aeb.onclick=exportARRCsv;
+  var acb=G("arr-clear-stat");if(acb)acb.onclick=clearARRData;
 
   // Evaluate
   var bn1=G("btn-n1");if(bn1)bn1.onclick=function(){showPh(2);renderTechTags();};var bir3=G("btn-import-reviewed");if(bir3)bir3.onclick=importReviewedAsResults;var bb2=G("btn-b2");if(bb2)bb2.onclick=function(){showPh(1);};var bst=G("btn-start");if(bst)bst.onclick=startEval;var bpa=G("btn-pause");if(bpa)bpa.onclick=togPause;var bst2=G("btn-stop");if(bst2)bst2.onclick=stopEval;var bb4=G("btn-b4");if(bb4)bb4.onclick=function(){showPh(3);};var bp5=G("btn-ph5");if(bp5)bp5.onclick=function(){var dt=G("done-title");if(dt)dt.textContent="Evaluation Complete!";showPh(5);};
@@ -5374,7 +5572,7 @@ document.addEventListener("DOMContentLoaded",function(){
   setTimeout(function(){
     if(!FB.enabled||!FB.auth)return;
 
-    var _resultsUnsub=null,_smbUnsub=null,_rsUnsub=null;
+    var _resultsUnsub=null,_smbUnsub=null,_rsUnsub=null,_arrUnsub=null;
 
     function startResultsListener(){
       if(!FB.enabled||!FB.db||!FB.user||_resultsUnsub)return;
@@ -5420,6 +5618,23 @@ document.addEventListener("DOMContentLoaded",function(){
             }
           },function(err){console.warn("SMB listener error:",err.code);_smbUnsub=null;});
       }catch(le){console.warn("startSMBListener:",le);}
+    }
+
+    function startARRListener(){
+      if(!FB.enabled||!FB.db||!FB.user||_arrUnsub)return;
+      try{
+        _arrUnsub=FB.db.collection("shared").doc("arrdata")
+          .onSnapshot(function(snap){
+            if(!snap||!snap.exists)return;
+            var d=snap.data();
+            if(d&&d.map){
+              ST.arrData=d.map;ST.arrRaw=d.raw||[];
+              lsS(SK.ARD,{data:ST.arrData,raw:ST.arrRaw});
+              upBadges();
+              var apg=G("pg-arr");if(apg&&apg.classList.contains("active"))renderARRPage();
+            }
+          },function(err){console.warn("ARR listener error:",err.code);_arrUnsub=null;});
+      }catch(le){console.warn("startARRListener:",le);}
     }
 
     function startReviewSessionsListener(){
@@ -5471,10 +5686,11 @@ document.addEventListener("DOMContentLoaded",function(){
         // Start real-time listeners now that we have a user
         startResultsListener();
         startSMBListener();
+        startARRListener();
         startReviewSessionsListener();
       }else{
         FB.user=null;
-        _resultsUnsub=null;_smbUnsub=null;_rsUnsub=null;
+        _resultsUnsub=null;_smbUnsub=null;_rsUnsub=null;_arrUnsub=null;
       }
     });
   },300);
