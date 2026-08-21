@@ -337,10 +337,13 @@ select.fin{cursor:pointer}
   padding:10px 14px;text-align:left;
   font-family:var(--font-ui);font-weight:700;font-size:10.5px;
   color:var(--tx-3);border-bottom:1px solid var(--border);
-  white-space:nowrap;z-index:2;cursor:pointer;user-select:none;
+  white-space:nowrap;z-index:2;user-select:none;
   letter-spacing:.08em;text-transform:uppercase;
 }
-.tbl th:hover{color:var(--brand)}
+/* Only headers wired to srtBy() get the sortable affordance — a plain (non-sortable) header
+   showing a pointer cursor was a pre-existing UI inconsistency (looked clickable, did nothing). */
+.tbl th[data-s]{cursor:pointer}
+.tbl th[data-s]:hover{color:var(--brand)}
 .tbl th.sa::after{content:" ↑";font-size:10px;color:var(--brand)}
 .tbl th.sd::after{content:" ↓";font-size:10px;color:var(--brand)}
 .tbl td{
@@ -468,6 +471,10 @@ select.fin{cursor:pointer}
 .fsel:focus{border-color:var(--brand);box-shadow:var(--shadow-focus)}
 .fsch{padding:6px 11px;border:1px solid var(--border-dark);border-radius:var(--r);font-size:12.5px;background:#fff;outline:none;width:180px;color:var(--tx);font-family:var(--font-ui);transition:all .15s}
 .fsch:focus{border-color:var(--brand);box-shadow:var(--shadow-focus)}
+.fsch-wrap{position:relative;display:inline-flex;align-items:center}
+.fsch-wrap .fsch{padding-left:28px}
+.fsch-ic{position:absolute;left:9px;color:var(--tx-3);pointer-events:none}
+.fsortw{display:flex;align-items:center;gap:6px}
 .ckr{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-lg);border:1px solid var(--border-dark);cursor:pointer;transition:all .15s var(--ease);user-select:none}
 .ckr:hover,.ckr.on{border-color:var(--brand);background:var(--brand-bg)}
 .ckr input[type=checkbox]{accent-color:var(--brand);width:14px;height:14px;cursor:pointer}
@@ -923,7 +930,9 @@ select.fin{cursor:pointer}
           <div class="chd"><span class="ct">All Evaluated Tickets</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--tx-3);font-family:var(--font-mono)" id="res-lbl">0 records</span><button class="btn bout bsm" id="res-manage">&#9881; Manage Data</button><button class="btn bgst bsm" id="res-clr">Clear all</button><button class="btn bout bsm" id="res-csv">&#8595; CSV</button><button class="btn bok bsm" id="res-xl">&#8595; Excel</button></div></div>
           <div class="fb">
             <select class="fsel" id="f-session"><option value="">All Reviews</option></select>
-            <input class="fsch" id="f-q" placeholder="Search ID, subject&#8230;"><select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
+            <div class="fsch-wrap"><svg class="fsch-ic" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="fsch" id="f-q" placeholder="Search ID, subject, assignee&#8230;"></div>
+            <div class="fsortw"><label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">Sort</label><select class="fsel" id="f-sort"><option value="evaluatedAt">Date</option><option value="id">ID</option><option value="subject">Subject</option><option value="frr">FRR</option><option value="status">Status</option><option value="environment">Environment</option><option value="category">Category</option><option value="sub_category">Sub Category</option><option value="smb_type">SMB</option><option value="assignee">Assignee</option><option value="assignedToName">Reviewer</option></select><button class="btn bgst bsm" id="f-sort-dir" title="Toggle sort direction (currently ascending)">&#8593;</button></div>
+            <select class="fsel" id="f-env"><option value="">All Environments</option></select><select class="fsel" id="f-cat"><option value="">All Categories</option></select><select class="fsel" id="f-sub"><option value="">All Sub Categories</option></select><select class="fsel" id="f-smb"><option value="">All SMB Types</option></select><select class="fsel" id="f-st"><option value="">All Statuses</option><option>open</option><option>pending</option><option>solved</option><option>closed</option></select>
             <select class="fsel" id="f-reviewer"><option value="">All Reviewers</option></select>
             <div style="display:flex;align-items:center;gap:4px">
               <label style="font-size:11.5px;color:var(--tx-2);white-space:nowrap">From</label>
@@ -934,7 +943,7 @@ select.fin{cursor:pointer}
             <button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
             <span style="margin-left:auto;font-size:11.5px;color:var(--tx-3)" id="f-cnt"></span>
           </div>
-          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th>Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th data-s="assignee">Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
             <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bout bsm" id="save-sel-session" style="display:none">&#128190; Save as Review Session</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -4432,7 +4441,7 @@ function applyF(){
   var toTs=dateTo?new Date(dateTo+"T23:59:59").getTime():Infinity;
   var reviewer=gv("f-reviewer");
   ST.filtered=base.filter(function(r){
-    if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0)return false;
+    if(q&&String(r.id).indexOf(q)<0&&String(r.subject||"").toLowerCase().indexOf(q)<0&&String(r.assignee||r.requester||"").toLowerCase().indexOf(q)<0)return false;
     if(env&&r.environment!==env)return false;
     if(cat&&r.category!==cat)return false;
     if(sub&&r.sub_category!==sub)return false;
@@ -4451,7 +4460,18 @@ function applyF(){
 }
 function clearF(){["f-q","f-env","f-cat","f-sub","f-smb","f-st","f-reviewer","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e){if(e.tagName==="SELECT")e.selectedIndex=0;else e.value="";}});ST.filtered=[];applyF();}
 var _sk=null,_sd="asc";
-function srtBy(k){if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}var all=getFiltered();all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});renderResTable();}
+function srtBy(k){
+  if(_sk===k)_sd=_sd==="asc"?"desc":"asc";else{_sk=k;_sd="asc";}
+  var all=getFiltered();
+  all.sort(function(a,b){var av=a[k]!=null?a[k]:"",bv=b[k]!=null?b[k]:"";var c=typeof av==="number"?av-bv:String(av).localeCompare(String(bv));return _sd==="asc"?c:-c;});
+  Q(".tbl th[data-s]").forEach(function(th){th.classList.remove("sa","sd");if(th.dataset.s===k)th.classList.add(_sd==="asc"?"sa":"sd");});
+  // Keep the explicit Sort dropdown/direction button in sync, whether this sort came from a
+  // header click or from that dropdown — same single source of truth (_sk/_sd) either way.
+  var fs=G("f-sort");if(fs&&fs.value!==k)fs.value=k;
+  var fsd=G("f-sort-dir");
+  if(fsd){fsd.innerHTML=_sd==="asc"?"&#8593;":"&#8595;";fsd.title="Toggle sort direction (currently "+(_sd==="asc"?"ascending":"descending")+")";}
+  renderResTable();
+}
 // Single source of truth for the Results-page bulk-action bar (Export/Save as Session/Delete) so
 // the "select all" header checkbox and individual row checkboxes always agree on which buttons show.
 function updateBulkActionButtons(){
@@ -5478,6 +5498,8 @@ document.addEventListener("DOMContentLoaded",function(){
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
   var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
   ["f-env","f-cat","f-sub","f-smb","f-st","f-reviewer","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
+  var fsort=G("f-sort");if(fsort)fsort.onchange=function(){srtBy(this.value);};
+  var fsortd=G("f-sort-dir");if(fsortd)fsortd.onclick=function(){srtBy(G("f-sort")?gv("f-sort"):(_sk||"evaluatedAt"));};
   var fsess=G("f-session");if(fsess)fsess.onchange=function(){onReviewSessionChange(this.value);};
   var salb=G("sel-all");if(salb)salb.onchange=function(){Q(".rcb").forEach(function(c){c.checked=salb.checked;});updateBulkActionButtons();};
   var exs=G("exp-sel");if(exs)exs.onclick=function(){var idxs=Q(".rcb:checked").map(function(e){return+e.dataset.gi;});var rows=idxs.map(function(i){return getFiltered()[i];}).filter(Boolean);if(!rows.length){toast("No rows selected","warn");return;}exportR(rows,"xlsx");};
