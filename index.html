@@ -770,6 +770,25 @@ select.fin{cursor:pointer}
             </div>
           </div>
         </div>
+
+        <!-- Top 75 Customer Health — separate from the Customer Health Indicator above: that one
+             only reflects tickets that have gone through this app's AI evaluation, this one queries
+             Zendesk directly (by activation code tag) so it reflects an account's full ticket
+             history, on demand via the Sync button rather than continuously. -->
+        <div class="card" id="chr75-card" style="margin-top:16px">
+          <div class="chd" style="flex-wrap:wrap;gap:8px">
+            <div>
+              <span class="ct">Top 75 Customer Health <span style="font-weight:400;color:var(--tx-3)">(Live from Zendesk)</span></span>
+              <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Top 75 accounts by ARR (from the ARR Database) &middot; <span id="chr75-asof">Never synced</span></div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:6px"><button class="btn bpri bsm" id="chr75-sync">&#8635; Sync from Zendesk</button></div>
+          </div>
+          <div class="cbd" style="display:flex;flex-direction:column;gap:12px">
+            <div class="al ai" style="font-size:11.5px">Matches each account's activation code against a Zendesk ticket tag. Open/Total ticket counts and last activity are pulled live — this can take a minute or two for 75 accounts, one Zendesk search per account.</div>
+            <div id="chr75-progress" style="display:none"><div class="ptrk"><div id="chr75-pb-fill" class="pfil" style="width:0%"></div></div><div id="chr75-pb-label" style="font-size:12px;color:var(--tx-3);margin-top:4px;text-align:center"></div></div>
+            <div class="tw" style="max-height:420px"><table class="tbl"><thead><tr><th>#</th><th>Activation Code</th><th>ARR</th><th>Open Tickets</th><th>Total Tickets</th><th>Last Activity</th></tr></thead><tbody id="chr75-tb"><tr><td colspan="6" class="te">Click &ldquo;Sync from Zendesk&rdquo; to load.</td></tr></tbody></table></div>
+          </div>
+        </div>
       </div>
 
       <!-- EVALUATE -->
@@ -1193,7 +1212,7 @@ var DT = ["Technical"];
 var CM = {ticket_id:["ticket id","ticket_id","id"],assignee:["assignee name","assignee"],ticket_type:["ticket type","type"],priority:["priority"],status:["ticket status","status"],subject:["ticket subject","subject"],ticket_category:["ticket category"],requester:["requester name","requester"],org:["requester organization name","organization"],activation_code:["activation code"],product:["product"],created:["ticket created - date","ticket created","created date"],solved:["ticket solved - date","ticket solved","solved date"],satisfaction:["ticket satisfaction rating"],issue_desc:["issue description","description"],kb:["kb article"],jira:["jira if yes link the jira to the ticket","jira link","jira"],cse_review:["cse review conclusion"],frr:["frr"],smb:["smb"],cse:["cse"],environment:["environment"],category:["category"],sub_category:["sub category","subcategory"],comments:["comments"],arr:["arr","arr value","annual recurring revenue"],confidence:["ai confidence","confidence"],ab_comment:["comments(ab)","comments (ab)"]};
 
 // ─── STORAGE KEYS (localStorage fallback) ────────────────────
-var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm",ARD:"tep_ard"};
+var SK = {U:"tep_u",A:"tep_a",EN:"tep_en",CA:"tep_ca",SU:"tep_su",SM:"tep_sm",RE:"tep_re",CO:"tep_co",TY:"tep_ty",FB:"tep_fb",RS:"tep_rs",SMR:"tep_smr",SMM:"tep_smm",ARRR:"tep_arrr",CHRM:"tep_chrm",ARD:"tep_ard",CHR75:"tep_chr75"};
 
 // ─── FIREBASE ────────────────────────────────────────────────
 var FB = {app:null,auth:null,db:null,enabled:false,user:null};
@@ -1478,6 +1497,7 @@ async function saveLabelsToFirestore(){
 var ST={
   sess:null,results:[],curEval:[],filtered:[],smbData:{},smbRaw:[],
   arrData:{},arrRaw:[],
+  chr75Data:[],chr75SyncedAt:null,
   rows:[],headers:[],colIdx:{},
   fills:{frr:true,smb:true,env:true,cat:true,sub:true},
   delay:1500,paused:false,stop:false,
@@ -1898,6 +1918,13 @@ async function loadDataFromFirestore(){
     if(arrd&&arrd.map){ST.arrData=arrd.map;ST.arrRaw=arrd.raw||[];}
     else{var larr=lsG(SK.ARD,null);if(larr){ST.arrData=larr.data||{};ST.arrRaw=larr.raw||[];}}
   }catch(e){var larr=lsG(SK.ARD,null);if(larr){ST.arrData=larr.data||{};ST.arrRaw=larr.raw||[];}}
+  // ── Load the last Top-75 Zendesk sync (aggregate stats only, no raw ticket lists — see
+  // syncCHR75FromZendesk for why) ──
+  try{
+    var c75=await fsGet("shared/chr75health");
+    if(c75&&c75.accounts){ST.chr75Data=c75.accounts;ST.chr75SyncedAt=(c75.syncedAt&&c75.syncedAt.toDate)?c75.syncedAt.toDate().getTime():(c75.syncedAt||null);}
+    else{var l75=lsG(SK.CHR75,null);if(l75){ST.chr75Data=l75.accounts||[];ST.chr75SyncedAt=l75.syncedAt||null;}}
+  }catch(e){var l75=lsG(SK.CHR75,null);if(l75){ST.chr75Data=l75.accounts||[];ST.chr75SyncedAt=l75.syncedAt||null;}}
   // ── Load shared SMB license/ARR ranges + classification mode ──
   await loadSMBRangesFromFirestore();
   await loadARRRangesFromFirestore();
@@ -2243,6 +2270,7 @@ function renderDash(){
   // Render charts
   try{renderDashboardCharts();}catch(ce){console.warn("Chart error:",ce);}
   try{renderHealthReport();}catch(he){console.warn("Health report error:",he);}
+  try{renderCHR75();}catch(he2){console.warn("CHR75 render error:",he2);}
 }
 
 // Locale-independent "M/D/YY" date, matching the report template's compact date style
@@ -2334,6 +2362,117 @@ function addEscalationRow(){
   m.escalations.push({issue:"",impact:"",engOwner:"",priority:"P2"});
   setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
   renderEscalationsTable();
+}
+
+// ─── TOP 75 CUSTOMER HEALTH (LIVE FROM ZENDESK) ───────────────
+// Separate from the Customer Health Indicator above: that one only ever reflects tickets that have
+// gone through this app's own AI evaluation. This queries Zendesk directly — by matching each
+// account's activation code against a Zendesk ticket tag — so it reflects an account's FULL ticket
+// history, evaluated or not. On demand only (the Sync button), never automatic, to keep control
+// over how many Zendesk API calls get made (one search per account, 75 accounts per sync).
+var CHR75_TOP_N=75;
+function getTop75ARRAccounts(){
+  var codes=Object.keys(ST.arrData||{});
+  codes.sort(function(a,b){return(ST.arrData[b].arr||0)-(ST.arrData[a].arr||0);});
+  return codes.slice(0,CHR75_TOP_N).map(function(k){return ST.arrData[k];}).filter(Boolean);
+}
+async function saveCHR75ToFirestore(accounts,syncedAt){
+  if(!FB.enabled||!FB.db||!FB.user)return;
+  try{await fsSet("shared/chr75health",{accounts:accounts,syncedAt:syncedAt});}
+  catch(e){console.warn("saveCHR75ToFirestore error:",e);}
+}
+async function syncCHR75FromZendesk(){
+  if(!cfg("ZD_TOK")||!cfg("ZD_SUB")){toast("Configure Zendesk API access in Settings first","err");return;}
+  var accounts=getTop75ARRAccounts();
+  if(!accounts.length){toast("No accounts in the ARR Database yet — add ARR data first","err");return;}
+  var btn=G("chr75-sync");if(btn){btn.disabled=true;btn.textContent="Syncing…";}
+  var prog=G("chr75-progress"),pfill=G("chr75-pb-fill"),plabel=G("chr75-pb-label");
+  if(prog)prog.style.display="block";
+  var results=[];
+  for(var i=0;i<accounts.length;i++){
+    var acct=accounts[i];
+    var pct=Math.round((i/accounts.length)*100);
+    if(pfill)pfill.style.width=pct+"%";
+    if(plabel)plabel.textContent="Syncing "+acct.code+" ("+(i+1)+"/"+accounts.length+")…";
+    try{
+      var q="type:ticket tags:"+acct.code;
+      var d=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q)+"&sort_by=updated_at&sort_order=desc");
+      var tickets=(d.results||[]).filter(function(t){return t.id&&t.status;});
+      var openCount=tickets.filter(function(t){return isOpenStatus(t.status);}).length;
+      var lastActivity=tickets.length?tickets[0].updated_at:null; // already sorted desc by updated_at
+      results.push({code:acct.code,arr:acct.arr||0,openCount:openCount,totalCount:(typeof d.count==="number"?d.count:tickets.length),lastActivity:lastActivity,tickets:tickets.slice(0,50)});
+    }catch(e){
+      console.warn("CHR75 sync error for "+acct.code+":",e.message||e);
+      results.push({code:acct.code,arr:acct.arr||0,openCount:null,totalCount:null,lastActivity:null,tickets:[],error:e.message||"Sync failed"});
+    }
+    await sleep(250); // throttle — 75 sequential Zendesk searches without a gap risks rate-limiting
+  }
+  ST.chr75Data=results;
+  ST.chr75SyncedAt=Date.now();
+  // Persist only the light aggregate (never the raw ticket lists — 75 accounts x up to 50 tickets
+  // each would badly bloat both localStorage and the Firestore doc). Full ST.chr75Data with
+  // .tickets stays in-memory for this session's drill-in only; after a reload, drill-in is
+  // unavailable until the next sync.
+  var toPersist=results.map(function(r){return{code:r.code,arr:r.arr,openCount:r.openCount,totalCount:r.totalCount,lastActivity:r.lastActivity,error:r.error||""};});
+  lsS(SK.CHR75,{accounts:toPersist,syncedAt:ST.chr75SyncedAt});
+  saveCHR75ToFirestore(toPersist,fsTs()).catch(function(){});
+  renderCHR75();
+  if(btn){btn.disabled=false;btn.textContent="↻ Sync from Zendesk";}
+  if(prog)prog.style.display="none";
+  var errCount=results.filter(function(r){return r.error;}).length;
+  toast("Synced "+results.length+" account(s) from Zendesk"+(errCount?" — "+errCount+" failed":""),errCount?"warn":"ok");
+}
+function renderCHR75(){
+  var tb=G("chr75-tb");if(!tb)return;
+  var data=ST.chr75Data||[];
+  var asof=G("chr75-asof");
+  if(!data.length){
+    tb.innerHTML='<tr><td colspan="6" class="te">Click &ldquo;Sync from Zendesk&rdquo; to load.</td></tr>';
+    if(asof)asof.textContent="Never synced";
+    return;
+  }
+  if(asof)asof.textContent=ST.chr75SyncedAt?("Last synced "+new Date(ST.chr75SyncedAt).toLocaleString()):"Never synced";
+  var sorted=data.slice().sort(function(a,b){return(b.arr||0)-(a.arr||0);});
+  var h="";
+  sorted.forEach(function(r,idx){
+    var lastAct=r.lastActivity?new Date(r.lastActivity).toLocaleDateString("en-GB"):"--";
+    var openDisplay=r.openCount==null?'<span style="color:var(--danger)" title="'+esc(r.error||"Sync error")+'">Error</span>':r.openCount;
+    h+="<tr data-chr75=\""+esc(r.code)+"\" style='cursor:pointer' title='Click to see tickets (available for this session only, right after a sync)'>"+
+      "<td style='color:var(--tx-3)'>"+(idx+1)+"</td>"+
+      "<td style='font-weight:600;font-family:monospace'>"+esc(r.code)+"</td>"+
+      "<td>"+(r.arr>0?("$"+Math.round(r.arr/1000)+"K"):"--")+"</td>"+
+      "<td>"+openDisplay+"</td>"+
+      "<td style='color:var(--tx-2)'>"+(r.totalCount!=null?r.totalCount:"--")+"</td>"+
+      "<td style='font-size:11.5px;color:var(--tx-2)'>"+lastAct+"</td>"+
+      "</tr>";
+  });
+  tb.innerHTML=h;
+  tb.querySelectorAll("[data-chr75]").forEach(function(tr){
+    tr.onclick=function(){
+      var code=this.dataset.chr75;
+      var acct=data.filter(function(a){return a.code===code;})[0];
+      if(!acct||!acct.tickets||!acct.tickets.length){toast("Sync from Zendesk to view this account's ticket details","in");return;}
+      openZendeskTicketListModal(code,acct.tickets);
+    };
+  });
+}
+// Simpler drill-down modal for RAW Zendesk ticket objects (from the Search API) — these don't have
+// the AI-evaluation fields (category/smb_type/frr/etc.) that openTicketListModal() expects.
+function openZendeskTicketListModal(code,tickets){
+  var h='<div style="margin-bottom:12px;font-size:13px;color:var(--tx-2)">'+tickets.length+' ticket'+(tickets.length!==1?"s":"")+' for <strong>'+esc(code)+'</strong></div>';
+  h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
+  h+='<thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th><th>Updated</th></tr></thead><tbody>';
+  tickets.forEach(function(t){
+    var stCls=t.status==="open"?"st-open":t.status==="solved"?"st-solved":t.status==="closed"?"st-closed":t.status==="pending"?"st-pending":"bgr";
+    h+="<tr><td><a href='https://"+esc(cfg("ZD_SUB"))+".zendesk.com/agent/tickets/"+esc(t.id)+"' target='_blank' style='color:var(--brand-light);font-family:monospace'>#"+esc(t.id)+"</a></td>"+
+      "<td class='tr' style='max-width:220px;font-size:11.5px'>"+esc(t.subject||"--")+"</td>"+
+      "<td><span class='bdg "+stCls+"'>"+esc(t.status||"--")+"</span></td>"+
+      "<td style='font-size:11px;color:var(--tx-3)'>"+(t.created_at?new Date(t.created_at).toLocaleDateString("en-GB"):"--")+"</td>"+
+      "<td style='font-size:11px;color:var(--tx-3)'>"+(t.updated_at?new Date(t.updated_at).toLocaleDateString("en-GB"):"--")+"</td></tr>";
+  });
+  h+="</tbody></table></div>";
+  openModal("Zendesk Tickets — "+esc(code),h,'<button class="btn bpri" id="dd-cl3">Close</button>',"760px");
+  var dcl3=G("dd-cl3");if(dcl3)dcl3.onclick=closeModal;
 }
 // Exports the report as a real, editable .pptx — reads current values straight out of the DOM
 // (including any manual edits you've made) rather than recomputing, so what you see is what
@@ -5479,6 +5618,7 @@ function bootApp(){
   var sm=lsG(SK.SM,null);if(sm){ST.smbData=sm.data||{};ST.smbRaw=sm.raw||[];}
   migrateSMBState();
   var am=lsG(SK.ARD,null);if(am){ST.arrData=am.data||{};ST.arrRaw=am.raw||[];}
+  var l75b=lsG(SK.CHR75,null);if(l75b){ST.chr75Data=l75b.accounts||[];ST.chr75SyncedAt=l75b.syncedAt||null;}
   ST.tech=getTech();
   if(FB.enabled&&FB.db){
     // Snapshot local results BEFORE loadDataFromFirestore() below can overwrite ST.results (and the
@@ -5626,6 +5766,7 @@ document.addEventListener("DOMContentLoaded",function(){
   // Chart filter buttons
   var csess=G("chart-session");if(csess)csess.onchange=function(){onReviewSessionChange(this.value);};
   var chrr=G("chr-refresh");if(chrr)chrr.onclick=function(){try{renderHealthReport();toast("Health report refreshed","ok");}catch(e){}};
+  var chr75s=G("chr75-sync");if(chr75s)chr75s.onclick=syncCHR75FromZendesk;
   var cs1=G("chr-sev1");if(cs1)cs1.onchange=function(){saveCHRManualField("critOpen",+this.value||0);};
   var cs1a=G("chr-sev1-accounts");if(cs1a)cs1a.onchange=function(){saveCHRManualField("critOpenAccounts",+this.value||0);};
   var car=G("chr-arr-risk");if(car)car.onchange=function(){saveCHRManualField("arrAtRisk",this.value||"");};
