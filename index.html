@@ -717,7 +717,7 @@ select.fin{cursor:pointer}
           <div class="chd" style="flex-wrap:wrap;gap:8px">
             <div>
               <span class="ct">Customer Health Indicator</span>
-              <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Leading signals for retention risk &middot; auto-generated from evaluated tickets (rolling 7 days) &middot; <span id="chr-asof"></span></div>
+              <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Leading signals for retention risk &middot; auto-generated from evaluated tickets (<span id="chr-period-label">rolling 7 days</span>) &middot; <span id="chr-asof"></span></div>
             </div>
             <div style="margin-left:auto;display:flex;gap:6px"><button class="btn bgst bsm" id="chr-refresh">&#8635; Refresh</button><button class="btn bpri bsm" id="chr-ppt">&#8595; Download PPT</button></div>
           </div>
@@ -947,7 +947,7 @@ select.fin{cursor:pointer}
             <button class="btn bgst bsm" id="f-clr">&#215; Reset</button>
             <span style="margin-left:auto;font-size:11.5px;color:var(--tx-3)" id="f-cnt"></span>
           </div>
-          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th data-s="assignee">Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="12" class="te">No results yet.</td></tr></tbody></table></div>
+          <div class="tw" style="max-height:460px"><table class="tbl"><thead><tr><th><input type="checkbox" id="sel-all" style="accent-color:var(--brand-light)"></th><th data-s="id">ID</th><th data-s="subject">Subject</th><th data-s="ticket_type">Type</th><th data-s="ticket_category">Ticket Category</th><th data-s="status">Status</th><th data-s="smb_type">SMB</th><th data-s="environment">Environment</th><th data-s="category">Category</th><th data-s="sub_category">Sub Category</th><th data-s="frr">FRR</th><th>Comments</th><th>Confidence</th><th data-s="assignee">Assignee</th><th data-s="assignedToName">Reviewer</th><th data-s="evaluatedAt">Date</th><th>Actions</th></tr></thead><tbody id="res-tb"><tr><td colspan="17" class="te">No results yet.</td></tr></tbody></table></div>
           <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
             <div style="display:flex;gap:8px"><button class="btn bout bsm" id="exp-sel" style="display:none">&#8595; Export selected</button><button class="btn bout bsm" id="save-sel-session" style="display:none">&#128190; Save as Review Session</button><button class="btn bdan bsm" id="del-sel" style="display:none">&#128465; Delete selected</button></div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -1705,6 +1705,7 @@ async function syncLocalDataToFirestore(preloadedResults){
             batch.set(ref,{
               id:String(r.id||""),subject:String(r.subject||""),
               assignee:String(r.assignee||""),ticket_type:String(r.ticket_type||""),
+              ticket_category:String(r.ticket_category||""),
               priority:String(r.priority||""),status:String(r.status||""),
               requester:String(r.requester||""),activation_code:String(r.activation_code||""),
               frr:Number(r.frr)||0,frr_txt:String(r.frr_txt||""),
@@ -1747,10 +1748,11 @@ async function syncLocalDataToFirestore(preloadedResults){
         if(r.assignedTo&&ex.data.assignedTo!==r.assignedTo)patch.assignedTo=String(r.assignedTo);
         if(r.assignedToName&&ex.data.assignedToName!==r.assignedToName)patch.assignedToName=String(r.assignedToName);
         if(r.assignedToEmail&&ex.data.assignedToEmail!==r.assignedToEmail)patch.assignedToEmail=String(r.assignedToEmail);
+        if(r.ticket_category&&ex.data.ticket_category!==r.ticket_category)patch.ticket_category=String(r.ticket_category);
         if(Object.keys(patch).length)toPatch.push({ref:ex.ref,patch:patch});
       });
       if(toPatch.length>0){
-        console.log("Patching review-session/assignment tags onto "+toPatch.length+" already-synced result(s)...");
+        console.log("Patching review-session/assignment/ticket-category tags onto "+toPatch.length+" already-synced result(s)...");
         for(var p=0;p<toPatch.length;p+=400){
           var pbatch=FB.db.batch();
           toPatch.slice(p,p+400).forEach(function(item){pbatch.set(item.ref,item.patch,{merge:true});});
@@ -1910,7 +1912,7 @@ async function loadDataFromFirestore(){
 
 async function saveResultToFirestore(res){
   if(!FB.enabled||!FB.db||!FB.user)return; // must have authenticated Firebase user
-  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",description:res.description||"",first_customer_comment:res.first_customer_comment||"",savedAt:fsTs()};
+  var toSave={id:res.id,subject:res.subject||"",assignee:res.assignee||"",ticket_type:res.ticket_type||"",ticket_category:res.ticket_category||"",priority:res.priority||"",status:res.status||"",requester:res.requester||"",org:res.org||"",activation_code:res.activation_code||"",created:res.created||"",solved:res.solved||"",satisfaction:res.satisfaction||"",arr:(typeof res.arr==="number")?res.arr:null,frr:res.frr||0,frr_txt:res.frr_txt||"",smb_type:res.smb_type||"",environment:res.environment||"",category:res.category||"",sub_category:res.sub_category||"",ab_comment:res.ab_comment||"",confidence:res.confidence||0,zd_url:res.zd_url||"",_ok:res._ok||false,error:res.error||"",evaluatedBy:FB.user.email||"",evaluatedAt:res.evaluatedAt||Date.now(),reviewSessionId:res.reviewSessionId||"",reviewSessionName:res.reviewSessionName||"",reviewDate:res.reviewDate||0,assignedTo:res.assignedTo||"",assignedToName:res.assignedToName||"",assignedToEmail:res.assignedToEmail||"",description:res.description||"",first_customer_comment:res.first_customer_comment||"",savedAt:fsTs()};
   try{
     var ref=await FB.db.collection("shared").doc("org").collection("results").add(toSave);
     res._fid=ref.id;
@@ -2480,13 +2482,32 @@ function renderHealthReport(){
   if(!all.length){card.style.display="none";return;}
   card.style.display="block";
   var now=new Date();
-  var wkStartMs=now.getTime()-7*86400000;
-  var prevWkStartMs=now.getTime()-14*86400000;
-  var m4wkStartMs=now.getTime()-28*86400000;
+  // Respect the same Chart Period filter (chart-date-from/to) the dashboard charts already use.
+  // Previously this always computed a rolling "7 days ending right now" regardless of what date
+  // range was selected — so picking e.g. a full month still only ever showed the current week.
+  // With no range selected, behavior is unchanged: rolling 7/14/28-day windows ending now.
+  var cdf=gv("chart-date-from"),cdt=gv("chart-date-to");
+  var customFrom=cdf?new Date(cdf).getTime():null;
+  var customTo=cdt?new Date(cdt+"T23:59:59").getTime():null;
+  var wkEndMs,wkStartMs,rangeMs,periodLabel;
+  if(customFrom!=null||customTo!=null){
+    wkEndMs=customTo!=null?customTo:now.getTime();
+    wkStartMs=customFrom!=null?customFrom:(wkEndMs-7*86400000);
+    rangeMs=Math.max(wkEndMs-wkStartMs,86400000); // floor at 1 day so a same-day range doesn't divide by ~0
+    periodLabel="selected range: "+(cdf||"…")+" to "+(cdt||"…");
+  }else{
+    wkEndMs=now.getTime();
+    wkStartMs=wkEndMs-7*86400000;
+    rangeMs=7*86400000;
+    periodLabel="rolling 7 days";
+  }
+  var prevWkStartMs=wkStartMs-rangeMs;
+  var m4wkStartMs=wkEndMs-4*rangeMs;
+  var pl=G("chr-period-label");if(pl)pl.textContent=periodLabel;
   function evTime(r){return r.evaluatedAt||0;}
-  var week=all.filter(function(r){return evTime(r)>=wkStartMs;});
-  var prevWeek=all.filter(function(r){return evTime(r)>=prevWkStartMs&&evTime(r)<wkStartMs;});
-  var last4wk=all.filter(function(r){return evTime(r)>=m4wkStartMs;});
+  var week=all.filter(function(r){var t=evTime(r);return t>=wkStartMs&&t<=wkEndMs;});
+  var prevWeek=all.filter(function(r){var t=evTime(r);return t>=prevWkStartMs&&t<wkStartMs;});
+  var last4wk=all.filter(function(r){var t=evTime(r);return t>=m4wkStartMs&&t<=wkEndMs;});
 
   // ── Ticket Volume (Week) ──
   var vol=week.length,prevVol=prevWeek.length;
@@ -2543,10 +2564,18 @@ function renderHealthReport(){
           if(td&&(!repDate||td<repDate)){rep=t;repDate=td;}
         });
         var days=repDate?daysBetween(repDate,now):null;
-        ah+="<tr><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
+        ah+="<tr data-acct=\""+esc(acct)+"\" style='cursor:pointer' title='Click to see these tickets'><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
       });
       if(acctKeys.length>CHR_TOP_ACCOUNTS_N)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-CHR_TOP_ACCOUNTS_N)+" more accounts</td></tr>";
       accTb.innerHTML=ah;
+      // Drill-in: click a row to see its open tickets. Reads byAcct via closure — no need to
+      // re-derive the ticket list from a value/field lookup like showDrillDown() does.
+      accTb.querySelectorAll("[data-acct]").forEach(function(tr){
+        tr.onclick=function(){
+          var info2=byAcct[this.dataset.acct];
+          if(info2)openTicketListModal("Open Tickets — "+this.dataset.acct,info2.tickets);
+        };
+      });
     }
   }
 
@@ -2560,9 +2589,16 @@ function renderHealthReport(){
     var ch="";
     catKeys.forEach(function(k){
       var pct=weekNoProv.length?Math.round(catCnt[k]/weekNoProv.length*100):0;
-      ch+="<div style='display:flex;justify-content:space-between;align-items:center'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
+      ch+="<div data-catmix=\""+esc(k)+"\" style='display:flex;justify-content:space-between;align-items:center;cursor:pointer' title='Click to see these tickets'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
     });
     cm.innerHTML=ch||'<div class="te" style="text-align:left">No tickets this week.</div>';
+    // Drill-in: click a category row to see this week's tickets in that category.
+    cm.querySelectorAll("[data-catmix]").forEach(function(row){
+      row.onclick=function(){
+        var k=this.dataset.catmix;
+        openTicketListModal("This Week — "+k,weekNoProv.filter(function(r){return(r.category||"Unclassified")===k;}));
+      };
+    });
   }
   // Top themes (sub categories) — same Provisioning exclusion + priority ordering
   var subCnt={};weekNoProv.forEach(function(r){var s=r.sub_category;if(s)subCnt[s]=(subCnt[s]||0)+1;});
@@ -2573,7 +2609,15 @@ function renderHealthReport(){
     themes:subKeys.map(function(k){return{label:k,count:subCnt[k]};})
   };
   var th=G("chr-themes");
-  if(th)th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
+  if(th){
+    th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li data-theme=\""+esc(k)+"\" style='cursor:pointer' title='Click to see these tickets'>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
+    th.querySelectorAll("[data-theme]").forEach(function(li){
+      li.onclick=function(){
+        var k=this.dataset.theme;
+        openTicketListModal("This Week — "+k,weekNoProv.filter(function(r){return r.sub_category===k;}));
+      };
+    });
+  }
 
   // ── Product Escalations to Engineering — manual, editable table ──
   renderEscalationsTable();
@@ -3445,6 +3489,36 @@ function showDrillDown(value,field,data){
   h+="</tbody></table></div>";
   openModal(esc(fieldLabel)+": "+esc(value), h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
   var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
+}
+
+// Generic ticket-list drill-down modal — used by the Customer Health Indicator's "Top Accounts"
+// and "This Week's Picture"/"Top Themes" sections, which (unlike showDrillDown above) already have
+// their own pre-filtered ticket list in hand and just need somewhere to show it.
+function openTicketListModal(title,tickets){
+  if(!tickets||!tickets.length){toast("No matching tickets found","in");return;}
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">';
+  h+='<span style="font-size:13px;color:var(--tx-2)">'+tickets.length+' ticket'+(tickets.length!==1?"s":"")+'</span></div>';
+  h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
+  h+='<thead><tr><th>ID</th><th>Subject</th><th>Type</th><th>Status</th><th>SMB</th><th>FRR</th><th>Category</th><th>Sub Category</th><th>Assignee</th></tr></thead><tbody>';
+  tickets.slice(0,150).forEach(function(r){
+    var fc=r.frr>60?"var(--danger)":r.frr>0?"var(--success)":"var(--tx-3)";
+    var stCls=r.status==="open"?"st-open":r.status==="solved"?"st-solved":r.status==="closed"?"st-closed":r.status==="pending"?"st-pending":"bgr";
+    h+="<tr>";
+    h+="<td style='white-space:nowrap'><a href='"+esc(r.zd_url||"#")+"' target='_blank' style='color:var(--brand-light);font-family:monospace'>#"+esc(r.id)+"</a></td>";
+    h+="<td class='tr' style='max-width:180px;font-size:11.5px'>"+esc(r.subject||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.ticket_type||"--")+"</td>";
+    h+="<td><span class='bdg "+stCls+"'>"+esc(r.status||"--")+"</span></td>";
+    h+="<td>"+smbBdg(r.smb_type)+"</td>";
+    h+="<td style='font-family:monospace;font-weight:600;color:"+fc+"'>"+(r.frr>0?r.frr:r.frr_txt||"--")+"</td>";
+    h+="<td>"+catBdg(r.category)+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.sub_category||"--")+"</td>";
+    h+="<td style='font-size:11px;color:var(--tx-2)'>"+esc(r.assignee||r.requester||"--")+"</td>";
+    h+="</tr>";
+  });
+  if(tickets.length>150)h+='<tr><td colspan="9" class="te" style="padding:10px">Showing 150 of '+tickets.length+' tickets.</td></tr>';
+  h+="</tbody></table></div>";
+  openModal(esc(title), h, '<button class="btn bpri" id="dd-cl2">Close</button>', "860px");
+  var dcl2=G("dd-cl2");if(dcl2)dcl2.onclick=closeModal;
 }
 
 function makeLabelPlugin(field,data){
@@ -4492,7 +4566,7 @@ function renderResTable(){
   // with every row visibly checked: none of the checkboxes carried a usable index.
   var startIdx=(ST.pgSz===Infinity)?0:ST.pg*ST.pgSz;
   var pg=all.slice(startIdx,startIdx+ST.pgSz),tb=G("res-tb");if(!tb)return;
-  if(!pg.length){tb.innerHTML='<tr><td colspan="12" class="te">No records match your filters.</td></tr>';return;}
+  if(!pg.length){tb.innerHTML='<tr><td colspan="17" class="te">No records match your filters.</td></tr>';return;}
   var h="";for(var i=0;i<pg.length;i++){var r=pg[i],gi=startIdx+i;
     var stCls=r.status==="open"?"st-open":r.status==="solved"?"st-solved":r.status==="closed"?"st-closed":r.status==="pending"?"st-pending":"bgr";
     var frrCls=r.frr>60?"frr-warn":r.frr>0?"frr-ok":"frr-none";
@@ -4504,6 +4578,7 @@ function renderResTable(){
     h+="<td style=\"font-family:var(--font-mono)\"><a href=\""+esc(r.zd_url||"#")+"\" target=\"_blank\" style=\"color:var(--brand-light)\" data-tid=\""+esc(r.id)+"\" data-gi=\""+gi+"\">#"+esc(r.id)+"</a></td>";
     h+="<td class=\"tr\" style=\"max-width:200px;font-size:13px;font-weight:500\" title=\""+esc(r.subject||"")+"\">"+esc(r.subject||"--")+"</td>";
     h+="<td><span class=\"bdg bgr\" style=\"font-size:10.5px\">"+esc(r.ticket_type||"--")+"</span></td>";
+    h+="<td class=\"tr\" style=\"max-width:120px;font-size:12px;color:var(--tx-2)\" title=\""+esc(r.ticket_category||"")+"\">"+esc(r.ticket_category||"--")+"</td>";
     h+="<td><span class=\"bdg "+stCls+"\">"+esc(r.status||"--")+"</span></td>";
     h+="<td>"+smbBdg(r.smb_type)+"</td>";
     h+="<td class=\"tr\" style=\"max-width:110px;font-size:12px;color:var(--tx-2)\">"+esc(r.environment||"--")+"</td>";
@@ -5557,10 +5632,15 @@ document.addEventListener("DOMContentLoaded",function(){
   var cea=G("chr-esc-add");if(cea)cea.onclick=addEscalationRow;
   var cppt=G("chr-ppt");if(cppt)cppt.onclick=exportHealthReportPPT;
   var capply=G("chart-apply-btn"),creset=G("chart-reset-btn"),ceval=G("chart-eval-btn"),drefresh=G("dash-refresh-btn");
-  if(capply)capply.onclick=function(){renderDashboardCharts();};
+  // Both charts AND the Customer Health Indicator read chart-date-from/to — previously only the
+  // charts re-rendered here, so CHR silently kept showing its default rolling-7-days window no
+  // matter what period was picked. renderHealthReport() is wrapped since it's a bonus refresh, not
+  // the primary action of these buttons — a CHR error here should never block the chart update.
+  if(capply)capply.onclick=function(){renderDashboardCharts();try{renderHealthReport();}catch(e){console.warn("Health report error:",e);}};
   if(creset)creset.onclick=function(){
     var f=G("chart-date-from"),t=G("chart-date-to");if(f)f.value="";if(t)t.value="";
     renderDashboardCharts();
+    try{renderHealthReport();}catch(e){console.warn("Health report error:",e);}
   };
   if(ceval)ceval.onclick=function(){
     var f=G("chart-date-from"),t=G("chart-date-to");if(f)f.value="";if(t)t.value="";
@@ -5568,6 +5648,7 @@ document.addEventListener("DOMContentLoaded",function(){
     _chartCurrentData=ST.curEval;
     var b=G("chart-count-badge");if(b)b.textContent=ST.curEval.length+" tickets (current eval)";
     renderDashboardCharts();
+    try{renderHealthReport();}catch(e){console.warn("Health report error:",e);}
   };
   if(drefresh)drefresh.onclick=refreshDashboard;
   var syncRetryBtn=G("sync-error-retry");
@@ -5591,7 +5672,7 @@ document.addEventListener("DOMContentLoaded",function(){
   if(zdt)zdt.onclick=testZD;if(zds)zds.onclick=saveAPISettings;if(gmt)gmt.onclick=testGem;if(gms)gms.onclick=saveAPISettings;
   if(fbt)fbt.onclick=testFirebase;if(fbs)fbs.onclick=saveFirebaseSettings;
   var cr2=G("clr-res"),cl2=G("clr-lrn"),cs2=G("clr-smb");
-  if(cr2)cr2.onclick=async function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="12" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
+  if(cr2)cr2.onclick=async function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);upBadges();var rlt=G("res-tb");if(rlt)rlt.innerHTML='<tr><td colspan="17" class="te">No results yet.</td></tr>';toast("Cleared","ok");};
   if(cl2)cl2.onclick=clearLrn;if(cs2)cs2.onclick=clearSMBData;
 
   // Firebase Auth state + Real-time listeners
