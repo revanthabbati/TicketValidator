@@ -719,7 +719,7 @@ select.fin{cursor:pointer}
               <span class="ct">Customer Health Indicator</span>
               <div style="font-size:11.5px;color:var(--tx-3);margin-top:2px">Leading signals for retention risk &middot; auto-generated from evaluated tickets (<span id="chr-period-label">rolling 7 days</span>) &middot; <span id="chr-asof"></span></div>
             </div>
-            <div style="margin-left:auto;display:flex;gap:6px"><button class="btn bgst bsm" id="chr-refresh">&#8635; Refresh</button><button class="btn bpri bsm" id="chr-ppt">&#8595; Download PPT</button></div>
+            <div style="margin-left:auto;display:flex;gap:6px"><button class="btn bok bsm" id="chr-manual-save">&#10003; Save Values</button><button class="btn bgst bsm" id="chr-refresh">&#8635; Refresh</button><button class="btn bpri bsm" id="chr-ppt">&#8595; Download PPT</button></div>
           </div>
           <div class="cbd" style="display:flex;flex-direction:column;gap:16px">
             <div class="al ai" style="font-size:11.5px">Ticket Volume, SLA, CSAT/DSAT, Top Accounts, and This Week's Picture are computed automatically from evaluated tickets (SLA = Initial Reply sent within 30 min; CSAT/DSAT = Satisfaction Rating column matched against good/bad keywords). <strong>Critical Open (Sev 1)</strong> and <strong>Product Escalations to Engineering</strong> are entered manually below &mdash; edit them directly, they're saved automatically and shared with your team.</div>
@@ -2310,6 +2310,25 @@ function setCHRManual(m){lsS(SK.CHRM,m);}
 function saveCHRManualField(field,value){
   var m=getCHRManual();m[field]=value;setCHRManual(m);saveCHRManualToFirestore(m).catch(function(){});
 }
+// Explicit "Save Values" button — the fields above already autosave on blur (onchange), but that's
+// invisible to the user. This re-reads every manual input straight from the DOM (covers anything
+// still focused/unblurred) and gives a visible confirmation that it was saved.
+function saveCHRManualAll(){
+  var m=getCHRManual();
+  var s1=G("chr-sev1"),s1a=G("chr-sev1-accounts"),ar=G("chr-arr-risk");
+  if(s1)m.critOpen=+s1.value||0;
+  if(s1a)m.critOpenAccounts=+s1a.value||0;
+  if(ar)m.arrAtRisk=ar.value||"";
+  var escTb=G("chr-esc-tb");
+  if(escTb){
+    escTb.querySelectorAll("[data-esc-f]").forEach(function(el){
+      var idx=+el.dataset.escIdx,f=el.dataset.escF;
+      if(m.escalations[idx])m.escalations[idx][f]=el.value;
+    });
+  }
+  setCHRManual(m);
+  saveCHRManualToFirestore(m).then(function(){toast("Customer Health values saved","ok");}).catch(function(){toast("Saved locally — cloud sync failed","warn");});
+}
 async function loadCHRManualFromFirestore(){
   if(!FB.enabled||!FB.db)return;
   try{var d=await fsGet("shared/healthreport");if(d&&d.manual)lsS(SK.CHRM,d.manual);}
@@ -2381,6 +2400,25 @@ async function saveCHR75ToFirestore(accounts,syncedAt){
   try{await fsSet("shared/chr75health",{accounts:accounts,syncedAt:syncedAt});}
   catch(e){console.warn("saveCHR75ToFirestore error:",e);}
 }
+// Tries an exact tag match first (tags: is the strict interpretation of "activation code on the
+// ticket"), then falls back to a plain quoted keyword search for the same code — Zendesk's tag
+// match alone came back empty for every account in testing, most likely because the code lives in
+// a custom field rather than literally as a ticket tag. The keyword search covers that case too
+// without needing to know the field's name/ID. Only falls back when the tag search found nothing
+// (not on an error, which still needs to surface as a real failure to the caller).
+async function zdSearchTicketsByCode(code){
+  var safe=String(code||"").trim().replace(/"/g,"");
+  if(!safe)return{tickets:[],count:0};
+  var q1="type:ticket tags:"+safe;
+  var d=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q1)+"&sort_by=updated_at&sort_order=desc");
+  var tickets=(d.results||[]).filter(function(t){return t.id&&t.status;});
+  if(tickets.length)return{tickets:tickets,count:(typeof d.count==="number"?d.count:tickets.length)};
+  await sleep(150);
+  var q2='type:ticket "'+safe+'"';
+  var d2=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q2)+"&sort_by=updated_at&sort_order=desc");
+  var tickets2=(d2.results||[]).filter(function(t){return t.id&&t.status;});
+  return{tickets:tickets2,count:(typeof d2.count==="number"?d2.count:tickets2.length)};
+}
 async function syncCHR75FromZendesk(){
   if(!cfg("ZD_TOK")||!cfg("ZD_SUB")){toast("Configure Zendesk API access in Settings first","err");return;}
   var accounts=getTop75ARRAccounts();
@@ -2395,12 +2433,13 @@ async function syncCHR75FromZendesk(){
     if(pfill)pfill.style.width=pct+"%";
     if(plabel)plabel.textContent="Syncing "+acct.code+" ("+(i+1)+"/"+accounts.length+")…";
     try{
-      var q="type:ticket tags:"+acct.code;
-      var d=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q)+"&sort_by=updated_at&sort_order=desc");
-      var tickets=(d.results||[]).filter(function(t){return t.id&&t.status;});
+      var sres=await zdSearchTicketsByCode(acct.code);
+      var tickets=sres.tickets;
+      // Open = new/open/pending/on-hold — anything not solved or closed (isOpenStatus already
+      // encodes exactly that set); Total = every ticket matched for this activation code.
       var openCount=tickets.filter(function(t){return isOpenStatus(t.status);}).length;
       var lastActivity=tickets.length?tickets[0].updated_at:null; // already sorted desc by updated_at
-      results.push({code:acct.code,arr:acct.arr||0,openCount:openCount,totalCount:(typeof d.count==="number"?d.count:tickets.length),lastActivity:lastActivity,tickets:tickets.slice(0,50)});
+      results.push({code:acct.code,arr:acct.arr||0,openCount:openCount,totalCount:sres.count,lastActivity:lastActivity,tickets:tickets.slice(0,50)});
     }catch(e){
       console.warn("CHR75 sync error for "+acct.code+":",e.message||e);
       results.push({code:acct.code,arr:acct.arr||0,openCount:null,totalCount:null,lastActivity:null,tickets:[],error:e.message||"Sync failed"});
@@ -2703,16 +2742,20 @@ function renderHealthReport(){
           if(td&&(!repDate||td<repDate)){rep=t;repDate=td;}
         });
         var days=repDate?daysBetween(repDate,now):null;
-        ah+="<tr data-acct=\""+esc(acct)+"\" style='cursor:pointer' title='Click to see these tickets'><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
+        ah+="<tr data-acct=\""+esc(acct)+"\" data-issue=\""+esc(rep.category||"")+"\" style='cursor:pointer' title='Click to see these tickets'><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
       });
       if(acctKeys.length>CHR_TOP_ACCOUNTS_N)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-CHR_TOP_ACCOUNTS_N)+" more accounts</td></tr>";
       accTb.innerHTML=ah;
-      // Drill-in: click a row to see its open tickets. Reads byAcct via closure — no need to
-      // re-derive the ticket list from a value/field lookup like showDrillDown() does.
+      // Drill-in: click a row to see only the open ticket(s) behind the Issue Type shown in that
+      // row (not every open ticket the account has) — sourced purely from the imported file's own
+      // evaluated results (byAcct, via closure), never from Zendesk directly.
       accTb.querySelectorAll("[data-acct]").forEach(function(tr){
         tr.onclick=function(){
           var info2=byAcct[this.dataset.acct];
-          if(info2)openTicketListModal("Open Tickets — "+this.dataset.acct,info2.tickets);
+          if(!info2)return;
+          var issue=this.dataset.issue||"";
+          var matched=info2.tickets.filter(function(t){return(t.category||"")===issue;});
+          openTicketListModal("Open Tickets — "+this.dataset.acct+(issue?" — "+issue:""),matched.length?matched:info2.tickets);
         };
       });
     }
@@ -5766,6 +5809,7 @@ document.addEventListener("DOMContentLoaded",function(){
   // Chart filter buttons
   var csess=G("chart-session");if(csess)csess.onchange=function(){onReviewSessionChange(this.value);};
   var chrr=G("chr-refresh");if(chrr)chrr.onclick=function(){try{renderHealthReport();toast("Health report refreshed","ok");}catch(e){}};
+  var chrms=G("chr-manual-save");if(chrms)chrms.onclick=saveCHRManualAll;
   var chr75s=G("chr75-sync");if(chr75s)chr75s.onclick=syncCHR75FromZendesk;
   var cs1=G("chr-sev1");if(cs1)cs1.onchange=function(){saveCHRManualField("critOpen",+this.value||0);};
   var cs1a=G("chr-sev1-accounts");if(cs1a)cs1a.onchange=function(){saveCHRManualField("critOpenAccounts",+this.value||0);};
