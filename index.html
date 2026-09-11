@@ -2409,13 +2409,15 @@ async function saveCHR75ToFirestore(accounts,syncedAt){
 async function zdSearchTicketsByCode(code){
   var safe=String(code||"").trim().replace(/"/g,"");
   if(!safe)return{tickets:[],count:0};
+  // per_page=100 (Zendesk's max) so the Open/Total counts and the drill-in are based on as
+  // complete a ticket list as one API call can return, not just a default-sized first page.
   var q1="type:ticket tags:"+safe;
-  var d=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q1)+"&sort_by=updated_at&sort_order=desc");
+  var d=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q1)+"&sort_by=updated_at&sort_order=desc&per_page=100");
   var tickets=(d.results||[]).filter(function(t){return t.id&&t.status;});
   if(tickets.length)return{tickets:tickets,count:(typeof d.count==="number"?d.count:tickets.length)};
   await sleep(150);
   var q2='type:ticket "'+safe+'"';
-  var d2=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q2)+"&sort_by=updated_at&sort_order=desc");
+  var d2=await zdGet(zdBase()+"/search.json?query="+encodeURIComponent(q2)+"&sort_by=updated_at&sort_order=desc&per_page=100");
   var tickets2=(d2.results||[]).filter(function(t){return t.id&&t.status;});
   return{tickets:tickets2,count:(typeof d2.count==="number"?d2.count:tickets2.length)};
 }
@@ -2439,7 +2441,7 @@ async function syncCHR75FromZendesk(){
       // encodes exactly that set); Total = every ticket matched for this activation code.
       var openCount=tickets.filter(function(t){return isOpenStatus(t.status);}).length;
       var lastActivity=tickets.length?tickets[0].updated_at:null; // already sorted desc by updated_at
-      results.push({code:acct.code,arr:acct.arr||0,openCount:openCount,totalCount:sres.count,lastActivity:lastActivity,tickets:tickets.slice(0,50)});
+      results.push({code:acct.code,arr:acct.arr||0,openCount:openCount,totalCount:sres.count,lastActivity:lastActivity,tickets:tickets.slice(0,100)});
     }catch(e){
       console.warn("CHR75 sync error for "+acct.code+":",e.message||e);
       results.push({code:acct.code,arr:acct.arr||0,openCount:null,totalCount:null,lastActivity:null,tickets:[],error:e.message||"Sync failed"});
@@ -2448,7 +2450,7 @@ async function syncCHR75FromZendesk(){
   }
   ST.chr75Data=results;
   ST.chr75SyncedAt=Date.now();
-  // Persist only the light aggregate (never the raw ticket lists — 75 accounts x up to 50 tickets
+  // Persist only the light aggregate (never the raw ticket lists — 75 accounts x up to 100 tickets
   // each would badly bloat both localStorage and the Firestore doc). Full ST.chr75Data with
   // .tickets stays in-memory for this session's drill-in only; after a reload, drill-in is
   // unavailable until the next sync.
@@ -2476,29 +2478,42 @@ function renderCHR75(){
   sorted.forEach(function(r,idx){
     var lastAct=r.lastActivity?new Date(r.lastActivity).toLocaleDateString("en-GB"):"--";
     var openDisplay=r.openCount==null?'<span style="color:var(--danger)" title="'+esc(r.error||"Sync error")+'">Error</span>':r.openCount;
-    h+="<tr data-chr75=\""+esc(r.code)+"\" style='cursor:pointer' title='Click to see tickets (available for this session only, right after a sync)'>"+
+    h+="<tr>"+
       "<td style='color:var(--tx-3)'>"+(idx+1)+"</td>"+
       "<td style='font-weight:600;font-family:monospace'>"+esc(r.code)+"</td>"+
       "<td>"+(r.arr>0?("$"+Math.round(r.arr/1000)+"K"):"--")+"</td>"+
-      "<td>"+openDisplay+"</td>"+
-      "<td style='color:var(--tx-2)'>"+(r.totalCount!=null?r.totalCount:"--")+"</td>"+
+      "<td data-chr75-open=\""+esc(r.code)+"\" style='cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see open/pending/on-hold/new tickets'>"+openDisplay+"</td>"+
+      "<td data-chr75-total=\""+esc(r.code)+"\" style='color:var(--tx-2);cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see every ticket'>"+(r.totalCount!=null?r.totalCount:"--")+"</td>"+
       "<td style='font-size:11.5px;color:var(--tx-2)'>"+lastAct+"</td>"+
       "</tr>";
   });
   tb.innerHTML=h;
-  tb.querySelectorAll("[data-chr75]").forEach(function(tr){
-    tr.onclick=function(){
-      var code=this.dataset.chr75;
+  // Two independent drill-ins per row — Open Tickets shows only new/open/pending/on-hold tickets,
+  // Total Tickets shows every ticket fetched for that activation code (both from the same synced
+  // list already held in-memory; no extra Zendesk calls).
+  tb.querySelectorAll("[data-chr75-open]").forEach(function(td){
+    td.onclick=function(){
+      var code=this.dataset.chr75Open;
       var acct=data.filter(function(a){return a.code===code;})[0];
       if(!acct||!acct.tickets||!acct.tickets.length){toast("Sync from Zendesk to view this account's ticket details","in");return;}
-      openZendeskTicketListModal(code,acct.tickets);
+      var openTix=acct.tickets.filter(function(t){return isOpenStatus(t.status);});
+      openZendeskTicketListModal(code+" — Open Tickets",openTix);
+    };
+  });
+  tb.querySelectorAll("[data-chr75-total]").forEach(function(td){
+    td.onclick=function(){
+      var code=this.dataset.chr75Total;
+      var acct=data.filter(function(a){return a.code===code;})[0];
+      if(!acct||!acct.tickets||!acct.tickets.length){toast("Sync from Zendesk to view this account's ticket details","in");return;}
+      openZendeskTicketListModal(code+" — All Tickets",acct.tickets,acct.totalCount);
     };
   });
 }
 // Simpler drill-down modal for RAW Zendesk ticket objects (from the Search API) — these don't have
 // the AI-evaluation fields (category/smb_type/frr/etc.) that openTicketListModal() expects.
-function openZendeskTicketListModal(code,tickets){
-  var h='<div style="margin-bottom:12px;font-size:13px;color:var(--tx-2)">'+tickets.length+' ticket'+(tickets.length!==1?"s":"")+' for <strong>'+esc(code)+'</strong></div>';
+function openZendeskTicketListModal(code,tickets,totalCount){
+  var capNote=(totalCount!=null&&totalCount>tickets.length)?(" — showing "+tickets.length+" of "+totalCount+" total (Zendesk returns up to 100 per search)"):"";
+  var h='<div style="margin-bottom:12px;font-size:13px;color:var(--tx-2)">'+tickets.length+' ticket'+(tickets.length!==1?"s":"")+' for <strong>'+esc(code)+'</strong>'+capNote+'</div>';
   h+='<div style="max-height:420px;overflow-y:auto"><table class="tbl" style="font-size:12px">';
   h+='<thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th><th>Updated</th></tr></thead><tbody>';
   tickets.forEach(function(t){
