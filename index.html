@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F6EF7'/><text x='50%25' y='58%25' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='white'>&#10003;</text></svg>"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DispatchTrack — Ticket Evaluation Platform</title>
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#1B1A16">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
 <!-- System fonts: Apple SF Pro, Helvetica Neue -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -496,21 +503,116 @@ select.fin{cursor:pointer}
 ::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
 /* Page transition */
 .page.active{animation:fadeIn .18s var(--ease)}
-</style></style>
+
+/* ═══ UX / ACCESSIBILITY / PERFORMANCE LAYER ════════════════════
+   Additive only — refines the existing system without renaming any class the JS relies on. */
+::selection{background:rgba(59,81,112,.18)}
+/* Grid items default to min-width:auto, so a chart canvas or wide table could force its card
+   wider than the column and push the whole page into horizontal scroll. */
+.g2>*,.g3>*,.g4>*{min-width:0}
+/* .al is flex for the [icon | text] layout — but alerts holding plain text with inline <strong>
+   tags had every text run split into its own flex column. Plain-text alerts flow as a block. */
+.al:not(:has(> svg)):not(:has(> div)):not(:has(> button)){display:block}
+#pgwrap{scrollbar-gutter:stable;overscroll-behavior:contain}
+.tw{overscroll-behavior:contain}
+
+/* Keyboard focus — visible only for keyboard users (:focus-visible), never on mouse click */
+.btn:focus-visible,.sbi:focus-visible,.sbout:focus-visible,.mcl:focus-visible,a:focus-visible,
+.tbl th[data-s]:focus-visible,[role="button"]:focus-visible,.ckr:has(:focus-visible),.dz:focus-visible{
+  outline:2px solid var(--brand-light);outline-offset:2px;
+}
+.sbi:focus-visible{outline-color:rgba(245,243,236,.6);outline-offset:-2px}
+input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px solid var(--brand-light);outline-offset:2px}
+.lbtn:focus-visible{outline:2px solid rgba(245,243,236,.7);outline-offset:3px}
+
+/* Disabled — every button variant, not just .bpri */
+.btn:disabled,.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* Numbers line up in columns / don't jitter while counters update */
+.sv,.sv-input,.tbl td,.sbbd,#proc-pct{font-variant-numeric:tabular-nums}
+
+/* Table cells: no per-cell background transition (repaint cost on large tables) */
+.tbl td{transition:none}
+
+/* Drill-in affordance — rows/items that open a ticket list on click */
+#chr-accounts-tb tr[data-acct],[data-catmix],#chr-themes li[data-theme]{transition:background .12s var(--ease)}
+#chr-accounts-tb tr[data-acct]:hover td{background:var(--brand-bg)}
+[data-catmix]{padding:3px 6px;margin:0 -6px;border-radius:var(--r-xs)}
+[data-catmix]:hover{background:var(--gray-100)}
+#chr-themes li[data-theme]{border-radius:var(--r-xs);padding:1px 4px}
+#chr-themes li[data-theme]:hover{background:var(--gray-100);color:var(--tx)}
+[data-chr75-open]:hover,[data-chr75-total]:hover{background:var(--brand-bg)!important;color:var(--brand-dark)!important}
+
+/* Modal: body never jumps behind it; footer stays reachable on short screens */
+.modal{overscroll-behavior:contain}
+.modal:focus{outline:none}
+
+/* Toast close button */
+.toast-x{background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-size:17px;margin-left:auto;padding:0 2px;line-height:1;border-radius:4px}
+.toast-x:hover{color:#fff}
+.toast-x:focus-visible{outline:2px solid rgba(255,255,255,.6);outline-offset:1px}
+
+/* Visually hidden but announced by screen readers */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width:1280px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:1080px){
+  .g3{grid-template-columns:repeat(2,1fr)}
+  #pgwrap{padding:20px 18px 40px}
+}
+@media (max-width:900px){
+  :root{--sidebar-w:64px}
+  .g2,.g3{grid-template-columns:1fr}
+  .row{flex-direction:column}
+  /* Sidebar collapses to an icon rail; labels move into each item's title tooltip */
+  .sbh{padding:14px 0;display:flex;justify-content:center}
+  .sblo>div:last-child,.sbsc,.sbun,.sbur,#sb-logo-img{display:none!important}
+  .sbnav{padding:10px 8px;align-items:stretch}
+  .sbi{font-size:0;justify-content:center;padding:10px 0;gap:0}
+  .sbi svg{width:17px;height:17px}
+  .sbbd{position:absolute;top:3px;right:5px;margin:0;font-size:8.5px;padding:1px 4px;min-width:14px}
+  .sbusr{flex-direction:column;padding:10px 0;gap:6px}
+  .sbusr .sbout{margin:0}
+  #topbar{padding:0 16px}
+  #pgwrap{padding:16px 14px 36px}
+}
+@media (max-width:600px){
+  .g4{grid-template-columns:1fr}
+  .tbd{display:none}
+  .chd{padding:14px 16px}
+  .cbd{padding:16px}
+  #mov{padding:8px}
+  .modal{max-height:96vh;border-radius:var(--r-lg)}
+  .fsch,.fsch-wrap{width:100%}
+  /* Inline-styled button/filter rows inside card headers and filter bars wrap instead of overflowing */
+  .chd div[style*="display:flex"],.fb div[style*="display:flex"],.fb>*{flex-wrap:wrap;min-width:0}
+  .chd>div[style*="margin-left:auto"]{margin-left:0!important}
+  #tw{left:12px;right:12px;bottom:12px}
+  .toast{max-width:none}
+}
+
+/* ── Reduced motion: honor the OS setting ────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<!-- PptxGenJS (~0.5MB) is loaded on demand by exportHealthReportPPT() — see loadPptxLib() -->
 </head>
 <body>
 <!-- LOGIN -->
 <div id="lw"><div class="lcard">
   <div class="llogo"><div class="lic" id="login-logo-ic"><svg id="login-logo-svg" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div style="display:flex;flex-direction:column;align-items:flex-start"><img id="login-logo-img" src="" alt="DispatchTrack" style="max-height:30px;max-width:200px;object-fit:contain;display:none"><div class="lbr" id="login-brand-name">DispatchTrack</div><div class="lbs">Ticket Eval Platform</div></div></div>
   <div class="ltit">Welcome back</div><div class="lsub">Evaluate, classify and measure support tickets</div>
-  <div class="lf"><label class="ll">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
-  <div class="lf"><label class="ll">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+  <div class="lf"><label class="ll" for="lem">Email address</label><input id="lem" class="li" type="email" placeholder="you@dispatchtrack.com" autocomplete="email"></div>
+  <div class="lf"><label class="ll" for="lpw">Password</label><input id="lpw" class="li" type="password" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="lbtn" id="lbtn">Sign In &#8594;</button>
   <div class="lerr" id="lerr"></div>
   <div style="text-align:center;margin-top:14px">
@@ -1191,8 +1293,8 @@ service cloud.firestore {
   </div><!-- /main -->
 </div><!-- /app -->
 
-<div id="mov"><div class="modal" id="mbox" style="max-width:500px"><div class="mhd"><div class="mtt" id="mtit">Modal</div><button class="mcl" id="mcl">&#215;</button></div><div class="mbd" id="mbd"></div><div class="mft" id="mft"></div></div></div>
-<div id="tw"></div>
+<div id="mov"><div class="modal" id="mbox" style="max-width:500px" role="dialog" aria-modal="true" aria-labelledby="mtit" tabindex="-1"><div class="mhd"><div class="mtt" id="mtit">Modal</div><button class="mcl" id="mcl" aria-label="Close dialog" title="Close (Esc)">&#215;</button></div><div class="mbd" id="mbd"></div><div class="mft" id="mft"></div></div></div>
+<div id="tw" role="status" aria-live="polite"></div>
 <script>
 "use strict";
 // ─── MASTER IDENTITY ────────────────────────────────────────
@@ -1458,14 +1560,45 @@ function toast(msg,t){
   var w=G("tw");if(!w)return;
   var d=document.createElement("div");d.className="toast "+(t==="ok"?"ok":t==="err"?"er":t==="warn"?"wn":"in");
   var sp=document.createElement("span");sp.textContent=msg;
-  var cb=document.createElement("button");cb.textContent="x";cb.style.cssText="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;margin-left:auto;padding:0;line-height:1";
+  var cb=document.createElement("button");cb.className="toast-x";cb.innerHTML="&times;";cb.setAttribute("aria-label","Dismiss notification");
   cb.onclick=function(){if(d.parentNode)d.parentNode.removeChild(d);};
   d.appendChild(sp);d.appendChild(cb);w.appendChild(d);
-  setTimeout(function(){if(d.parentNode){d.style.opacity="0";d.style.transition="opacity .3s";setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},300);}},5000);
+  // Cap the stack so a burst (e.g. many per-ticket errors) can't bury the screen; oldest go first.
+  while(w.children.length>4)w.removeChild(w.firstChild);
+  setTimeout(function(){if(d.parentNode){d.style.opacity="0";d.style.transition="opacity .3s";setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},300);}},t==="err"?7000:5000);
 }
 function setBox(id,html,type){var el=G(id);if(!el)return;el.className="al "+(type==="ok"?"ao":type==="err"?"ae":"ai");el.innerHTML=html;el.style.display="block";}
-function openModal(title,body,footer,maxW){G("mtit").textContent=title;G("mbd").innerHTML=body;G("mft").innerHTML=footer;G("mbox").style.maxWidth=maxW||"500px";G("mov").classList.add("open");}
-function closeModal(){G("mov").classList.remove("open");}
+var _modalReturnFocus=null;
+function openModal(title,body,footer,maxW){
+  var mov=G("mov"),wasOpen=mov.classList.contains("open");
+  if(!wasOpen)_modalReturnFocus=document.activeElement;
+  G("mtit").textContent=title;G("mbd").innerHTML=body;G("mft").innerHTML=footer;G("mbox").style.maxWidth=maxW||"500px";G("mbox").scrollTop=0;mov.classList.add("open");
+  try{G("mbox").focus({preventScroll:true});}catch(e){}
+}
+function closeModal(){
+  G("mov").classList.remove("open");
+  var rf=_modalReturnFocus;_modalReturnFocus=null;
+  if(rf&&rf.focus&&document.contains(rf)){try{rf.focus({preventScroll:true});}catch(e){}}
+}
+// Escape closes the modal; Tab stays inside it while open. Enter/Space activates any custom
+// role="button" element (sidebar items, drill-in rows) the same way a click does.
+document.addEventListener("keydown",function(e){
+  var mov=G("mov"),open=mov&&mov.classList.contains("open");
+  if(open&&e.key==="Escape"){e.preventDefault();closeModal();return;}
+  if(open&&e.key==="Tab"){
+    var box=G("mbox");
+    var f=Array.prototype.filter.call(box.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'),function(el){return el.offsetParent!==null;});
+    if(!f.length){e.preventDefault();box.focus();return;}
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&(document.activeElement===first||document.activeElement===box)){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    return;
+  }
+  var tg=e.target;
+  if((e.key==="Enter"||e.key===" ")&&tg&&tg.getAttribute&&(tg.getAttribute("role")==="button"||(tg.tagName==="TH"&&tg.hasAttribute("data-s")))&&!/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(tg.tagName)){
+    e.preventDefault();e.target.click();
+  }
+});
 
 // ─── LABELS ──────────────────────────────────────────────────
 function getEnvs(){return lsG(SK.EN,null)||DE.slice();}
@@ -2042,8 +2175,13 @@ var PM={dashboard:{t:"Dashboard",d:"Overview"},evaluate:{t:"Evaluate",d:"Upload,
 function goPage(pg){
   if((pg==="users"||pg==="settings"||pg==="evaluate")&&!isAdmin()){toast("Admin access required","err");return;}
   Q(".sbi").forEach(function(x){x.classList.remove("active");});
-  var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav)nav.classList.add("active");
+  Q(".sbi").forEach(function(x){x.removeAttribute("aria-current");});
+  var nav=document.querySelector('.sbi[data-pg="'+pg+'"]');if(nav){nav.classList.add("active");nav.setAttribute("aria-current","page");}
+  var prevPe=document.querySelector(".page.active");
   Q(".page").forEach(function(x){x.classList.remove("active");});
+  // Shared scroll container — start a newly opened page at the top instead of inheriting the
+  // previous page's scroll offset. Re-entering the same page keeps the user's position.
+  var pw=G("pgwrap");if(pw&&(!prevPe||prevPe.id!=="pg-"+pg))pw.scrollTop=0;
   var pe=G("pg-"+pg);if(pe)pe.classList.add("active");
   var m=PM[pg]||{t:pg,d:""};if(G("pgtit"))G("pgtit").textContent=m.t;if(G("pgdsc"))G("pgdsc").textContent=m.d;
   if(pg==="dashboard")renderDash();if(pg==="results"){fillFilters();applyF();}
@@ -2482,8 +2620,8 @@ function renderCHR75(){
       "<td style='color:var(--tx-3)'>"+(idx+1)+"</td>"+
       "<td style='font-weight:600;font-family:monospace'>"+esc(r.code)+"</td>"+
       "<td>"+(r.arr>0?("$"+Math.round(r.arr/1000)+"K"):"--")+"</td>"+
-      "<td data-chr75-open=\""+esc(r.code)+"\" style='cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see open/pending/on-hold/new tickets'>"+openDisplay+"</td>"+
-      "<td data-chr75-total=\""+esc(r.code)+"\" style='color:var(--tx-2);cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see every ticket'>"+(r.totalCount!=null?r.totalCount:"--")+"</td>"+
+      "<td data-chr75-open=\""+esc(r.code)+"\" role='button' tabindex='0' style='cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see open/pending/on-hold/new tickets'>"+openDisplay+"</td>"+
+      "<td data-chr75-total=\""+esc(r.code)+"\" role='button' tabindex='0' style='color:var(--tx-2);cursor:pointer;text-decoration:underline;text-decoration-style:dotted' title='Click to see every ticket'>"+(r.totalCount!=null?r.totalCount:"--")+"</td>"+
       "<td style='font-size:11.5px;color:var(--tx-2)'>"+lastAct+"</td>"+
       "</tr>";
   });
@@ -2525,7 +2663,7 @@ function openZendeskTicketListModal(code,tickets,totalCount){
       "<td style='font-size:11px;color:var(--tx-3)'>"+(t.updated_at?new Date(t.updated_at).toLocaleDateString("en-GB"):"--")+"</td></tr>";
   });
   h+="</tbody></table></div>";
-  openModal("Zendesk Tickets — "+esc(code),h,'<button class="btn bpri" id="dd-cl3">Close</button>',"760px");
+  openModal("Zendesk Tickets — "+code,h,'<button class="btn bpri" id="dd-cl3">Close</button>',"760px");
   var dcl3=G("dd-cl3");if(dcl3)dcl3.onclick=closeModal;
 }
 // Exports the report as a real, editable .pptx — reads current values straight out of the DOM
@@ -2540,9 +2678,31 @@ function chrCategoryColor(name,ORANGE,RED,NAVY,BLUE,GREEN,GRAY){
   if(/enhancement/.test(name))return GREEN;
   return GRAY;
 }
+// PptxGenJS is ~0.5MB and only ever needed here, so it's fetched on first export instead of
+// blocking every page load. Cached after the first successful load.
+var _pptxLibPromise=null;
+function loadPptxLib(){
+  if(typeof PptxGenJS!=="undefined")return Promise.resolve();
+  if(_pptxLibPromise)return _pptxLibPromise;
+  _pptxLibPromise=new Promise(function(resolve,reject){
+    var s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js";
+    s.async=true;
+    s.onload=function(){resolve();};
+    s.onerror=function(){_pptxLibPromise=null;if(s.parentNode)s.parentNode.removeChild(s);reject(new Error("load failed"));};
+    document.head.appendChild(s);
+  });
+  return _pptxLibPromise;
+}
 async function exportHealthReportPPT(){
+  var btn=G("chr-ppt");
+  if(typeof PptxGenJS==="undefined"){
+    if(btn){btn.disabled=true;btn.textContent="Loading…";}
+    try{await loadPptxLib();}catch(e){}
+    if(btn){btn.disabled=false;btn.innerHTML="&#8595; Download PPT";}
+  }
   if(typeof PptxGenJS==="undefined"){toast("PPT library failed to load — check your internet connection and try again","err");return;}
-  var btn=G("chr-ppt");if(btn){btn.disabled=true;btn.textContent="Generating…";}
+  if(btn){btn.disabled=true;btn.textContent="Generating…";}
   try{
     var pptx=new PptxGenJS();
     pptx.defineLayout({name:"DT_WIDE",width:13.33,height:7.5});
@@ -2757,7 +2917,7 @@ function renderHealthReport(){
           if(td&&(!repDate||td<repDate)){rep=t;repDate=td;}
         });
         var days=repDate?daysBetween(repDate,now):null;
-        ah+="<tr data-acct=\""+esc(acct)+"\" data-issue=\""+esc(rep.category||"")+"\" style='cursor:pointer' title='Click to see these tickets'><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
+        ah+="<tr data-acct=\""+esc(acct)+"\" data-issue=\""+esc(rep.category||"")+"\" role='button' tabindex='0' style='cursor:pointer' title='Click to see these tickets'><td style='font-weight:600'>"+esc(acct)+"</td><td>"+(info.arr>0?("$"+Math.round(info.arr/1000)+"K"):"--")+"</td><td>"+catBdg(rep.category)+"</td><td>"+(days==null?"--":days)+"</td><td style='font-size:11.5px;color:var(--tx-2)'>"+esc(rep.assignee||rep.requester||"--")+" / "+esc(rep.status||"--")+"</td></tr>";
       });
       if(acctKeys.length>CHR_TOP_ACCOUNTS_N)ah+='<tr><td colspan="5" class="te">+ '+(acctKeys.length-CHR_TOP_ACCOUNTS_N)+" more accounts</td></tr>";
       accTb.innerHTML=ah;
@@ -2786,7 +2946,7 @@ function renderHealthReport(){
     var ch="";
     catKeys.forEach(function(k){
       var pct=weekNoProv.length?Math.round(catCnt[k]/weekNoProv.length*100):0;
-      ch+="<div data-catmix=\""+esc(k)+"\" style='display:flex;justify-content:space-between;align-items:center;cursor:pointer' title='Click to see these tickets'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
+      ch+="<div data-catmix=\""+esc(k)+"\" role='button' tabindex='0' style='display:flex;justify-content:space-between;align-items:center;cursor:pointer' title='Click to see these tickets'>"+catBdg(k)+"<span style='font-size:11.5px;color:var(--tx-3)'>["+pct+"%] "+catCnt[k]+"</span></div>";
     });
     cm.innerHTML=ch||'<div class="te" style="text-align:left">No tickets this week.</div>';
     // Drill-in: click a category row to see this week's tickets in that category.
@@ -2807,7 +2967,7 @@ function renderHealthReport(){
   };
   var th=G("chr-themes");
   if(th){
-    th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li data-theme=\""+esc(k)+"\" style='cursor:pointer' title='Click to see these tickets'>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
+    th.innerHTML=subKeys.length?subKeys.map(function(k){return"<li data-theme=\""+esc(k)+"\" role='button' tabindex='0' style='cursor:pointer' title='Click to see these tickets'>"+esc(k)+" ("+subCnt[k]+")</li>";}).join(""):'<li style="list-style:none;color:var(--tx-3)">No themes yet.</li>';
     th.querySelectorAll("[data-theme]").forEach(function(li){
       li.onclick=function(){
         var k=this.dataset.theme;
@@ -3684,7 +3844,7 @@ function showDrillDown(value,field,data){
   });
   if(matching.length>150)h+='<tr><td colspan="8" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export for full list.</td></tr>';
   h+="</tbody></table></div>";
-  openModal(esc(fieldLabel)+": "+esc(value), h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
+  openModal(fieldLabel+": "+value, h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
   var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
 }
 
@@ -3714,7 +3874,7 @@ function openTicketListModal(title,tickets){
   });
   if(tickets.length>150)h+='<tr><td colspan="9" class="te" style="padding:10px">Showing 150 of '+tickets.length+' tickets.</td></tr>';
   h+="</tbody></table></div>";
-  openModal(esc(title), h, '<button class="btn bpri" id="dd-cl2">Close</button>', "860px");
+  openModal(title, h, '<button class="btn bpri" id="dd-cl2">Close</button>', "860px");
   var dcl2=G("dd-cl2");if(dcl2)dcl2.onclick=closeModal;
 }
 
@@ -3981,7 +4141,7 @@ function showFRRDrillDown(bucket,data){
   });
   if(matching.length>150)h+='<tr><td colspan="8" class="te" style="padding:10px">Showing 150 of '+matching.length+' tickets. Export for full list.</td></tr>';
   h+="</tbody></table></div>";
-  openModal(esc(label), h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
+  openModal(label, h, '<button class="btn bpri" id="dd-cl">Close</button>', "820px");
   var dcl=G("dd-cl");if(dcl)dcl.onclick=closeModal;
 }
 
@@ -4666,7 +4826,7 @@ function openEditResultModal(r){
   co+="<option value=''"+((!r.category)?" selected":"")+">-- not set --</option>";for(var i=0;i<cats.length;i++)co+="<option"+(cats[i]===r.category?" selected":"")+">"+esc(cats[i])+"</option>";
   so+="<option value=''"+((!r.sub_category)?" selected":"")+">-- not set --</option>";for(var i=0;i<subs.length;i++)so+="<option"+(subs[i]===r.sub_category?" selected":"")+">"+esc(subs[i])+"</option>";
   var smbo="<option value=\"\""+((!r.smb_type||r.smb_type==="Unknown")?" selected":"")+">Unknown</option><option value=\"SMB\""+(r.smb_type==="SMB"?" selected":"")+">SMB</option><option value=\"Mega\""+(r.smb_type==="Mega"?" selected":"")+">Mega</option><option value=\"Micro\""+(r.smb_type==="Micro"?" selected":"")+">Micro</option>";
-  openModal("Edit Result: #"+esc(r.id),
+  openModal("Edit Result: #"+r.id,
     "<div style=\"display:flex;flex-direction:column;gap:12px\">"+
     "<div style=\"font-size:12.5px;color:var(--tx-2)\">"+esc(r.subject||"")+"</div>"+
     "<div class=\"g2\" style=\"gap:10px\">"+
@@ -4703,7 +4863,9 @@ function openEditResultModal(r){
 function fillFilters(){
   fillReviewSessionDropdowns();
   var base=getBaseResults();
-  function fill(id,key,lbl){var s=G(id);if(!s)return;var vals=[],cur=s.value;base.forEach(function(r){if(r[key]&&vals.indexOf(r[key])<0)vals.push(r[key]);});vals.sort();s.innerHTML="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)s.innerHTML+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";}
+  // Single pass with a Set-like map + one innerHTML write (was indexOf-per-row and innerHTML+= per
+  // option, i.e. quadratic in both the result count and the option count). Same output.
+  function fill(id,key,lbl){var s=G(id);if(!s)return;var seen={},vals=[],cur=s.value;for(var j=0;j<base.length;j++){var v=base[j][key];if(v&&!Object.prototype.hasOwnProperty.call(seen,v)){seen[v]=1;vals.push(v);}}vals.sort();var h="<option value=\"\">All "+lbl+"</option>";for(var i=0;i<vals.length;i++)h+="<option"+(vals[i]===cur?" selected":"")+">"+esc(vals[i])+"</option>";s.innerHTML=h;}
   fill("f-env","environment","Environments");fill("f-cat","category","Categories");fill("f-sub","sub_category","Sub Categories");fill("f-smb","smb_type","SMB Types");fill("f-reviewer","assignedToName","Reviewers");
   var rl=G("res-lbl");if(rl)rl.textContent=base.length+" records";
 }
@@ -4755,6 +4917,36 @@ function updateBulkActionButtons(){
     var el=G(id);if(el)el.style.display=any?"inline-flex":"none";
   });
 }
+// One set of delegated listeners on the <tbody>, bound once, instead of 4–5 listeners per row
+// re-created on every render — with "Show: All" on a large result set that was thousands of
+// listeners rebuilt on every filter change. Rows are still resolved via data-gi into getFiltered(),
+// exactly as before.
+function bindResTableDelegates(tb){
+  if(tb._resDelegated)return;
+  tb._resDelegated=true;
+  tb.addEventListener("change",function(e){
+    if(e.target.classList&&e.target.classList.contains("rcb"))updateBulkActionButtons();
+  });
+  tb.addEventListener("click",function(e){
+    var eb=e.target.closest("[data-edit-gi]");
+    if(eb&&tb.contains(eb)){openEditResultModal(getFiltered()[+eb.dataset.editGi]);return;}
+    var db=e.target.closest("[data-del-gi]");
+    if(db&&tb.contains(db))deleteResult(+db.dataset.delGi);
+  });
+  function tidAnchor(t){var a=t&&t.closest?t.closest("a[data-tid]"):null;return a&&tb.contains(a)?a:null;}
+  tb.addEventListener("mouseover",function(e){
+    var a=tidAnchor(e.target);if(!a||a.contains(e.relatedTarget))return;
+    var r=getFiltered()[+a.dataset.gi];if(r)showTicketPreview(e,r);
+  });
+  tb.addEventListener("mousemove",function(e){
+    var a=tidAnchor(e.target);if(!a)return;
+    showTicketPreview(e,getFiltered()[+a.dataset.gi]);
+  });
+  tb.addEventListener("mouseout",function(e){
+    var a=tidAnchor(e.target);if(!a||a.contains(e.relatedTarget))return;
+    hideTicketPreview();
+  });
+}
 function renderResTable(){
   var all=getFiltered();
   // ST.pg*ST.pgSz is NaN when pgSz is Infinity ("Show: All") — 0*Infinity===NaN in JS — which made
@@ -4792,22 +4984,7 @@ function renderResTable(){
     h+="</tr>";
   }
   tb.innerHTML=h;
-  tb.querySelectorAll(".rcb").forEach(function(cb){cb.onchange=function(){updateBulkActionButtons();};});
-  // Edit buttons
-  tb.querySelectorAll("[data-edit-gi]").forEach(function(btn){
-    btn.onclick=function(){openEditResultModal(getFiltered()[+this.dataset.editGi]);};
-  });
-  // Delete buttons
-  tb.querySelectorAll("[data-del-gi]").forEach(function(btn){
-    btn.onclick=function(){deleteResult(+this.dataset.delGi);};
-  });
-  // Ticket hover preview
-  tb.querySelectorAll("a[data-tid]").forEach(function(a){
-    var r=getFiltered()[+a.dataset.gi];
-    a.addEventListener("mouseenter",function(e){if(r)showTicketPreview(e,r);});
-    a.addEventListener("mousemove",function(e){showTicketPreview(e,r);});
-    a.addEventListener("mouseleave",hideTicketPreview);
-  });
+  bindResTableDelegates(tb);
   var pages=Math.ceil(all.length/ST.pgSz)||1,pl=G("pg-lbl");
   if(pl)pl.textContent=(ST.pgSz===Infinity)?("All "+all.length+" shown"):("Page "+(ST.pg+1)+" of "+pages);
   var pgpEl=G("pg-p"),pgnEl=G("pg-n");if(pgpEl)pgpEl.style.display=(ST.pgSz===Infinity)?"none":"inline-flex";if(pgnEl)pgnEl.style.display=(ST.pgSz===Infinity)?"none":"inline-flex";
@@ -5000,7 +5177,7 @@ async function assignReviewersToSession(sessionId,userIds,users){
 async function openAssignReviewersModal(sessionId){
   var s=null;for(var i=0;i<ST.reviewSessions.length;i++){if(ST.reviewSessions[i].id===sessionId){s=ST.reviewSessions[i];break;}}
   if(!s)return;
-  openModal("Assign Reviewers — \""+esc(s.name)+"\"","<div class='te'>Loading users…</div>","<button class='btn bgst' id='arv-cancel'>Cancel</button><button class='btn bpri' id='arv-assign'>Assign</button>","540px");
+  openModal("Assign Reviewers — \""+s.name+"\"","<div class='te'>Loading users…</div>","<button class='btn bgst' id='arv-cancel'>Cancel</button><button class='btn bpri' id='arv-assign'>Assign</button>","540px");
   G("arv-cancel").onclick=closeModal;
   var users=await getAllUsers();
   var mbd=G("mbd");if(!mbd)return;
@@ -5727,7 +5904,15 @@ document.addEventListener("DOMContentLoaded",function(){
   var mcl=G("mcl"),mov=G("mov");if(mcl)mcl.onclick=closeModal;if(mov)mov.onclick=function(e){if(e.target===this)closeModal();};
 
   // Sidebar
-  Q(".sbi").forEach(function(item){item.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});});
+  Q(".sbi").forEach(function(item){
+    item.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});
+    // Keyboard + screen-reader access, and a label tooltip for the collapsed (icon-only) sidebar
+    item.setAttribute("role","button");item.setAttribute("tabindex","0");
+    var lbl="";item.childNodes.forEach(function(n){if(n.nodeType===3)lbl+=n.textContent;});
+    lbl=lbl.trim();if(lbl){item.setAttribute("title",lbl);item.setAttribute("aria-label",lbl);}
+  });
+  Q(".dz").forEach(function(dz){dz.setAttribute("role","button");dz.setAttribute("tabindex","0");});
+  Q(".tbl th[data-s]").forEach(function(th){th.setAttribute("tabindex","0");});
   Q("[data-pg]").forEach(function(el){if(!el.classList.contains("sbi"))el.addEventListener("click",function(){var pg=this.dataset.pg;if(pg)goPage(pg);});});
 
   // Dropzone helper
@@ -5773,7 +5958,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var rclr=G("res-clr");if(rclr)rclr.onclick=function(){if(!confirm("Clear all results?"))return;ST.results=[];ST.filtered=[];lsD(SK.RE);renderResTable();upBadges();fillFilters();toast("Cleared","ok");};
   var rmgd=G("res-manage");if(rmgd)rmgd.onclick=openManageDataModal;
   var rcsvb=G("res-csv");if(rcsvb)rcsvb.onclick=function(){exportR(getFiltered(),"csv");};var rxlb=G("res-xl");if(rxlb)rxlb.onclick=function(){exportR(getFiltered(),"xlsx");};
-  var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq)fq.oninput=applyF;
+  var fclr=G("f-clr");if(fclr)fclr.onclick=clearF;var fq=G("f-q");if(fq){var _fqT=null;fq.oninput=function(){clearTimeout(_fqT);_fqT=setTimeout(applyF,160);};fq.onkeydown=function(e){if(e.key==="Enter"){clearTimeout(_fqT);applyF();}};}
   ["f-env","f-cat","f-sub","f-smb","f-st","f-reviewer","f-date-from","f-date-to"].forEach(function(id){var e=G(id);if(e)e.onchange=applyF;});
   var fsort=G("f-sort");if(fsort)fsort.onchange=function(){srtBy(this.value);};
   var fsortd=G("f-sort-dir");if(fsortd)fsortd.onclick=function(){srtBy(G("f-sort")?gv("f-sort"):(_sk||"evaluatedAt"));};
@@ -5895,10 +6080,16 @@ document.addEventListener("DOMContentLoaded",function(){
             lsS(SK.RE,ST.results.slice(0,200));
             upBadges();
             setSyncStatus(true);
-            var dpg=G("pg-dashboard");
-            if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
-            var rpg=G("pg-results");
-            if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
+            // Data (ST.results) is updated synchronously above; only the expensive repaint is
+            // coalesced. During an evaluation run every saved ticket fires a snapshot, and each
+            // one used to tear down and rebuild every dashboard chart + the results table.
+            clearTimeout(startResultsListener._rt);
+            startResultsListener._rt=setTimeout(function(){
+              var dpg=G("pg-dashboard");
+              if(dpg&&dpg.classList.contains("active"))try{renderDash();}catch(e){}
+              var rpg=G("pg-results");
+              if(rpg&&rpg.classList.contains("active")){fillFilters();applyF();}
+            },220);
           },function(err){
             console.error("Results listener error:",err.code,err.message);
             _resultsUnsub=null; // Reset so we can retry
